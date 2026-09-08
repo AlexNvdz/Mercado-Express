@@ -3,14 +3,29 @@
 {% block title %}{% if active_category %}{{ active_category.name }}{% else %}Catálogo{% endif %} - MercadoExpress{% endblock %}
 
 {% block content %}
-<h1 class="section-title">
-    {% if active_category %}{{ active_category.name }}{% elif search %}Resultados para "{{ search }}"{% else %}Catálogo{% endif %}
-</h1>
+<nav class="breadcrumbs">
+    <a href="{% url 'core:home' %}">Inicio</a>
+    <span class="sep">/</span>
+    {% if active_category %}
+    <a href="{% url 'catalog:list' %}">Catálogo</a>
+    <span class="sep">/</span>
+    <span class="current">{{ active_category.name }}</span>
+    {% else %}
+    <span class="current">Catálogo</span>
+    {% endif %}
+</nav>
 
-<div class="category-grid">
-    <a class="category-card" href="{% url 'catalog:list' %}">Todas</a>
+<div class="section-head">
+    <h1 class="section-title">
+        {% if active_category %}{{ active_category.name }}{% elif search %}Resultados para "{{ search }}"{% else %}Catálogo{% endif %}
+    </h1>
+    {% if total %}<span class="muted">{{ total }} producto{{ total|pluralize }}</span>{% endif %}
+</div>
+
+<div class="category-pills">
+    <a class="category-pill{% if not active_category %} is-active{% endif %}" href="{% url 'catalog:list' %}">Todas</a>
     {% for category in categories %}
-    <a class="category-card" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
+    <a class="category-pill{% if active_category.id == category.id %} is-active{% endif %}" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
     {% endfor %}
 </div>
 
@@ -18,7 +33,23 @@
     {% for product in products %}
         {% include "catalog/_product_card.html" %}
     {% empty %}
-    <div class="empty-state">No se encontraron productos.</div>
+    <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state__icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <h2>No se encontraron productos</h2>
+        <p>{% if search %}Prueba con otro término de búsqueda.{% else %}Vuelve pronto -- estamos actualizando el catálogo.{% endif %}</p>
+    </div>
     {% endfor %}
 </div>
+
+{% if pages > 1 %}
+<div class="pagination">
+    {% if has_previous %}
+    <a class="btn btn--secondary btn--sm" href="?{% if search %}q={{ search }}&{% endif %}page={{ page|add:"-1" }}">&larr; Anterior</a>
+    {% endif %}
+    <span class="pagination__info">Página {{ page }} de {{ pages }}</span>
+    {% if has_next %}
+    <a class="btn btn--secondary btn--sm" href="?{% if search %}q={{ search }}&{% endif %}page={{ page|add:"1" }}">Siguiente &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}
 {% endblock %}

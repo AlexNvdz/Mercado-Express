@@ -4,26 +4,61 @@
 
 {% block content %}
 <section class="hero">
+    <div class="hero__blob" aria-hidden="true"></div>
+    <p class="hero__eyebrow">Abarrotes &middot; Frutas y verduras &middot; Lácteos &middot; Limpieza</p>
     <h1>Todo lo que necesitas, a un clic de distancia</h1>
-    <p>Abarrotes, frutas, lácteos y más, con entrega rápida.</p>
-    <a class="btn" href="{% url 'catalog:list' %}">Ver catálogo</a>
+    <p>Explora el catálogo, arma tu carrito y sigue tu pedido en tiempo real desde que lo confirmas hasta que llega a tu puerta.</p>
+    <div class="hero__actions">
+        <a class="btn btn--accent" href="{% url 'catalog:list' %}">Ver catálogo</a>
+        {% if not is_api_authenticated %}
+        <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Crear cuenta</a>
+        {% endif %}
+    </div>
 </section>
 
-<h2 class="section-title">Categorías</h2>
-<div class="category-grid">
+<div class="benefits">
+    <div class="benefit">
+        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.8"/></svg></div>
+        <div><div class="benefit__title">Catálogo actualizado</div><div class="benefit__text">Disponibilidad real de cada producto</div></div>
+    </div>
+    <div class="benefit">
+        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg></div>
+        <div><div class="benefit__title">Pago seguro</div><div class="benefit__text">Tu pedido se confirma al instante</div></div>
+    </div>
+    <div class="benefit">
+        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 16V7a1 1 0 0 1 1-1h9v10M4 16h10M4 16H2m18 0h-4m0 0V10h3l2 3v3h-1" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18.5" r="1.6" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="18.5" r="1.6" stroke="currentColor" stroke-width="1.8"/></svg></div>
+        <div><div class="benefit__title">Seguimiento de envío</div><div class="benefit__text">Mira el estado de tu pedido paso a paso</div></div>
+    </div>
+    <div class="benefit">
+        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-8.5C.8 9.1 2.3 5.5 6 5.5c2 0 3.4 1.1 4 2.2.6-1.1 2-2.2 4-2.2 3.7 0 5.2 3.6 3.5 7C15 16.65 12 21 12 21Z" stroke="currentColor" stroke-width="1.8"/></svg></div>
+        <div><div class="benefit__title">Guarda tus favoritos</div><div class="benefit__text">Encuentra rápido lo que más compras</div></div>
+    </div>
+</div>
+
+<div class="section-head">
+    <h2 class="section-title">Categorías</h2>
+</div>
+<div class="category-pills">
     {% for category in categories %}
-    <a class="category-card" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
+    <a class="category-pill" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
     {% empty %}
-    <p>No hay categorías disponibles.</p>
+    <p class="muted">No hay categorías disponibles todavía.</p>
     {% endfor %}
 </div>
 
-<h2 class="section-title">Productos destacados</h2>
+<div class="section-head">
+    <h2 class="section-title">Productos destacados</h2>
+    <a class="section-link" href="{% url 'catalog:list' %}">Ver todo el catálogo &rarr;</a>
+</div>
 <div class="product-grid">
     {% for product in featured_products %}
         {% include "catalog/_product_card.html" %}
     {% empty %}
-    <p>No hay productos disponibles.</p>
+    <div class="empty-state">
+        <div class="empty-state__icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.5"/></svg></div>
+        <h2>Aún no hay productos publicados</h2>
+        <p>Vuelve pronto -- el catálogo se está preparando.</p>
+    </div>
     {% endfor %}
 </div>
 {% endblock %}

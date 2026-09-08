@@ -8,6 +8,7 @@ from services import auth as auth_service
 from services import customers as customers_service
 from services import orders as orders_service
 from services import payments as payments_service
+from services import products as products_service
 from services import shipments as shipments_service
 from services.exceptions import ApiConflictError, ApiError
 
@@ -16,7 +17,69 @@ from services.exceptions import ApiConflictError, ApiError
 def order_list(request):
     token = auth_service.get_access_token(request)
     result = orders_service.list_orders(token)
-    return render(request, "orders/list.html", {"orders": result["items"]})
+    orders = result["items"]
+
+    status_filter = request.GET.get("status") or ""
+    statuses = sorted({o["status"] for o in orders})
+    if status_filter:
+        orders = [o for o in orders if o["status"] == status_filter]
+
+    context = {"orders": orders, "statuses": statuses, "status_filter": status_filter}
+    return render(request, "orders/list.html", context)
+
+
+TRACKER_STEPS = [
+    ("pending", "Pedido creado"),
+    ("paid", "Pago confirmado"),
+    ("preparing", "Preparando"),
+    ("shipped", "Enviado"),
+    ("delivered", "Entregado"),
+]
+
+
+def _build_tracker(status: str) -> list[dict] | None:
+    """Maps the order's lifecycle status (API_CONTRACT.md#apiv1orders) onto
+    TRACKER_STEPS for the progress bar. Returns None for terminal states
+    that fall outside the normal flow (cancelled/refunded).
+    """
+    if status in ("cancelled", "refunded"):
+        return None
+
+    # awaiting_payment sits at the same visual step as pending (still
+    # "pedido creado" from the customer's point of view).
+    effective = "pending" if status == "awaiting_payment" else status
+    order_index = {key: i for i, (key, _label) in enumerate(TRACKER_STEPS)}
+    current = order_index.get(effective, 0)
+
+    steps = []
+    for i, (key, label) in enumerate(TRACKER_STEPS):
+        if i < current:
+            state = "done"
+        elif i == current:
+            state = "current"
+        else:
+            state = "upcoming"
+        steps.append({"key": key, "label": label, "state": state})
+    return steps
+
+
+def _enrich_items_with_product_names(items: list[dict]) -> list[dict]:
+    """API_CONTRACT.md's order-item shape has no product name (only
+    product_id/quantity/unit_price/line_total) -- confirmed against the real
+    backend, not just the doc. Resolve it here so templates can show
+    something better than a blank cell; falls back to the SKU/id if the
+    product was since deleted.
+    """
+    cache: dict[str, dict | None] = {}
+    enriched = []
+    for item in items:
+        product_id = item["product_id"]
+        if product_id not in cache:
+            cache[product_id] = products_service.get_product(product_id)
+        product = cache[product_id]
+        name = product["name"] if product else f"Producto no disponible ({product_id[:8]})"
+        enriched.append({**item, "product_name": name})
+    return enriched
 
 
 @api_login_required
@@ -26,11 +89,18 @@ def order_detail(request, order_id):
     if order is None:
         raise Http404("Pedido no encontrado")
 
+    order = {**order, "items": _enrich_items_with_product_names(order["items"])}
     shipment = shipments_service.get_shipment_for_order(token, str(order_id))
     payments = payments_service.list_payments_for_order(token, str(order_id))
     cancellable = order["status"] in ("pending", "awaiting_payment")
 
-    context = {"order": order, "shipment": shipment, "payments": payments, "cancellable": cancellable}
+    context = {
+        "order": order,
+        "shipment": shipment,
+        "payments": payments,
+        "cancellable": cancellable,
+        "tracker_steps": _build_tracker(order["status"]),
+    }
     return render(request, "orders/detail.html", context)
 
 
@@ -46,6 +116,34 @@ def order_cancel(request, order_id):
             messages.error(request, "No fue posible cancelar el pedido.")
         else:
             messages.success(request, "Pedido cancelado.")
+    return redirect("orders:detail", order_id=order_id)
+
+
+@api_login_required
+def order_reorder(request, order_id):
+    """Adds every item from a past order back into the cart ("repetir
+    pedido"). Prices are re-fetched from services.products when the cart is
+    rendered/checked out -- this never reuses the order's old unit_price.
+    """
+    if request.method == "POST":
+        token = auth_service.get_access_token(request)
+        order = orders_service.get_order(token, str(order_id))
+        if order is None:
+            raise Http404("Pedido no encontrado")
+
+        added = 0
+        for item in order["items"]:
+            product = products_service.get_product(item["product_id"])
+            if product is None:
+                continue
+            request.cart.add(item["product_id"], item["quantity"])
+            added += 1
+
+        if added:
+            messages.success(request, "Productos añadidos al carrito.")
+        else:
+            messages.warning(request, "Ninguno de los productos de este pedido está disponible ahora.")
+        return redirect("cart:detail")
     return redirect("orders:detail", order_id=order_id)
 
 

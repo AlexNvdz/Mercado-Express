@@ -3,18 +3,38 @@
 {% block title %}Mi perfil - MercadoExpress{% endblock %}
 
 {% block content %}
-<h1 class="section-title">Mi perfil</h1>
-
-{% if user %}
-<div class="form-card" style="max-width:480px;">
-    <p><strong>Nombre:</strong> {{ user.full_name }}</p>
-    <p><strong>Correo:</strong> {{ user.email }}</p>
-    <p><strong>Teléfono:</strong> {{ user.phone|default:"—" }}</p>
+<div class="section-head">
+    <h1 class="section-title">Mi perfil</h1>
 </div>
-{% else %}
-<div class="empty-state">No fue posible cargar tu información. Intenta más tarde.</div>
-{% endif %}
 
-<p style="margin-top:24px;"><a href="{% url 'orders:list' %}">Ver historial de pedidos &rarr;</a></p>
-<p><a href="{% url 'dashboard:addresses' %}">Mis direcciones de envío &rarr;</a></p>
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
+    <div class="form-card">
+        <h3 style="margin-bottom:16px; font-size:1rem;">Datos de la cuenta</h3>
+        {% if user %}
+        <p class="muted" style="margin-bottom:16px;">{{ user.email }} &middot; {{ user.role|default:"customer" }}</p>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<span class="form-errors">{{ error }}</span>{% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn">Guardar cambios</button>
+        </form>
+        {% else %}
+        <p class="muted">No fue posible cargar tu información. Intenta más tarde.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom:12px; font-size:1rem;">Accesos rápidos</h3>
+        <div class="stack">
+            <a class="btn btn--secondary btn--full" href="{% url 'orders:list' %}">Historial de pedidos</a>
+            <a class="btn btn--secondary btn--full" href="{% url 'dashboard:addresses' %}">Direcciones de envío</a>
+            <a class="btn btn--secondary btn--full" href="{% url 'catalog:wishlist' %}">Mis favoritos</a>
+        </div>
+    </div>
+</div>
 {% endblock %}

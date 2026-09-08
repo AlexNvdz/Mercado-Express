@@ -3,8 +3,8 @@
 {% block title %}Iniciar sesión - MercadoExpress{% endblock %}
 
 {% block content %}
-<div class="form-card form">
-    <h1 class="section-title">Iniciar sesión</h1>
+<div class="form form-card" style="margin: 24px auto;">
+    <h1 class="section-title" style="margin-bottom:20px;">Iniciar sesión</h1>
 
     {% if form.non_field_errors %}
     <ul class="form-errors">
@@ -24,6 +24,6 @@
         <button type="submit" class="btn btn--full">Ingresar</button>
     </form>
 
-    <p style="margin-top:16px;">¿No tienes cuenta? <a href="{% url 'accounts:register' %}">Regístrate</a></p>
+    <p class="form-help">¿No tienes cuenta? <a href="{% url 'accounts:register' %}">Regístrate</a></p>
 </div>
 {% endblock %}

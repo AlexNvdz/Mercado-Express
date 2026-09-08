@@ -4,25 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MercadoExpress{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}MercadoExpress -- tu mercado en línea: catálogo, pedidos y seguimiento de envío.{% endblock %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     {% include "partials/navbar.html" %}
 
-    <main class="page">
-        {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li class="message message--{{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+    {% if messages %}
+    <div class="toasts">
+        {% for message in messages %}
+        <div class="toast toast--{{ message.tags }}" role="status">
+            <span>{{ message }}</span>
+            <button type="button" class="toast__close" aria-label="Cerrar">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
+    <main class="page">
         {% block content %}{% endblock %}
     </main>
 
     {% include "partials/footer.html" %}
+    <script src="{% static 'js/app.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

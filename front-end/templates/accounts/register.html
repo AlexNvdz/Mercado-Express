@@ -3,8 +3,8 @@
 {% block title %}Crear cuenta - MercadoExpress{% endblock %}
 
 {% block content %}
-<div class="form-card form">
-    <h1 class="section-title">Crear cuenta</h1>
+<div class="form form-card" style="margin: 24px auto;">
+    <h1 class="section-title" style="margin-bottom:20px;">Crear cuenta</h1>
 
     {% if form.non_field_errors %}
     <ul class="form-errors">
@@ -24,6 +24,6 @@
         <button type="submit" class="btn btn--full">Crear cuenta</button>
     </form>
 
-    <p style="margin-top:16px;">¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}">Inicia sesión</a></p>
+    <p class="form-help">¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}">Inicia sesión</a></p>
 </div>
 {% endblock %}

@@ -106,6 +106,49 @@ def test_checkout_out_of_stock_product_redirects_to_cart(client):
 
 
 @pytest.mark.django_db
+def test_order_list_status_tabs_filter(client):
+    _login(client)
+    delivered_id = mock_data.MOCK_ORDERS[0]["id"]  # seeded "delivered"
+    shipped_id = mock_data.MOCK_ORDERS[1]["id"]  # seeded "shipped"
+
+    response = client.get(reverse("orders:list"), {"status": "delivered"})
+    assert response.status_code == 200
+    order_numbers = [o["order_number"] for o in response.context["orders"]]
+    assert mock_data.MOCK_ORDERS[0]["order_number"] in order_numbers
+    assert mock_data.MOCK_ORDERS[1]["order_number"] not in order_numbers
+
+
+@pytest.mark.django_db
+def test_reorder_adds_items_to_cart_and_redirects(client):
+    _login(client)
+    order_id = mock_data.MOCK_ORDERS[0]["id"]  # has 2 line items in mock data
+
+    response = client.post(reverse("orders:reorder", kwargs={"order_id": order_id}))
+    assert response.status_code == 302
+    assert response.url == reverse("cart:detail")
+
+    cart_response = client.get(reverse("cart:detail"))
+    assert b"Arroz blanco 1kg" in cart_response.content
+
+
+@pytest.mark.django_db
+def test_reorder_requires_login(client):
+    order_id = mock_data.MOCK_ORDERS[0]["id"]
+    response = client.post(reverse("orders:reorder", kwargs={"order_id": order_id}))
+    assert response.status_code == 302
+    assert response.url.startswith(reverse("accounts:login"))
+
+
+@pytest.mark.django_db
+def test_order_detail_shows_tracker_for_active_order(client):
+    _login(client)
+    order_id = mock_data.MOCK_ORDERS[1]["id"]  # seeded "shipped"
+    response = client.get(reverse("orders:detail", kwargs={"order_id": order_id}))
+    assert response.status_code == 200
+    assert b"order-tracker" in response.content
+
+
+@pytest.mark.django_db
 def test_cancel_pending_order(client):
     _login(client)
     client.post(reverse("cart:add", kwargs={"product_id": ARROZ_ID}), {"quantity": 1})

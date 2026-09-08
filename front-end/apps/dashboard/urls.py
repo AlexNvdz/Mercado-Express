@@ -10,4 +10,5 @@ urlpatterns = [
     path("direcciones/", views.address_list, name="addresses"),
     path("direcciones/nueva/", views.address_add, name="address_add"),
     path("direcciones/<uuid:address_id>/eliminar/", views.address_delete, name="address_delete"),
+    path("direcciones/<uuid:address_id>/predeterminada/", views.address_set_default, name="address_set_default"),
 ]

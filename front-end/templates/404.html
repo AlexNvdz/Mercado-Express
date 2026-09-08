@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Página no encontrada - MercadoExpress{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-page__code">404</div>
+    <h1 style="margin: 12px 0 8px;">No encontramos esta página</h1>
+    <p class="muted">El enlace puede estar roto o el producto/pedido ya no existe.</p>
+    <a class="btn" style="margin-top:20px;" href="{% url 'core:home' %}">Volver al inicio</a>
+</div>
+{% endblock %}

@@ -1,6 +1,11 @@
 from django import forms
 
 
+class ProfileForm(forms.Form):
+    full_name = forms.CharField(label="Nombre completo", max_length=150)
+    phone = forms.CharField(label="Teléfono", max_length=30, required=False)
+
+
 class AddressForm(forms.Form):
     line1 = forms.CharField(label="Dirección (línea 1)", max_length=200)
     line2 = forms.CharField(label="Dirección (línea 2)", max_length=200, required=False)

@@ -1,40 +1,51 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}Carrito - MercadoExpress{% endblock %}
 
 {% block content %}
-<h1 class="section-title">Tu carrito</h1>
+<div class="section-head">
+    <h1 class="section-title">Tu carrito</h1>
+</div>
 
 {% if items %}
+<div class="table-card" style="padding: 4px 24px;">
     {% for item in items %}
     <div class="cart-item">
         <div>
-            <strong>{{ item.product.name }}</strong><br>
-            <span class="product-card__stock">${{ item.unit_price }} c/u</span>
+            <div class="cart-item__name">{{ item.product.name }}</div>
+            <span class="muted">${{ item.unit_price|money }} c/u</span>
         </div>
-        <form method="post" action="{% url 'cart:update' item.product.id %}" style="display:flex; gap:8px; align-items:center;">
+        <form method="post" action="{% url 'cart:update' item.product.id %}" onchange="this.requestSubmit()">
             {% csrf_token %}
-            <label>Cant.
-                <input class="qty-input" type="number" name="quantity" value="{{ item.quantity }}" min="1">
-            </label>
-            <button type="submit" class="btn btn--secondary btn--sm">Actualizar</button>
+            <div class="qty-stepper">
+                <button type="button" data-step="-1" aria-label="Restar">&minus;</button>
+                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" aria-label="Cantidad">
+                <button type="button" data-step="1" aria-label="Sumar">&plus;</button>
+            </div>
         </form>
-        <div><strong>${{ item.subtotal }}</strong></div>
+        <div class="cart-item__name">${{ item.subtotal|money }}</div>
         <form method="post" action="{% url 'cart:remove' item.product.id %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn--danger btn--sm">Quitar</button>
+            <button type="submit" class="icon-btn" aria-label="Quitar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
         </form>
     </div>
     {% endfor %}
+</div>
 
-    <div class="cart-summary">
-        <div class="cart-summary__total">Total: ${{ total }}</div>
-        <a class="btn btn--full" href="{% url 'orders:checkout' %}">Finalizar compra</a>
-    </div>
+<div class="cart-summary">
+    <div class="cart-summary__total"><span>Total</span><span>${{ total|money }}</span></div>
+    <a class="btn btn--full" href="{% url 'orders:checkout' %}">Finalizar compra</a>
+    <a class="btn btn--ghost btn--full" style="margin-top:8px;" href="{% url 'catalog:list' %}">Seguir comprando</a>
+</div>
 {% else %}
-    <div class="empty-state">
-        <p>Tu carrito está vacío.</p>
-        <a class="btn" href="{% url 'catalog:list' %}">Ir al catálogo</a>
-    </div>
+<div class="empty-state">
+    <div class="empty-state__icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.2 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.4" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="20" r="1.4" stroke="currentColor" stroke-width="1.5"/></svg></div>
+    <h2>Tu carrito está vacío</h2>
+    <p>Explora el catálogo y añade productos para empezar tu pedido.</p>
+    <a class="btn" style="margin-top:12px;" href="{% url 'catalog:list' %}">Ir al catálogo</a>
+</div>
 {% endif %}
 {% endblock %}

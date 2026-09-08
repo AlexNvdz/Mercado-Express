@@ -1,13 +1,28 @@
+{% load money catalog_extras %}
 <article class="product-card">
-    <div class="product-card__image">Sin imagen</div>
-    <div class="product-card__name">
-        <a href="{% url 'catalog:detail' product.id %}">{{ product.name }}</a>
+    <div class="product-card__media">
+        <form method="post" action="{% url 'catalog:wishlist_toggle' product.id %}" class="product-card__fav">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="icon-btn{% if product.id|in_wishlist:wishlist %} is-active{% endif %}" aria-label="Favorito">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8.1 2.3 4.5 6 4.5c2 0 3.4 1.1 4 2.2.6-1.1 2-2.2 4-2.2 3.7 0 5.2 3.6 3.5 7-2.5 4.15-9.5 8.5-9.5 8.5Z" {% if product.id|in_wishlist:wishlist %}fill="currentColor"{% endif %} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </button>
+        </form>
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none"><path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.4"/></svg>
     </div>
-    <div class="product-card__price">${{ product.price }}</div>
-    <form method="post" action="{% url 'cart:add' product.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="quantity" value="1">
-        <input type="hidden" name="next" value="{{ request.path }}">
-        <button type="submit" class="btn btn--sm btn--full">Añadir al carrito</button>
-    </form>
+    <div class="product-card__body">
+        <div class="product-card__name">
+            <a href="{% url 'catalog:detail' product.id %}">{{ product.name }}</a>
+        </div>
+        <div class="product-card__spacer"></div>
+        <div class="product-card__price-row">
+            <div class="product-card__price">${{ product.price|money }}</div>
+        </div>
+        <form method="post" action="{% url 'cart:add' product.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="quantity" value="1">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn--sm btn--full">Añadir al carrito</button>
+        </form>
+    </div>
 </article>

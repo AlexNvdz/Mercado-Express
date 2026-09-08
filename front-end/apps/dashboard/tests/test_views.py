@@ -1,6 +1,10 @@
 import pytest
 from django.urls import reverse
 
+from services import mock_data
+
+ADDRESS_ID = mock_data.MOCK_ADDRESSES[0]["id"]
+
 
 def _login(client):
     client.post(
@@ -53,3 +57,21 @@ def test_address_add_creates_and_redirects(client):
     )
     assert response.status_code == 302
     assert response.url == reverse("dashboard:addresses")
+
+
+@pytest.mark.django_db
+def test_address_set_default_redirects(client):
+    _login(client)
+    response = client.post(reverse("dashboard:address_set_default", kwargs={"address_id": ADDRESS_ID}))
+    assert response.status_code == 302
+    assert response.url == reverse("dashboard:addresses")
+
+
+@pytest.mark.django_db
+def test_profile_update_changes_full_name(client):
+    _login(client)
+    response = client.post(reverse("dashboard:profile"), {"full_name": "Nuevo Nombre", "phone": ""})
+    assert response.status_code == 302
+
+    profile_response = client.get(reverse("dashboard:profile"))
+    assert b"Nuevo Nombre" in profile_response.content

@@ -1,11 +1,24 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}Mis pedidos - MercadoExpress{% endblock %}
 
 {% block content %}
-<h1 class="section-title">Mis pedidos</h1>
+<div class="section-head">
+    <h1 class="section-title">Mis pedidos</h1>
+</div>
+
+{% if statuses %}
+<div class="tabs">
+    <a class="tab{% if not status_filter %} is-active{% endif %}" href="{% url 'orders:list' %}">Todos</a>
+    {% for s in statuses %}
+    <a class="tab{% if status_filter == s %} is-active{% endif %}" href="?status={{ s }}">{{ s }}</a>
+    {% endfor %}
+</div>
+{% endif %}
 
 {% if orders %}
+<div class="table-card">
 <table class="table">
     <thead>
         <tr>
@@ -22,16 +35,24 @@
             <td>{{ order.order_number }}</td>
             <td>{{ order.created_at }}</td>
             <td><span class="status status--{{ order.status }}">{{ order.status }}</span></td>
-            <td>${{ order.total_amount }}</td>
-            <td><a href="{% url 'orders:detail' order.id %}">Ver detalle</a></td>
+            <td>${{ order.total_amount|money }}</td>
+            <td style="display:flex; gap:8px; justify-content:flex-end;">
+                <form method="post" action="{% url 'orders:reorder' order.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--secondary btn--sm">Repetir pedido</button>
+                </form>
+                <a class="btn btn--sm" href="{% url 'orders:detail' order.id %}">Ver detalle</a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% else %}
 <div class="empty-state">
-    <p>Aún no tienes pedidos.</p>
-    <a class="btn" href="{% url 'catalog:list' %}">Ir al catálogo</a>
+    <div class="empty-state__icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="4" y="7" width="16" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.5"/></svg></div>
+    <h2>{% if status_filter %}No tienes pedidos en este estado{% else %}Aún no tienes pedidos{% endif %}</h2>
+    <a class="btn" style="margin-top:12px;" href="{% url 'catalog:list' %}">Ir al catálogo</a>
 </div>
 {% endif %}
 {% endblock %}

@@ -1,6 +1,30 @@
 <footer class="footer">
     <div class="footer__inner">
-        <p>&copy; {% now "Y" %} MercadoExpress. Todos los derechos reservados.</p>
-        <p class="footer__note">Frontend Django &middot; Backend FastAPI &middot; PostgreSQL</p>
+        <div class="footer__brand-col">
+            <div class="footer__brand">MercadoExpress</div>
+            <p class="footer__tagline">Tu mercado en línea: catálogo actualizado, pago seguro y seguimiento de pedido en tiempo real.</p>
+        </div>
+        <div>
+            <div class="footer__heading">Comprar</div>
+            <ul class="footer__links">
+                <li><a href="{% url 'catalog:list' %}">Catálogo completo</a></li>
+                <li><a href="{% url 'catalog:wishlist' %}">Favoritos</a></li>
+                <li><a href="{% url 'cart:detail' %}">Carrito</a></li>
+            </ul>
+        </div>
+        <div>
+            <div class="footer__heading">Mi cuenta</div>
+            <ul class="footer__links">
+                {% if is_api_authenticated %}
+                <li><a href="{% url 'dashboard:profile' %}">Mi perfil</a></li>
+                <li><a href="{% url 'dashboard:addresses' %}">Direcciones</a></li>
+                <li><a href="{% url 'orders:list' %}">Mis pedidos</a></li>
+                {% else %}
+                <li><a href="{% url 'accounts:login' %}">Ingresar</a></li>
+                <li><a href="{% url 'accounts:register' %}">Crear cuenta</a></li>
+                {% endif %}
+            </ul>
+        </div>
     </div>
+    <div class="footer__bottom">&copy; {% now "Y" %} MercadoExpress &middot; Frontend Django &middot; Backend FastAPI &middot; PostgreSQL</div>
 </footer>
