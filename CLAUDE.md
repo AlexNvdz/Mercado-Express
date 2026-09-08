@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repo shape
 
-Two independent projects, each with its own `uv`-managed venv, git repo, and test suite. Not a monorepo build — no root package manifest.
+One git repo (root, GitHub: `AlexNvdz/Mercado-Express`) holding two independent projects, each with its own `uv`-managed venv and test suite. Not a monorepo build — no root package manifest, no shared dependency graph.
 
 - `backend-api/` — FastAPI + PostgreSQL. Owns all business data (customers, products, inventory, orders, payments, shipments, sales).
 - `front-end/` — Django. No business logic, no direct DB access to business data. Talks to `backend-api` only over HTTP through `services/`.
@@ -63,6 +63,7 @@ Key domain rules to know before touching orders/inventory/payments:
 - **Inventory**: single stock pool per product (`quantity_on_hand` / `quantity_reserved`; `quantity_available` is derived). Reserve/release/fulfill use `SELECT ... FOR UPDATE` row locks to prevent overselling under concurrent orders. Order creation is all-or-nothing — no partial stock reservation across items.
 - **Payments/Shipments**: sit behind `PaymentGateway` / `ShipmentCarrier` provider abstractions with only a manual/placeholder implementation wired up (no real gateway or carrier yet, by design). `POST /payments` completes payment immediately via the manual gateway.
 - The initial Alembic migration (`2a6e6f24d115_initial_schema.py`) was hand-authored against no live DB. Every migration after it must use `--autogenerate` against a real database and be reviewed before committing.
+- **Seeding** (`app/scripts/`, Fase 7): `seed_admin.py` creates the first admin from `FIRST_ADMIN_EMAIL`/`FIRST_ADMIN_PASSWORD`/`FIRST_ADMIN_FULL_NAME` env vars (idempotent, no-op if already set or vars unset — the only way to get an `employee`/`admin` account, no API endpoint for it). `seed_demo_data.py` creates demo categories/products with real stock (idempotent). Both run automatically on `api` container startup via `docker-compose.yml`.
 
 ## front-end (Django)
 
@@ -101,8 +102,8 @@ templates/*  ->  apps/*/views.py  ->  services/*  ->  backend-api (HTTP)
 - All IDs are UUIDv4 strings; timestamps are ISO 8601 UTC.
 - Every error response is `{"detail": "..."}` (422 validation errors: `detail` is a list of field errors, not a string).
 - List endpoints paginate via `page`/`page_size` query params, returning `{items, total, page, page_size, pages}` — except `/customers/me/addresses`, which is a flat unpaginated array (confirmed against the real backend, see `API_INTEGRATION_NOTES.md`).
-- `GET /shipments/order/{id}` response shape is not yet confirmed against contract — check `API_INTEGRATION_NOTES.md` before relying on its fields.
-- No server-side product search exists (`GET /products` only filters by `category_id`) — the navbar search currently filters client-side on the already-fetched page.
+- `GET /shipments/order/{id}` response shape is now confirmed: `{id, order_id, address_id, status, carrier, tracking_number, shipped_at, delivered_at, created_at, updated_at}`, `status` in `pending -> preparing -> in_transit -> delivered` (or `failed`/`returned`). Same shape for the `POST` create/ship/deliver responses.
+- `GET /products` supports `search` (case-insensitive match on name or SKU) in addition to `category_id`/`page`/`page_size` — the frontend's navbar search in `services/products.list_products` predates this and may still be filtering client-side; check before assuming it uses the server-side param.
 
 ## Running both services together
 
@@ -110,4 +111,8 @@ templates/*  ->  apps/*/views.py  ->  services/*  ->  backend-api (HTTP)
 docker compose -f backend-api/docker-compose.yml -f front-end/docker-compose.override.yml up --build
 ```
 
-The `-f` order matters — Compose resolves relative build-context paths against the *first* `-f` file's directory. This brings up Postgres, FastAPI (`:8000`), and Django (`:8080`), with Django reaching FastAPI at `http://api:8000` over the Docker network. There is no root-level compose file.
+The `-f` order matters — Compose resolves relative build-context paths against the *first* `-f` file's directory. This brings up Postgres, FastAPI (`:8000`), Django (`:8080`), with Django reaching FastAPI at `http://api:8000` over the Docker network. There is no root-level compose file.
+
+On this Windows host, hit services via `127.0.0.1:<port>`, not `localhost` — `localhost` resolves to IPv6 and the request hangs (Docker Desktop only binds IPv4). `127.0.0.1:8000/health` and `127.0.0.1:8080/` are the smoke-test URLs.
+
+Staff-only actions (creating categories/products, adjusting inventory, managing shipments) need an `employee`/`admin` account — there's no self-service way to get one; use `seed_admin.py` (see above) to provision one for local testing.
