@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Mi perfil - MercadoExpress{% endblock %}
+
+{% block content %}
+<h1 class="section-title">Mi perfil</h1>
+
+{% if user %}
+<div class="form-card" style="max-width:480px;">
+    <p><strong>Nombre:</strong> {{ user.full_name }}</p>
+    <p><strong>Correo:</strong> {{ user.email }}</p>
+    <p><strong>Teléfono:</strong> {{ user.phone|default:"—" }}</p>
+</div>
+{% else %}
+<div class="empty-state">No fue posible cargar tu información. Intenta más tarde.</div>
+{% endif %}
+
+<p style="margin-top:24px;"><a href="{% url 'orders:list' %}">Ver historial de pedidos &rarr;</a></p>
+<p><a href="{% url 'dashboard:addresses' %}">Mis direcciones de envío &rarr;</a></p>
+{% endblock %}

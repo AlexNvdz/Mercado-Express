@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Mis pedidos - MercadoExpress{% endblock %}
+
+{% block content %}
+<h1 class="section-title">Mis pedidos</h1>
+
+{% if orders %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Pedido</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Total</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.order_number }}</td>
+            <td>{{ order.created_at }}</td>
+            <td><span class="status status--{{ order.status }}">{{ order.status }}</span></td>
+            <td>${{ order.total_amount }}</td>
+            <td><a href="{% url 'orders:detail' order.id %}">Ver detalle</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>Aún no tienes pedidos.</p>
+    <a class="btn" href="{% url 'catalog:list' %}">Ir al catálogo</a>
+</div>
+{% endif %}
+{% endblock %}

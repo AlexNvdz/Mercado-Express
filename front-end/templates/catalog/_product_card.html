@@ -1,0 +1,13 @@
+<article class="product-card">
+    <div class="product-card__image">Sin imagen</div>
+    <div class="product-card__name">
+        <a href="{% url 'catalog:detail' product.id %}">{{ product.name }}</a>
+    </div>
+    <div class="product-card__price">${{ product.price }}</div>
+    <form method="post" action="{% url 'cart:add' product.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="quantity" value="1">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="btn btn--sm btn--full">Añadir al carrito</button>
+    </form>
+</article>

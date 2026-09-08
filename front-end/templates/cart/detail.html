@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Carrito - MercadoExpress{% endblock %}
+
+{% block content %}
+<h1 class="section-title">Tu carrito</h1>
+
+{% if items %}
+    {% for item in items %}
+    <div class="cart-item">
+        <div>
+            <strong>{{ item.product.name }}</strong><br>
+            <span class="product-card__stock">${{ item.unit_price }} c/u</span>
+        </div>
+        <form method="post" action="{% url 'cart:update' item.product.id %}" style="display:flex; gap:8px; align-items:center;">
+            {% csrf_token %}
+            <label>Cant.
+                <input class="qty-input" type="number" name="quantity" value="{{ item.quantity }}" min="1">
+            </label>
+            <button type="submit" class="btn btn--secondary btn--sm">Actualizar</button>
+        </form>
+        <div><strong>${{ item.subtotal }}</strong></div>
+        <form method="post" action="{% url 'cart:remove' item.product.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--danger btn--sm">Quitar</button>
+        </form>
+    </div>
+    {% endfor %}
+
+    <div class="cart-summary">
+        <div class="cart-summary__total">Total: ${{ total }}</div>
+        <a class="btn btn--full" href="{% url 'orders:checkout' %}">Finalizar compra</a>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>Tu carrito está vacío.</p>
+        <a class="btn" href="{% url 'catalog:list' %}">Ir al catálogo</a>
+    </div>
+{% endif %}
+{% endblock %}

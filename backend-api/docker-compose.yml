@@ -1,0 +1,45 @@
+# Local/dev orchestration for the backend + PostgreSQL.
+# Usage: docker compose up --build
+#
+# The frontend (Django, ../front-end) is intentionally NOT included here --
+# it talks to this API over HTTP, it does not share this compose project.
+# A root-level compose file tying both services together (e.g. shared
+# network, reverse proxy) can be added later at the Mercado-Express root
+# once the frontend team is ready to coordinate on it.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mercadoexpress}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-mercadoexpress}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-mercadoexpress}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  db_data:

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Pedido {{ order.order_number }} - MercadoExpress{% endblock %}
+
+{% block content %}
+<h1 class="section-title">Pedido {{ order.order_number }}</h1>
+<p><span class="status status--{{ order.status }}">{{ order.status }}</span></p>
+
+<h2 class="section-title">Productos</h2>
+<table class="table">
+    <thead>
+        <tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr>
+    </thead>
+    <tbody>
+        {% for item in order.items %}
+        <tr>
+            <td>{{ item.product_name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.unit_price }}</td>
+            <td>${{ item.line_total }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td><strong>${{ order.total_amount }}</strong></td></tr>
+    </tfoot>
+</table>
+
+{% if payments %}
+<h2 class="section-title">Pago</h2>
+{% for payment in payments %}
+<p>{{ payment.method }} &middot; {{ payment.status }} &middot; ${{ payment.amount }}</p>
+{% endfor %}
+{% endif %}
+
+<h2 class="section-title">Envío</h2>
+{% if shipment %}
+<p>Transportadora: {{ shipment.carrier|default:"—" }}</p>
+<p>Guía de seguimiento: {{ shipment.tracking_number|default:"—" }}</p>
+<p>Estado del envío: {{ shipment.status|default:"—" }}</p>
+{% else %}
+<p class="product-card__stock">Tu pedido aún no ha sido despachado.</p>
+{% endif %}
+
+{% if cancellable %}
+<form method="post" action="{% url 'orders:cancel' order.id %}" style="margin-top:16px;" onsubmit="return confirm('¿Cancelar este pedido?');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn--danger">Cancelar pedido</button>
+</form>
+{% endif %}
+
+<p style="margin-top:24px;"><a href="{% url 'orders:list' %}">&larr; Volver a mis pedidos</a></p>
+{% endblock %}

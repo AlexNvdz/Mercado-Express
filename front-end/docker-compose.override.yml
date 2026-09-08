@@ -1,0 +1,54 @@
+# Frontend-owned compose fragment. backend-api/docker-compose.yml (services:
+# `db`, `api`) is scoped to the backend only -- there is no root-level
+# compose tying both together yet (see backend-api/README.md#docker). This
+# file adds the Django service on top of it, e.g. (from this directory):
+#
+#   docker compose -f ../backend-api/docker-compose.yml -f docker-compose.override.yml up --build
+#
+# IMPORTANT: with multiple -f files, Compose resolves every relative path
+# against the *first* file's directory (backend-api/), not each file's own
+# directory -- verified with `docker compose ... config` while writing this.
+# That's why the build context below is `../front-end`, not `.`, and why
+# invocation order matters: backend-api's compose file must come first.
+#
+# Do not edit backend-api/docker-compose.yml from here. If a root-level
+# compose file is added later, adjust this file (or fold it into that one)
+# to match -- coordinate with the backend-api Claude first.
+services:
+  frontend:
+    build:
+      context: ../front-end
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8000"
+    environment:
+      # NOT DJANGO_ENV=production: config/settings/production.py forces
+      # HTTPS redirects and Secure-flagged session/CSRF cookies, which need
+      # a TLS-terminating reverse proxy in front. This compose has none, so
+      # a real browser would silently drop the login cookie over plain
+      # HTTP. `development` with DEBUG off is the right tier for this
+      # no-TLS local/staging rehearsal; a real deployment behind HTTPS
+      # should use DJANGO_ENV=production.
+      DJANGO_ENV: development
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,frontend"
+      MERCADOEXPRESS_API_BASE_URL: http://api:8000
+      API_USE_MOCKS: "False"
+      # Django's own sqlite (sessions/admin, not business data) needs a
+      # volume: the container filesystem is otherwise wiped on every
+      # recreate, silently dropping every logged-in session.
+      DJANGO_DATABASE_URL: sqlite:////app/state/db.sqlite3
+    volumes:
+      - frontend_state:/app/state
+    depends_on:
+      - api
+    networks:
+      - default
+
+volumes:
+  frontend_state:
+
+networks:
+  default:
+    name: mercadoexpress

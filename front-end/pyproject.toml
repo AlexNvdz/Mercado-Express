@@ -1,0 +1,23 @@
+[project]
+name = "mercadoexpress-frontend"
+version = "0.1.0"
+description = "MercadoExpress web frontend (Django) consuming the FastAPI backend"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.1.1",
+    "django-environ>=0.14.0",
+    "gunicorn>=26.2.0",
+    "httpx>=0.28.1",
+    "whitenoise>=6.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+testpaths = ["apps", "tests"]

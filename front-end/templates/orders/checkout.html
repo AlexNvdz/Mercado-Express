@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Finalizar compra - MercadoExpress{% endblock %}
+
+{% block content %}
+<h1 class="section-title">Finalizar compra</h1>
+
+<table class="table">
+    <thead><tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th></tr></thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<form method="post" class="cart-summary" style="max-width:480px;">
+    {% csrf_token %}
+    <div class="cart-summary__total">Total: ${{ total }}</div>
+
+    <div class="form-field">
+        <label>Dirección de envío</label>
+        {% for address in addresses %}
+        <label style="display:flex; gap:8px; align-items:flex-start; font-weight:400; margin-bottom:8px;">
+            <input type="radio" name="shipping_address_id" value="{{ address.id }}" {% if address.is_default %}checked{% endif %} required>
+            <span>{{ address.line1 }}{% if address.line2 %}, {{ address.line2 }}{% endif %}, {{ address.city }}, {{ address.state }}, {{ address.country }}</span>
+        </label>
+        {% endfor %}
+    </div>
+
+    <div class="form-field">
+        <label for="notes">Notas para la entrega (opcional)</label>
+        <textarea id="notes" name="notes" rows="3"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn--full">Confirmar y pagar</button>
+</form>
+
+<p style="margin-top:12px;"><a href="{% url 'dashboard:address_add' %}?next={% url 'orders:checkout' %}">Añadir otra dirección</a></p>
+{% endblock %}

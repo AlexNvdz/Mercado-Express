@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}MercadoExpress - Tu mercado en línea{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Todo lo que necesitas, a un clic de distancia</h1>
+    <p>Abarrotes, frutas, lácteos y más, con entrega rápida.</p>
+    <a class="btn" href="{% url 'catalog:list' %}">Ver catálogo</a>
+</section>
+
+<h2 class="section-title">Categorías</h2>
+<div class="category-grid">
+    {% for category in categories %}
+    <a class="category-card" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
+    {% empty %}
+    <p>No hay categorías disponibles.</p>
+    {% endfor %}
+</div>
+
+<h2 class="section-title">Productos destacados</h2>
+<div class="product-grid">
+    {% for product in featured_products %}
+        {% include "catalog/_product_card.html" %}
+    {% empty %}
+    <p>No hay productos disponibles.</p>
+    {% endfor %}
+</div>
+{% endblock %}

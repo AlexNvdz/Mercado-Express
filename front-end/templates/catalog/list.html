@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{% if active_category %}{{ active_category.name }}{% else %}Catálogo{% endif %} - MercadoExpress{% endblock %}
+
+{% block content %}
+<h1 class="section-title">
+    {% if active_category %}{{ active_category.name }}{% elif search %}Resultados para "{{ search }}"{% else %}Catálogo{% endif %}
+</h1>
+
+<div class="category-grid">
+    <a class="category-card" href="{% url 'catalog:list' %}">Todas</a>
+    {% for category in categories %}
+    <a class="category-card" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
+    {% endfor %}
+</div>
+
+<div class="product-grid">
+    {% for product in products %}
+        {% include "catalog/_product_card.html" %}
+    {% empty %}
+    <div class="empty-state">No se encontraron productos.</div>
+    {% endfor %}
+</div>
+{% endblock %}

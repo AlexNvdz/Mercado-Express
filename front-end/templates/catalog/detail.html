@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - MercadoExpress{% endblock %}
+
+{% block content %}
+<div class="product-detail">
+    <div class="product-detail__image">Sin imagen</div>
+    <div>
+        {% if category %}
+        <p><a href="{% url 'catalog:category' category.id %}">{{ category.name }}</a></p>
+        {% endif %}
+        <h1>{{ product.name }}</h1>
+        <p>{{ product.description }}</p>
+        <div class="product-detail__price">${{ product.price }}</div>
+        <p class="product-card__stock">
+            {% if availability %}
+                {% if availability.quantity_available > 0 %}
+                    En stock: {{ availability.quantity_available }} unidades
+                {% else %}
+                    Agotado
+                {% endif %}
+            {% else %}
+                Disponibilidad no confirmada
+            {% endif %}
+        </p>
+
+        <form method="post" action="{% url 'cart:add' product.id %}" style="display:flex; gap:12px; align-items:center; margin-top:16px;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <label for="quantity">Cantidad</label>
+            <input class="qty-input" type="number" id="quantity" name="quantity" value="1" min="1">
+            <button type="submit" class="btn" {% if availability and availability.quantity_available <= 0 %}disabled{% endif %}>
+                Añadir al carrito
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
