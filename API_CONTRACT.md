@@ -27,8 +27,12 @@ Health check (no auth): `GET /health`.
 JWT bearer tokens, OAuth2-password-compatible login.
 
 1. `POST /api/v1/auth/register` — self-service, always creates a `customer`.
-   Staff/admin accounts are provisioned directly in the DB/by an admin, not
-   self-service (no public "become admin" endpoint).
+   Staff/admin accounts are **not** self-service (no public "become admin"
+   endpoint) — provisioned via a backend-side seed script
+   (`uv run python -m app.scripts.seed_admin`, idempotent, runs
+   automatically on every backend startup in Docker Compose). Ask the
+   backend owner for admin credentials for your environment rather than
+   trying to create one through the API.
 2. `POST /api/v1/auth/login` — **form-encoded** (`application/x-www-form-urlencoded`),
    fields `username` (= email) and `password`. Returns an access token
    (short-lived, 30 min default) and a refresh token (7 days default).
@@ -36,8 +40,7 @@ JWT bearer tokens, OAuth2-password-compatible login.
 4. Send `Authorization: Bearer <access_token>` on every authenticated request.
 
 Roles: `customer`, `employee`, `admin`. Endpoints marked **staff** below
-require `employee` or `admin`; **admin** rows don't exist yet (all
-staff-level checks currently accept either `employee` or `admin` — see
+require `employee` or `admin` — see
 `app/dependencies.py::require_staff`). Endpoints with no role note are
 either public or require any authenticated user (noted per-endpoint).
 
@@ -157,7 +160,7 @@ Address body:
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/products` | staff | Create product (also creates its zero-stock inventory row). |
-| GET | `/products?category_id=&page=&page_size=` | none | Paginated list, optionally filtered by category. Only active products. |
+| GET | `/products?category_id=&search=&page=&page_size=` | none | Paginated list, optionally filtered by category and/or full-text-ish search. Only active products. |
 | GET | `/products/{product_id}` | none | Get one. |
 | PATCH | `/products/{product_id}` | staff | Partial update. |
 | DELETE | `/products/{product_id}` | staff | Delete. |
@@ -279,6 +282,26 @@ contract.
 { "address_id": "...", "carrier": null }
 ```
 
+**Confirmed response shape** for `GET /shipments/order/{order_id}` (and the
+`POST` create/ship/deliver responses — same schema throughout the lifecycle):
+```json
+{
+  "id": "e6996580-941b-4129-87ca-592150a50527",
+  "order_id": "680f68f6-4288-4410-a792-ba3420eaf49f",
+  "address_id": "24e39aa2-33fe-4ec9-ba4d-39f32d4ac8d8",
+  "status": "in_transit",
+  "carrier": "DHL",
+  "tracking_number": "MANUAL-E699658094",
+  "shipped_at": "2026-09-08T11:06:19.263086Z",
+  "delivered_at": null,
+  "created_at": "2026-09-08T11:06:19.038605Z",
+  "updated_at": "2026-09-08T11:06:19.253758Z"
+}
+```
+`status` progresses `pending → preparing → in_transit → delivered` (or
+`failed`/`returned`). `address_id` and `updated_at` are real fields —
+include them even though earlier notes didn't have them confirmed.
+
 ---
 
 ## What Django needs to configure
@@ -292,12 +315,37 @@ contract.
 - All IDs are UUIDv4 strings.
 - Timestamps are ISO 8601 UTC (`...Z` / `+00:00`).
 
+## Test data now available (Fase 7)
+
+An admin account and a demo catalog now exist on the shared dev database
+(the one behind `backend-api`'s `docker compose up` / `POSTGRES_PORT` in
+`.env`) so the full order → payment → shipment → delivery flow can be
+exercised without any manual setup:
+
+- 3 categories (Electronics, Home & Kitchen, Books), 7 products, each with
+  real stock — see `backend-api/app/scripts/seed_demo_data.py` for the
+  exact list (SKUs `ELEC-001`..`ELEC-003`, `HOME-001`..`HOME-002`,
+  `BOOK-001`..`BOOK-002`). Re-run it any time to reset/top up (idempotent,
+  never overwrites existing rows).
+- An admin account for testing staff-only endpoints (create/edit
+  products & categories, adjust inventory, manage shipments) — ask
+  backend-api for the current dev credentials (not written here; seeded via
+  `app/scripts/seed_admin.py` from `.env`, not committed anywhere).
+- Confirmed end-to-end against the real containerized backend
+  (2026-09-08): register → create address → create order → pay → admin
+  creates shipment → ship → deliver. Order status walked
+  `pending → paid → preparing → shipped(in_transit) → delivered` exactly as
+  documented above.
+
 ## Open items / not yet implemented
 
 - Real payment gateway integration (currently a manual/no-op gateway).
 - Real shipping carrier integration (currently placeholder tracking numbers).
-- Admin/employee account provisioning endpoint (currently DB-side only).
+- Self-service admin/employee account provisioning endpoint — currently
+  seed-script only (`app/scripts/seed_admin.py`), no way to promote a user
+  to `employee` through the API yet (direct DB update or a future
+  admin-only endpoint).
 - Multi-warehouse inventory (currently single stock pool per product).
 
 ---
-_Maintained by the backend-api service. Last updated: 2026-09-08 (Phase 1-6: auth, catalog, inventory, orders, payments, shipments, tests, Docker)._
+_Maintained by the backend-api service. Last updated: 2026-09-08 (Phase 1-6 + 7: auth, catalog, inventory, orders, payments, shipments, tests, Docker, admin/demo-data seeding, product search, confirmed shipment response shape, full E2E order flow verified)._

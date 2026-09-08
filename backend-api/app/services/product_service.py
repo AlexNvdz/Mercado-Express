@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import ConflictError, NotFoundError
@@ -35,13 +36,22 @@ class ProductService:
         return product
 
     async def list(
-        self, *, offset: int, limit: int, category_id: uuid.UUID | None = None, active_only: bool = True
+        self,
+        *,
+        offset: int,
+        limit: int,
+        category_id: uuid.UUID | None = None,
+        search: str | None = None,
+        active_only: bool = True,
     ) -> tuple[list[Product], int]:
         filters = []
         if category_id is not None:
             filters.append(Product.category_id == category_id)
         if active_only:
             filters.append(Product.is_active.is_(True))
+        if search:
+            pattern = f"%{search.strip()}%"
+            filters.append(or_(Product.name.ilike(pattern), Product.sku.ilike(pattern)))
         items = await self.repo.list(offset=offset, limit=limit, filters=filters, order_by=Product.name)
         total = await self.repo.count(filters=filters)
         return items, total

@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -26,11 +26,15 @@ async def create_product(data: ProductCreate, db: AsyncSession = Depends(get_db)
 @router.get("", response_model=Page[ProductOut])
 async def list_products(
     category_id: uuid.UUID | None = None,
+    search: str | None = Query(default=None, description="Case-insensitive match on name or SKU."),
     pagination: PaginationParams = Depends(pagination_params),
     db: AsyncSession = Depends(get_db),
 ) -> Page[ProductOut]:
     items, total = await ProductService(db).list(
-        offset=pagination.offset, limit=pagination.page_size, category_id=category_id
+        offset=pagination.offset,
+        limit=pagination.page_size,
+        category_id=category_id,
+        search=search,
     )
     pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
     return Page(

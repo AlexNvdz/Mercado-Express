@@ -76,3 +76,27 @@ async def test_list_and_get_product(admin_client: AsyncClient) -> None:
 async def test_get_missing_product_returns_404(admin_client: AsyncClient) -> None:
     resp = await admin_client.get("/api/v1/products/00000000-0000-0000-0000-000000000000")
     assert resp.status_code == 404
+
+
+async def test_search_matches_name_or_sku_case_insensitively(admin_client: AsyncClient) -> None:
+    category_id = await _make_category(admin_client, "Search Cat")
+    await admin_client.post(
+        "/api/v1/products",
+        json={"sku": "SRCH-001", "name": "Wireless Mouse", "category_id": category_id, "price": "9.99"},
+    )
+    await admin_client.post(
+        "/api/v1/products",
+        json={"sku": "SRCH-002", "name": "Keyboard", "category_id": category_id, "price": "29.99"},
+    )
+
+    by_name = await admin_client.get("/api/v1/products", params={"search": "mouse"})
+    assert by_name.status_code == 200
+    names = [p["name"] for p in by_name.json()["items"]]
+    assert "Wireless Mouse" in names
+    assert "Keyboard" not in names
+
+    by_sku = await admin_client.get("/api/v1/products", params={"search": "srch-002"})
+    assert by_sku.status_code == 200
+    skus = [p["sku"] for p in by_sku.json()["items"]]
+    assert "SRCH-002" in skus
+    assert "SRCH-001" not in skus

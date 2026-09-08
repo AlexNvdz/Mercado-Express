@@ -78,6 +78,24 @@ uv run pytest            # run the suite
 uv run pytest --cov=app  # with coverage
 ```
 
+## First admin account
+
+There's no self-service "become admin" endpoint (registration always
+creates a `customer`, by design — see API_CONTRACT.md). To get a working
+admin account (needed for staff-only endpoints: create/edit
+products/categories, adjust inventory, manage shipments):
+
+```bash
+# Set in .env (see .env.example): FIRST_ADMIN_EMAIL, FIRST_ADMIN_PASSWORD
+uv run python -m app.scripts.seed_admin
+```
+
+Idempotent — safe to run repeatedly (skips if the account already exists;
+promotes it to `admin` if it exists with a different role, never touches
+its password). Docker Compose runs this automatically on `api` startup
+(after migrations, before uvicorn) whenever `FIRST_ADMIN_EMAIL` /
+`FIRST_ADMIN_PASSWORD` are set in `.env`.
+
 ## Migrations
 
 ```bash

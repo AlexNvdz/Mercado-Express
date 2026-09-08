@@ -74,6 +74,14 @@ class Settings(BaseSettings):
     TAX_RATE: float = 0.0
     FLAT_SHIPPING_FEE: float = 0.0
 
+    # --- First admin seed (see app/scripts/seed_admin.py) ---
+    # Optional: unset means the seed script does nothing. Set these to
+    # provision the first admin account (idempotent -- safe to leave set
+    # permanently; the script only creates the account if it's missing).
+    FIRST_ADMIN_EMAIL: str | None = None
+    FIRST_ADMIN_PASSWORD: str | None = None
+    FIRST_ADMIN_FULL_NAME: str = "Administrator"
+
 
 @lru_cache
 def get_settings() -> Settings:
