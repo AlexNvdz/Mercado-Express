@@ -12,6 +12,7 @@ from app.db.base_class import Base, TimestampMixin, UUIDPKMixin
 if TYPE_CHECKING:
     from app.models.category import Category
     from app.models.inventory import Inventory
+    from app.models.product_image import ProductImage
 
 
 class Product(UUIDPKMixin, TimestampMixin, Base):
@@ -30,4 +31,7 @@ class Product(UUIDPKMixin, TimestampMixin, Base):
     category: Mapped["Category"] = relationship(back_populates="products")
     inventory: Mapped["Inventory | None"] = relationship(
         back_populates="product", cascade="all, delete-orphan", uselist=False
+    )
+    images: Mapped[list["ProductImage"]] = relationship(
+        back_populates="product", cascade="all, delete-orphan", order_by="ProductImage.position"
     )

@@ -3,27 +3,44 @@
 {% block title %}Crear cuenta - MercadoExpress{% endblock %}
 
 {% block content %}
-<div class="form form-card" style="margin: 24px auto;">
-    <h1 class="section-title" style="margin-bottom:20px;">Crear cuenta</h1>
-
-    {% if form.non_field_errors %}
-    <ul class="form-errors">
-        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-    </ul>
-    {% endif %}
-
-    <form method="post">
-        {% csrf_token %}
-        {% for field in form %}
-        <div class="form-field">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% for error in field.errors %}<span class="form-errors">{{ error }}</span>{% endfor %}
+<div class="auth-shell">
+    <div class="auth-shell__brand">
+        <div class="hero__motif" aria-hidden="true">{% include "partials/_produce_motif.html" %}</div>
+        <div class="auth-shell__wordmark">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M8 6V5a4 4 0 0 1 8 0v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            MercadoExpress
         </div>
-        {% endfor %}
-        <button type="submit" class="btn btn--full">Crear cuenta</button>
-    </form>
+        <div class="auth-shell__pitch">
+            <h2>Tu mercado, a un clic</h2>
+            <p>Creá tu cuenta y empezá a armar tu pedido: catálogo real, pago al instante y seguimiento hasta tu puerta.</p>
+        </div>
+    </div>
 
-    <p class="form-help">¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}">Inicia sesión</a></p>
+    <div class="auth-shell__form">
+        <h1 class="section-title">Crear cuenta</h1>
+
+        {% if form.non_field_errors %}
+        <ul class="form-errors">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<span class="form-errors">{{ error }}</span>{% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn--full">Crear cuenta</button>
+        </form>
+
+        <p class="form-help">¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}">Inicia sesión</a></p>
+    </div>
 </div>
 {% endblock %}

@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+{% extends "dashboard/_layout.html" %}
 
 {% block title %}Mis direcciones - MercadoExpress{% endblock %}
 
-{% block content %}
+{% block dashboard_content %}
 <div class="section-head">
     <h1 class="section-title">Mis direcciones de envío</h1>
     <a class="btn" href="{% url 'dashboard:address_add' %}">+ Añadir dirección</a>

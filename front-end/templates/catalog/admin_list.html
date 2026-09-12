@@ -1,0 +1,42 @@
+{% extends "adminpanel/_layout.html" %}
+{% load money %}
+
+{% block title %}Administrar productos - MercadoExpress{% endblock %}
+
+{% block panel_content %}
+<div class="section-head">
+    <h1 class="section-title">Administrar productos</h1>
+    <a class="btn" href="{% url 'catalog:admin_create' %}">+ Nuevo producto</a>
+</div>
+
+{% if products %}
+<div class="stack">
+    {% for product in products %}
+    <div class="card flex-between">
+        <div style="display:flex; align-items:center; gap:12px;">
+            {% if product.images %}
+            <img src="{{ product.images.0.url }}" alt="{{ product.name }}" style="width:48px; height:48px; object-fit:cover; border-radius:8px;">
+            {% endif %}
+            <div>
+                <div style="font-weight:600;">{{ product.name }}</div>
+                <div class="muted">SKU {{ product.sku }} &middot; ${{ product.price|money }}{% if not product.is_active %} &middot; inactivo{% endif %}</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <a class="btn btn--secondary btn--sm" href="{% url 'catalog:admin_edit' product.id %}">Editar</a>
+            <form method="post" action="{% url 'catalog:admin_delete' product.id %}" onsubmit="return confirm('¿Eliminar este producto y todas sus imágenes? Esta acción no se puede deshacer.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--danger btn--sm">Eliminar</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>Todavía no hay productos</h2>
+    <p>Crea el primero para que aparezca en el catálogo.</p>
+    <a class="btn" style="margin-top:12px;" href="{% url 'catalog:admin_create' %}">+ Nuevo producto</a>
+</div>
+{% endif %}
+{% endblock %}

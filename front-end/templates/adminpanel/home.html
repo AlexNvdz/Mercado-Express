@@ -1,0 +1,132 @@
+{% extends "adminpanel/_layout.html" %}
+{% load money %}
+
+{% block title %}Panel de administración - MercadoExpress{% endblock %}
+
+{% block panel_content %}
+<div class="section-head">
+    <h1 class="section-title">Resumen</h1>
+</div>
+
+{% if stats.orders_capped %}
+<div class="card" style="border-color: var(--color-warning); margin-bottom: 20px;">
+    <strong style="color: var(--color-warning);">Estas cifras se calculan sobre los pedidos más recientes.</strong>
+    <span class="muted">Hay más pedidos de los que este resumen puede leer de una vez; pide al backend un endpoint de reportes agregados para cifras exactas (ver notas de integración).</span>
+</div>
+{% endif %}
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-card__label">Ingresos (pedidos pagados+)</div>
+        <div class="stat-card__value">${{ stats.revenue_total|money }}</div>
+        <div class="stat-card__hint">Suma de total_amount, no el libro de ventas</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Pedidos</div>
+        <div class="stat-card__value">{{ stats.total_orders }}</div>
+        <div class="stat-card__hint">{{ stats.orders_by_status.pending|default:0 }} pendientes</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Productos</div>
+        <div class="stat-card__value">{{ stats.total_products }}</div>
+        <div class="stat-card__hint"><a href="{% url 'catalog:admin_list' %}">Administrar</a></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Clientes</div>
+        <div class="stat-card__value">{{ stats.total_customers }}</div>
+        <div class="stat-card__hint"><a href="{% url 'adminpanel:customers_list' %}">Ver todos</a></div>
+    </div>
+    <div class="stat-card{% if stats.low_stock_count > 0 %} stat-card--warning{% endif %}">
+        <div class="stat-card__label">Stock bajo</div>
+        <div class="stat-card__value">{{ stats.low_stock_count }}</div>
+        <div class="stat-card__hint"><a href="{% url 'adminpanel:inventory_list' %}">Ver inventario</a></div>
+    </div>
+</div>
+
+<div class="dashboard-cols dashboard-cols--wide">
+    <div class="panel-section">
+        <div class="panel-section__head">
+            <h2>Pedidos recientes</h2>
+            <a class="btn btn--secondary btn--sm" href="{% url 'adminpanel:orders_list' %}">Ver todos</a>
+        </div>
+        {% if stats.recent_orders %}
+        <div class="table-card">
+        <table class="table">
+            <thead><tr><th>Pedido</th><th>Estado</th><th>Total</th><th></th></tr></thead>
+            <tbody>
+                {% for order in stats.recent_orders %}
+                <tr>
+                    <td>{{ order.order_number }}</td>
+                    <td><span class="status status--{{ order.status }}">{{ order.status }}</span></td>
+                    <td>${{ order.total_amount|money }}</td>
+                    <td><a class="btn btn--sm" href="{% url 'adminpanel:order_detail' order.id %}">Ver</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="muted">Todavía no hay pedidos.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel-section">
+        <div class="panel-section__head"><h2>Pedidos por estado</h2></div>
+        <div class="card stack">
+            {% for status, count in stats.orders_by_status.items %}
+            <div class="flex-between">
+                <span class="status status--{{ status }}">{{ status }}</span>
+                <strong>{{ count }}</strong>
+            </div>
+            {% empty %}
+            <p class="muted">Sin datos todavía.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-cols">
+    <div class="panel-section">
+        <div class="panel-section__head"><h2>Productos más vendidos</h2></div>
+        {% if stats.top_products %}
+        <div class="table-card">
+        <table class="table">
+            <thead><tr><th>Producto</th><th>Unidades vendidas</th></tr></thead>
+            <tbody>
+                {% for row in stats.top_products %}
+                <tr><td>{{ row.name }}</td><td>{{ row.quantity_sold }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="muted">Todavía no hay ventas registradas.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel-section">
+        <div class="panel-section__head">
+            <h2>Alerta de stock bajo</h2>
+            <a class="btn btn--secondary btn--sm" href="{% url 'adminpanel:inventory_list' %}">Gestionar inventario</a>
+        </div>
+        {% if stats.low_stock %}
+        <div class="table-card">
+        <table class="table">
+            <thead><tr><th>Producto</th><th>Disponible</th><th>Nivel de reorden</th></tr></thead>
+            <tbody>
+                {% for row in stats.low_stock %}
+                <tr>
+                    <td>{{ row.product.name }}</td>
+                    <td><span class="stock-badge stock-badge--{% if row.availability.quantity_available <= 0 %}out{% else %}low{% endif %}">{{ row.availability.quantity_available }}</span></td>
+                    <td>{{ row.availability.reorder_level }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="muted">Todo el stock está por encima del nivel de reorden.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

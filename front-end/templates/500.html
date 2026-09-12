@@ -12,9 +12,14 @@
     </style>
 </head>
 <body>
-    <!-- Deliberately standalone (no {% extends %}, no context processors): a
-         500 means something in the app already broke, so this page must not
-         depend on the DB, session, or backend API to render. -->
+    <!-- Deliberately standalone (no template inheritance, no context
+         processors): a 500 means something in the app already broke, so
+         this page must not depend on the DB, session, or backend API to
+         render. NOTE: never type a percent-brace template tag delimiter
+         pair inside this comment (open-brace-percent ... percent-close-
+         brace) -- Django's template lexer scans for that sequence
+         regardless of HTML comment syntax and will try to parse it as a
+         real tag, crashing this exact page when a 500 happens. -->
     <div class="wrap">
         <div class="code">500</div>
         <h1>Algo salió mal de nuestro lado</h1>

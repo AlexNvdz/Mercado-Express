@@ -14,8 +14,10 @@ instances and can safely be used together in the same test.
 """
 
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -65,6 +67,16 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
         await session.close()
         await trans.rollback()
         await connection.close()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_media_root(tmp_path: Path) -> Generator[None]:
+    """Redirect product image storage (app/services/storage_service.py) to a
+    per-test temp dir so tests never write into the real `media/` folder."""
+    original = settings.MEDIA_ROOT
+    settings.MEDIA_ROOT = str(tmp_path / "media")
+    yield
+    settings.MEDIA_ROOT = original
 
 
 @pytest_asyncio.fixture

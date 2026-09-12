@@ -74,6 +74,18 @@ class Settings(BaseSettings):
     TAX_RATE: float = 0.0
     FLAT_SHIPPING_FEE: float = 0.0
 
+    # --- Product images (local disk; see app/services/storage_service.py) ---
+    # MEDIA_ROOT: where files are written, relative to the process's working
+    # directory unless given as an absolute path.
+    # MEDIA_URL: the static mount prefix in app/main.py.
+    # PUBLIC_BASE_URL: scheme+host this API is reachable at from a browser
+    # (not the Docker-internal `http://api:8000` Django uses) -- ProductImage
+    # URLs are built as PUBLIC_BASE_URL + MEDIA_URL + file_path so the
+    # frontend (a different origin/port) can use them directly in <img src>.
+    MEDIA_ROOT: str = "media"
+    MEDIA_URL: str = "/media"
+    PUBLIC_BASE_URL: str = "http://127.0.0.1:8000"
+
     # --- First admin seed (see app/scripts/seed_admin.py) ---
     # Optional: unset means the seed script does nothing. Set these to
     # provision the first admin account (idempotent -- safe to leave set

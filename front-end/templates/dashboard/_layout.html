@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="side-layout">
+    <aside class="side-layout__sidebar">
+        <nav class="side-layout__nav">
+            <a class="side-layout__nav-link{% if active_nav == 'profile' %} is-active{% endif %}" href="{% url 'dashboard:profile' %}">
+                Mi perfil
+            </a>
+            <a class="side-layout__nav-link{% if active_nav == 'addresses' %} is-active{% endif %}" href="{% url 'dashboard:addresses' %}">
+                Direcciones
+            </a>
+            <a class="side-layout__nav-link" href="{% url 'orders:list' %}">
+                Mis pedidos
+            </a>
+            <a class="side-layout__nav-link" href="{% url 'catalog:wishlist' %}">
+                Favoritos
+            </a>
+        </nav>
+    </aside>
+    <div class="side-layout__content">
+        {% block dashboard_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

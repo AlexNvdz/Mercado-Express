@@ -138,7 +138,7 @@ class OrderService:
         return items, total
 
     async def list_all(self, *, offset: int, limit: int) -> tuple[list[Order], int]:
-        items = await self.orders.list(offset=offset, limit=limit, order_by=Order.created_at.desc())
+        items = await self.orders.list_all(offset=offset, limit=limit)
         total = await self.orders.count()
         return items, total
 

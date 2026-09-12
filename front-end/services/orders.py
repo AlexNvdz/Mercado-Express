@@ -5,7 +5,8 @@ Order creation, listing, detail and cancellation. See
     POST /api/v1/orders                       {items, shipping_address_id, notes}
     GET  /api/v1/orders?page=&page_size=      -> own orders (customer) / all (staff)
     GET  /api/v1/orders/{order_id}
-    POST /api/v1/orders/{order_id}/cancel
+    POST  /api/v1/orders/{order_id}/cancel
+    PATCH /api/v1/orders/{order_id}/status    staff, {"status": "<OrderStatus>"}
 
 No order/pricing/inventory business logic is duplicated here: this module
 only shapes requests/responses for the views. Totals, stock reservation and
@@ -23,6 +24,19 @@ from django.conf import settings
 from . import mock_data
 from .api_client import api_client
 from .exceptions import ApiConflictError, ApiNotFoundError
+
+# Mirrors backend-api's OrderStatus enum (app/models/enums.py) -- used to
+# populate the staff status-override form in apps/adminpanel.
+ORDER_STATUSES = [
+    "pending",
+    "awaiting_payment",
+    "paid",
+    "preparing",
+    "shipped",
+    "delivered",
+    "cancelled",
+    "refunded",
+]
 
 
 def list_orders(token: str, *, page: int = 1, page_size: int = 20) -> dict:
@@ -112,3 +126,17 @@ def cancel_order(token: str, order_id: str) -> dict:
         order["status"] = "cancelled"
         return order
     return api_client.post(f"/api/v1/orders/{order_id}/cancel", token=token)
+
+
+def update_status(token: str, order_id: str, status: str) -> dict:
+    """Staff only: force a status transition directly (see ORDER_STATUSES).
+    Prefer /payments and /shipments for the normal flow -- this is for
+    manual corrections (e.g. marking paid after an out-of-band payment).
+    """
+    if settings.API_USE_MOCKS:
+        order = next((o for o in mock_data.MOCK_ORDERS if o["id"] == str(order_id)), None)
+        if order is None:
+            raise ApiConflictError("Pedido no encontrado.", status_code=404)
+        order["status"] = status
+        return order
+    return api_client.patch(f"/api/v1/orders/{order_id}/status", token=token, json={"status": status})

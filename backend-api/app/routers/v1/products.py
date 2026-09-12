@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.dependencies import PaginationParams, pagination_params, require_staff
 from app.schemas.common import Page
-from app.schemas.product import ProductCreate, ProductOut, ProductUpdate
+from app.schemas.product import ProductCreate, ProductImageOut, ProductOut, ProductUpdate
+from app.services.product_image_service import ProductImageService
 from app.services.product_service import ProductService
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -63,3 +64,27 @@ async def update_product(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_staff)])
 async def delete_product(product_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> None:
     await ProductService(db).delete(product_id)
+
+
+@router.post(
+    "/{product_id}/images",
+    response_model=ProductImageOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_staff)],
+)
+async def upload_product_image(
+    product_id: uuid.UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)
+) -> ProductImageOut:
+    image = await ProductImageService(db).add(product_id, file)
+    return ProductImageOut.model_validate(image)
+
+
+@router.delete(
+    "/{product_id}/images/{image_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_staff)],
+)
+async def delete_product_image(
+    product_id: uuid.UUID, image_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+) -> None:
+    await ProductImageService(db).delete(product_id, image_id)

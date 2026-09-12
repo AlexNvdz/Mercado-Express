@@ -95,7 +95,24 @@ def get_refresh_token(request) -> str | None:
 def clear_tokens(request) -> None:
     request.session.pop(settings.API_ACCESS_TOKEN_SESSION_KEY, None)
     request.session.pop(settings.API_REFRESH_TOKEN_SESSION_KEY, None)
+    request.session.pop(settings.API_ROLE_SESSION_KEY, None)
 
 
 def is_authenticated(request) -> bool:
     return bool(get_access_token(request))
+
+
+def save_role(request, role: str) -> None:
+    """Cache the user's role (from GET /auth/me) in the session at login, so
+    staff-only checks (is_staff below) don't need an API call per request."""
+    request.session[settings.API_ROLE_SESSION_KEY] = role
+
+
+def get_role(request) -> str | None:
+    return request.session.get(settings.API_ROLE_SESSION_KEY)
+
+
+def is_staff(request) -> bool:
+    """True for `employee`/`admin` accounts -- mirrors backend-api's
+    `require_staff` dependency (see backend-api/app/dependencies.py)."""
+    return get_role(request) in ("employee", "admin")

@@ -9,7 +9,7 @@ from .forms import LoginForm, RegisterForm
 
 def login_view(request):
     if auth_service.is_authenticated(request):
-        return redirect("dashboard:home")
+        return redirect("adminpanel:home" if auth_service.is_staff(request) else "dashboard:home")
 
     form = LoginForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -25,8 +25,12 @@ def login_view(request):
                 access_token=tokens["access_token"],
                 refresh_token=tokens.get("refresh_token"),
             )
+            user = auth_service.get_current_user(tokens["access_token"])
+            if user:
+                auth_service.save_role(request, user["role"])
             messages.success(request, "Sesión iniciada correctamente.")
-            next_url = request.GET.get("next") or "dashboard:home"
+            default_next = "adminpanel:home" if auth_service.is_staff(request) else "dashboard:home"
+            next_url = request.GET.get("next") or default_next
             return redirect(next_url)
 
     return render(request, "accounts/login.html", {"form": form})
@@ -34,7 +38,7 @@ def login_view(request):
 
 def register_view(request):
     if auth_service.is_authenticated(request):
-        return redirect("dashboard:home")
+        return redirect("adminpanel:home" if auth_service.is_staff(request) else "dashboard:home")
 
     form = RegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():

@@ -4,15 +4,16 @@
 
 {% block content %}
 <section class="hero">
-    <div class="hero__blob" aria-hidden="true"></div>
-    <p class="hero__eyebrow">Abarrotes &middot; Frutas y verduras &middot; Lácteos &middot; Limpieza</p>
-    <h1>Todo lo que necesitas, a un clic de distancia</h1>
-    <p>Explora el catálogo, arma tu carrito y sigue tu pedido en tiempo real desde que lo confirmas hasta que llega a tu puerta.</p>
-    <div class="hero__actions">
-        <a class="btn btn--accent" href="{% url 'catalog:list' %}">Ver catálogo</a>
-        {% if not is_api_authenticated %}
-        <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Crear cuenta</a>
-        {% endif %}
+    <div class="hero__motif" aria-hidden="true">{% include "partials/_produce_motif.html" %}</div>
+    <div class="hero__inner">
+        <h1>Todo lo que necesitas, a un clic de distancia</h1>
+        <p>Explora el catálogo, arma tu carrito y sigue tu pedido en tiempo real desde que lo confirmas hasta que llega a tu puerta.</p>
+        <div class="hero__actions">
+            <a class="btn" href="{% url 'catalog:list' %}">Ver catálogo</a>
+            {% if not is_api_authenticated %}
+            <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Crear cuenta</a>
+            {% endif %}
+        </div>
     </div>
 </section>
 
@@ -36,6 +37,27 @@
 </div>
 
 <div class="section-head">
+    <h2 class="section-title">Cómo funciona</h2>
+</div>
+<div class="steps">
+    <div class="step">
+        <div class="step__num">1</div>
+        <div class="step__title">Elegís</div>
+        <p class="step__text">Buscá por categoría o desde el buscador y añadí lo que necesitás al carrito.</p>
+    </div>
+    <div class="step">
+        <div class="step__num">2</div>
+        <div class="step__title">Pagás</div>
+        <p class="step__text">Confirmá tu dirección de envío y tu pedido queda pagado al instante.</p>
+    </div>
+    <div class="step">
+        <div class="step__num">3</div>
+        <div class="step__title">Recibís</div>
+        <p class="step__text">Seguí cada paso del envío hasta que llegue a tu puerta.</p>
+    </div>
+</div>
+
+<div class="section-head">
     <h2 class="section-title">Categorías</h2>
 </div>
 <div class="category-pills">
@@ -48,7 +70,7 @@
 
 <div class="section-head">
     <h2 class="section-title">Productos destacados</h2>
-    <a class="section-link" href="{% url 'catalog:list' %}">Ver todo el catálogo &rarr;</a>
+    <a class="section-link" href="{% url 'catalog:list' %}">Ver todo el catálogo</a>
 </div>
 <div class="product-grid">
     {% for product in featured_products %}

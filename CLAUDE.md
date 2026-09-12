@@ -62,6 +62,7 @@ Key domain rules to know before touching orders/inventory/payments:
 - **Orders vs Sales**: `Order` is mutable lifecycle state (`pending -> awaiting_payment -> paid -> preparing -> shipped -> delivered`, with `cancelled`/`refunded` branches — see `API_CONTRACT.md` for the full transition table). `Sale` is an append-only record created once a payment completes — it's the immutable financial ledger, never edit it to fix an order.
 - **Inventory**: single stock pool per product (`quantity_on_hand` / `quantity_reserved`; `quantity_available` is derived). Reserve/release/fulfill use `SELECT ... FOR UPDATE` row locks to prevent overselling under concurrent orders. Order creation is all-or-nothing — no partial stock reservation across items.
 - **Payments/Shipments**: sit behind `PaymentGateway` / `ShipmentCarrier` provider abstractions with only a manual/placeholder implementation wired up (no real gateway or carrier yet, by design). `POST /payments` completes payment immediately via the manual gateway.
+- **Product images** (`app/models/product_image.py`): a product has many `ProductImage` rows (`product_id`, `file_path`, `position`). Storage sits behind an `ImageStorage` port (`app/services/storage_service.py`), same pattern as `PaymentGateway`/`ShipmentCarrier` -- only `LocalDiskImageStorage` is wired up (no S3/cloud storage; writes under `MEDIA_ROOT`, served at `MEDIA_URL`, absolute URL built with `PUBLIC_BASE_URL` since the frontend is a different origin/port). `POST`/`DELETE /products/{id}/images` manage rows one at a time; deleting a single row never touches disk -- files are only purged in bulk when the whole product is deleted (`ProductService.delete`).
 - The initial Alembic migration (`2a6e6f24d115_initial_schema.py`) was hand-authored against no live DB. Every migration after it must use `--autogenerate` against a real database and be reviewed before committing.
 - **Seeding** (`app/scripts/`, Fase 7): `seed_admin.py` creates the first admin from `FIRST_ADMIN_EMAIL`/`FIRST_ADMIN_PASSWORD`/`FIRST_ADMIN_FULL_NAME` env vars (idempotent, no-op if already set or vars unset — the only way to get an `employee`/`admin` account, no API endpoint for it). `seed_demo_data.py` creates demo categories/products with real stock (idempotent). Both run automatically on `api` container startup via `docker-compose.yml`.
 
@@ -95,6 +96,8 @@ templates/*  ->  apps/*/views.py  ->  services/*  ->  backend-api (HTTP)
 - Catalog/product/order URLs key on the UUID `id` from the API, not a slug — the contract doesn't expose slugs.
 - Checkout has no payment form: since the backend has no real payment gateway, the frontend implicitly uses `"card"` and calls `POST /payments` right after order creation.
 - No automatic token-refresh flow is wired to views yet — access/refresh tokens simply expire and the user re-logs in.
+- The user's role (`customer`/`employee`/`admin`) is cached in the session at login (`services/auth.py:save_role`/`is_staff`, populated from `GET /auth/me`) so staff-only views don't need an API call per request just to check it — see `apps/accounts/decorators.py:api_staff_required`.
+- Staff (`employee`/`admin`) product management lives in `apps/catalog` (not a separate app): `/catalogo/admin/` to list/create/edit products plus upload/remove their images. No Django `Product` model — these views call `services/products.py`, which calls backend-api, same as every other catalog view.
 
 ## Cross-cutting API contract notes
 
@@ -104,6 +107,7 @@ templates/*  ->  apps/*/views.py  ->  services/*  ->  backend-api (HTTP)
 - List endpoints paginate via `page`/`page_size` query params, returning `{items, total, page, page_size, pages}` — except `/customers/me/addresses`, which is a flat unpaginated array (confirmed against the real backend, see `API_INTEGRATION_NOTES.md`).
 - `GET /shipments/order/{id}` response shape is now confirmed: `{id, order_id, address_id, status, carrier, tracking_number, shipped_at, delivered_at, created_at, updated_at}`, `status` in `pending -> preparing -> in_transit -> delivered` (or `failed`/`returned`). Same shape for the `POST` create/ship/deliver responses.
 - `GET /products` supports `search` (case-insensitive match on name or SKU) in addition to `category_id`/`page`/`page_size` — the frontend's navbar search in `services/products.list_products` predates this and may still be filtering client-side; check before assuming it uses the server-side param.
+- Product responses (`GET`/list) include `images: [{id, url, position, created_at}]` (empty array if none). `url` is absolute and points at backend-api's own host (not the frontend's) — safe to use directly in `<img src>`. Managed only via `POST`/`DELETE /products/{id}/images`, never through `POST`/`PATCH /products`.
 
 ## Running both services together
 
@@ -115,4 +119,4 @@ The `-f` order matters — Compose resolves relative build-context paths against
 
 On this Windows host, hit services via `127.0.0.1:<port>`, not `localhost` — `localhost` resolves to IPv6 and the request hangs (Docker Desktop only binds IPv4). `127.0.0.1:8000/health` and `127.0.0.1:8080/` are the smoke-test URLs.
 
-Staff-only actions (creating categories/products, adjusting inventory, managing shipments) need an `employee`/`admin` account — there's no self-service way to get one; use `seed_admin.py` (see above) to provision one for local testing.
+Staff-only actions (creating categories/products, adjusting inventory, managing shipments) need an `employee`/`admin` account — there's no self-service way to get one; use `seed_admin.py` (see above) to provision one for local testing. Once logged in as staff, product create/edit/images has a frontend UI at `/catalogo/admin/`; categories, inventory, and shipments are still API-only, no frontend UI yet.

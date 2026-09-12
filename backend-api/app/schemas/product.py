@@ -27,8 +27,18 @@ class ProductUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class ProductImageOut(BaseModel):
+    id: uuid.UUID
+    url: str
+    position: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ProductOut(ProductBase):
     id: uuid.UUID
+    images: list[ProductImageOut] = []
     created_at: datetime
     updated_at: datetime
 

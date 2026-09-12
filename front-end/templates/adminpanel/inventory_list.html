@@ -1,0 +1,64 @@
+{% extends "adminpanel/_layout.html" %}
+
+{% block title %}Inventario - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<div class="section-head">
+    <h1 class="section-title">Inventario</h1>
+</div>
+
+{% if rows %}
+<div class="table-card">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>En bodega</th>
+            <th>Reservado</th>
+            <th>Disponible</th>
+            <th>Ajustar stock</th>
+            <th>Nivel de reorden</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row.product.name }}<div class="muted">SKU {{ row.product.sku }}</div></td>
+            {% if row.availability %}
+            <td>{{ row.availability.quantity_on_hand }}</td>
+            <td>{{ row.availability.quantity_reserved }}</td>
+            <td>
+                {% if row.availability.quantity_available <= row.availability.reorder_level %}
+                <span class="stock-badge stock-badge--{% if row.availability.quantity_available <= 0 %}out{% else %}low{% endif %}">{{ row.availability.quantity_available }}</span>
+                {% else %}
+                <span class="stock-badge stock-badge--in">{{ row.availability.quantity_available }}</span>
+                {% endif %}
+            </td>
+            <td>
+                <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_adjust' row.product.id %}">
+                    {% csrf_token %}
+                    {{ row.adjust_form.delta }}
+                    <button type="submit" class="btn btn--secondary btn--sm">Ajustar</button>
+                </form>
+            </td>
+            <td>
+                <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_set_reorder' row.product.id %}">
+                    {% csrf_token %}
+                    {{ row.reorder_form.reorder_level }}
+                    <button type="submit" class="btn btn--secondary btn--sm">Guardar</button>
+                </form>
+            </td>
+            {% else %}
+            <td colspan="4" class="muted">Sin registro de inventario.</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>Todavía no hay productos</h2>
+</div>
+{% endif %}
+{% endblock %}

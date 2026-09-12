@@ -7,10 +7,12 @@ Run in development with:
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.asyncio_compat import apply_windows_event_loop_policy
 from app.core.config import settings
@@ -71,6 +73,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Product images (see app/services/storage_service.py): local disk under
+# settings.MEDIA_ROOT, served back out at settings.MEDIA_URL.
+Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+app.mount(settings.MEDIA_URL, StaticFiles(directory=settings.MEDIA_ROOT), name="media")
 
 
 def _register_exception_handler(exc_class: type[AppError], http_status: int) -> None:

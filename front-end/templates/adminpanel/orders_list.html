@@ -1,0 +1,54 @@
+{% extends "adminpanel/_layout.html" %}
+{% load money %}
+
+{% block title %}Pedidos - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<div class="section-head">
+    <h1 class="section-title">Pedidos</h1>
+</div>
+
+<div class="tabs">
+    <a class="tab{% if not status_filter %} is-active{% endif %}" href="{% url 'adminpanel:orders_list' %}">Todos</a>
+    {% for s in statuses %}
+    <a class="tab{% if status_filter == s %} is-active{% endif %}" href="?status={{ s }}">{{ s }}</a>
+    {% endfor %}
+</div>
+
+{% if orders %}
+<div class="table-card">
+<table class="table">
+    <thead>
+        <tr><th>Pedido</th><th>Fecha</th><th>Estado</th><th>Total</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.order_number }}</td>
+            <td>{{ order.created_at }}</td>
+            <td><span class="status status--{{ order.status }}">{{ order.status }}</span></td>
+            <td>${{ order.total_amount|money }}</td>
+            <td><a class="btn btn--sm" href="{% url 'adminpanel:order_detail' order.id %}">Ver / gestionar</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% if pages > 1 %}
+<div class="pagination">
+    {% if has_previous %}
+    <a class="btn btn--secondary btn--sm" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page|add:"-1" }}">&larr; Anterior</a>
+    {% endif %}
+    <span class="pagination__info">Página {{ page }} de {{ pages }}</span>
+    {% if has_next %}
+    <a class="btn btn--secondary btn--sm" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page|add:"1" }}">Siguiente &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state">
+    <h2>{% if status_filter %}No hay pedidos en este estado{% else %}Todavía no hay pedidos{% endif %}</h2>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-panel">
+    <aside class="admin-panel__sidebar">
+        <nav class="admin-panel__nav">
+            <a class="admin-panel__nav-link{% if active_nav == 'home' %} is-active{% endif %}" href="{% url 'adminpanel:home' %}">
+                Resumen
+            </a>
+            <a class="admin-panel__nav-link{% if active_nav == 'products' %} is-active{% endif %}" href="{% url 'catalog:admin_list' %}">
+                Productos
+            </a>
+            <a class="admin-panel__nav-link{% if active_nav == 'categories' %} is-active{% endif %}" href="{% url 'adminpanel:categories_list' %}">
+                Categorías
+            </a>
+            <a class="admin-panel__nav-link{% if active_nav == 'inventory' %} is-active{% endif %}" href="{% url 'adminpanel:inventory_list' %}">
+                Inventario
+            </a>
+            <a class="admin-panel__nav-link{% if active_nav == 'orders' %} is-active{% endif %}" href="{% url 'adminpanel:orders_list' %}">
+                Pedidos
+            </a>
+            <a class="admin-panel__nav-link{% if active_nav == 'customers' %} is-active{% endif %}" href="{% url 'adminpanel:customers_list' %}">
+                Clientes
+            </a>
+        </nav>
+    </aside>
+    <div class="admin-panel__content">
+        {% block panel_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

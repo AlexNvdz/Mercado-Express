@@ -9,13 +9,15 @@ from app.models.product import Product
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.product_repository import ProductRepository
 from app.schemas.product import ProductCreate, ProductUpdate
+from app.services.storage_service import ImageStorage, LocalDiskImageStorage
 
 
 class ProductService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, storage: ImageStorage | None = None) -> None:
         self.db = db
         self.repo = ProductRepository(db)
         self.categories = CategoryRepository(db)
+        self.storage = storage or LocalDiskImageStorage()
 
     async def create(self, data: ProductCreate) -> Product:
         if await self.repo.get_by_sku(data.sku) is not None:
@@ -27,10 +29,13 @@ class ProductService:
         # Every product gets an inventory record at creation time (starts at zero).
         self.db.add(Inventory(product_id=product.id, quantity_on_hand=0, quantity_reserved=0))
         await self.db.flush()
-        return product
+        # Re-fetch with `images` eager-loaded (empty list) -- accessing the
+        # unloaded relationship on `product` directly would try an implicit
+        # lazy load, which AsyncSession doesn't allow outside an await.
+        return await self.get(product.id)
 
     async def get(self, product_id: uuid.UUID) -> Product:
-        product = await self.repo.get(product_id)
+        product = await self.repo.get_with_images(product_id)
         if product is None:
             raise NotFoundError(f"Product {product_id} not found.")
         return product
@@ -52,7 +57,9 @@ class ProductService:
         if search:
             pattern = f"%{search.strip()}%"
             filters.append(or_(Product.name.ilike(pattern), Product.sku.ilike(pattern)))
-        items = await self.repo.list(offset=offset, limit=limit, filters=filters, order_by=Product.name)
+        items = await self.repo.list_with_images(
+            offset=offset, limit=limit, filters=filters, order_by=Product.name
+        )
         total = await self.repo.count(filters=filters)
         return items, total
 
@@ -74,3 +81,6 @@ class ProductService:
     async def delete(self, product_id: uuid.UUID) -> None:
         product = await self.get(product_id)
         await self.repo.delete(product)
+        # Image rows are gone via cascade; purge their files from disk too --
+        # this is the only point where product image files are ever removed.
+        self.storage.delete_product_files(product_id)

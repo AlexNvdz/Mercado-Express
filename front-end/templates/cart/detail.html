@@ -12,25 +12,27 @@
 <div class="table-card" style="padding: 4px 24px;">
     {% for item in items %}
     <div class="cart-item">
-        <div>
+        <div class="cart-item__info">
             <div class="cart-item__name">{{ item.product.name }}</div>
             <span class="muted">${{ item.unit_price|money }} c/u</span>
         </div>
-        <form method="post" action="{% url 'cart:update' item.product.id %}" onchange="this.requestSubmit()">
-            {% csrf_token %}
-            <div class="qty-stepper">
-                <button type="button" data-step="-1" aria-label="Restar">&minus;</button>
-                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" aria-label="Cantidad">
-                <button type="button" data-step="1" aria-label="Sumar">&plus;</button>
-            </div>
-        </form>
-        <div class="cart-item__name">${{ item.subtotal|money }}</div>
-        <form method="post" action="{% url 'cart:remove' item.product.id %}">
-            {% csrf_token %}
-            <button type="submit" class="icon-btn" aria-label="Quitar">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-        </form>
+        <div class="cart-item__controls">
+            <form method="post" action="{% url 'cart:update' item.product.id %}" onchange="this.requestSubmit()">
+                {% csrf_token %}
+                <div class="qty-stepper">
+                    <button type="button" data-step="-1" aria-label="Restar">&minus;</button>
+                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1" aria-label="Cantidad">
+                    <button type="button" data-step="1" aria-label="Sumar">&plus;</button>
+                </div>
+            </form>
+            <div class="cart-item__subtotal">${{ item.subtotal|money }}</div>
+            <form method="post" action="{% url 'cart:remove' item.product.id %}">
+                {% csrf_token %}
+                <button type="submit" class="icon-btn" aria-label="Quitar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </form>
+        </div>
     </div>
     {% endfor %}
 </div>

@@ -1,0 +1,57 @@
+{% extends "adminpanel/_layout.html" %}
+
+{% block title %}{% if product %}Editar {{ product.name }}{% else %}Nuevo producto{% endif %} - MercadoExpress{% endblock %}
+
+{% block panel_content %}
+<div class="section-head">
+    <h1 class="section-title">{% if product %}Editar producto{% else %}Nuevo producto{% endif %}</h1>
+    <a class="btn btn--secondary" href="{% url 'catalog:admin_list' %}">&larr; Volver</a>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
+    <div class="form-card">
+        <form method="post">
+            {% csrf_token %}
+            {% for error in form.non_field_errors %}<p class="form-errors">{{ error }}</p>{% endfor %}
+            {% for field in form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<span class="form-errors">{{ error }}</span>{% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn">{% if product %}Guardar cambios{% else %}Crear producto{% endif %}</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom:12px; font-size:1rem;">Imágenes</h3>
+        {% if product %}
+            <form method="post" action="{% url 'catalog:admin_upload_image' product.id %}" enctype="multipart/form-data" style="margin-bottom:16px;">
+                {% csrf_token %}
+                <input type="file" name="file" accept="image/jpeg,image/png,image/webp" required>
+                <button type="submit" class="btn btn--secondary btn--sm" style="margin-top:8px;">Subir imagen</button>
+                <p class="muted" style="margin-top:6px;">jpg, png o webp &middot; máximo 5MB.</p>
+            </form>
+
+            {% if product.images %}
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap:10px;">
+                {% for image in product.images %}
+                <div style="position:relative;">
+                    <img src="{{ image.url }}" alt="" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px; border:1px solid var(--color-border);">
+                    <form method="post" action="{% url 'catalog:admin_delete_image' product.id image.id %}" onsubmit="return confirm('¿Quitar esta imagen del producto?');" style="position:absolute; top:4px; right:4px;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--danger btn--sm" title="Quitar" style="padding:2px 8px;">&times;</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="muted">Sin imágenes todavía.</p>
+            {% endif %}
+        {% else %}
+        <p class="muted">Guarda el producto primero para poder subirle imágenes.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

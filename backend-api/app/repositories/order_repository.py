@@ -34,3 +34,21 @@ class OrderRepository(BaseRepository[Order]):
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def list_all(self, *, offset: int = 0, limit: int = 20) -> list[Order]:
+        """Staff-only "every order" listing (see OrderService.list_all).
+        Same shape as list_for_customer minus the customer filter -- items
+        must be eager-loaded here too: OrderOut serializes `.items`, and the
+        generic BaseRepository.list() this used to call doesn't load that
+        relationship, so accessing it during Pydantic validation triggered
+        an async lazy-load outside the request's greenlet context
+        (`MissingGreenlet`) instead of a normal 500 with a clear cause.
+        """
+        result = await self.db.execute(
+            select(Order)
+            .options(selectinload(Order.items))
+            .order_by(Order.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return list(result.scalars().all())

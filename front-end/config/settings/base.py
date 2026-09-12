@@ -53,6 +53,7 @@ LOCAL_APPS = [
     "apps.cart",
     "apps.orders",
     "apps.dashboard",
+    "apps.adminpanel",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS
@@ -85,6 +86,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.cart.context_processors.cart",
                 "apps.catalog.context_processors.wishlist",
+                "apps.catalog.context_processors.nav_categories",
                 "apps.accounts.context_processors.auth",
             ],
         },
@@ -152,6 +154,10 @@ API_USE_MOCKS = env.bool("API_USE_MOCKS", default=False)
 # for customer identity -- the FastAPI backend is (see API_CONTRACT.md#authentication).
 API_ACCESS_TOKEN_SESSION_KEY = "mercadoexpress_access_token"
 API_REFRESH_TOKEN_SESSION_KEY = "mercadoexpress_refresh_token"
+# Cached at login from GET /auth/me so staff-only views/nav links don't need
+# an extra API call per request just to check the role (see services/auth.py
+# save_role/is_staff). Not the source of truth -- just a cache of it.
+API_ROLE_SESSION_KEY = "mercadoexpress_role"
 
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "dashboard:home"

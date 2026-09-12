@@ -1,6 +1,7 @@
 from functools import wraps
 from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -19,6 +20,26 @@ def api_login_required(view_func):
             login_url = reverse("accounts:login")
             query = urlencode({"next": request.get_full_path()})
             return redirect(f"{login_url}?{query}")
+        return view_func(request, *args, **kwargs)
+
+    return wrapped
+
+
+def api_staff_required(view_func):
+    """Like api_login_required, but also requires an `employee`/`admin`
+    role (see services.auth.is_staff) -- mirrors backend-api's
+    `require_staff` dependency. Product-management views use this.
+    """
+
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        if not auth_service.is_authenticated(request):
+            login_url = reverse("accounts:login")
+            query = urlencode({"next": request.get_full_path()})
+            return redirect(f"{login_url}?{query}")
+        if not auth_service.is_staff(request):
+            messages.error(request, "No tienes permiso para acceder a esta sección.")
+            return redirect("core:home")
         return view_func(request, *args, **kwargs)
 
     return wrapped

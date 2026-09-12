@@ -1,0 +1,27 @@
+{% extends "adminpanel/_layout.html" %}
+
+{% block title %}{{ customer.full_name }} - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<nav class="breadcrumbs">
+    <a href="{% url 'adminpanel:customers_list' %}">Clientes</a>
+    <span class="sep">/</span>
+    <span class="current">{{ customer.full_name }}</span>
+</nav>
+
+<div class="section-head">
+    <h1 class="section-title">{{ customer.full_name }}</h1>
+</div>
+
+<div class="card" style="max-width:480px;">
+    <p><strong>Correo:</strong> {{ customer.email }}</p>
+    <p><strong>Teléfono:</strong> {{ customer.phone|default:"—" }}</p>
+    <p><strong>Rol:</strong> {{ customer.role }}</p>
+    <p><strong>Estado:</strong> {% if customer.is_active %}Activo{% else %}Inactivo{% endif %}</p>
+    {% if customer.created_at %}<p><strong>Cliente desde:</strong> {{ customer.created_at }}</p>{% endif %}
+</div>
+
+<div style="margin-top:24px;">
+    <a class="btn btn--ghost" href="{% url 'adminpanel:customers_list' %}">&larr; Volver a clientes</a>
+</div>
+{% endblock %}

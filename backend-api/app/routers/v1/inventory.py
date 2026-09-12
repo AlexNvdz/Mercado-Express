@@ -1,14 +1,38 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.dependencies import require_staff
+from app.dependencies import PaginationParams, pagination_params, require_staff
+from app.schemas.common import Page
 from app.schemas.inventory import InventoryAdjust, InventoryOut, InventorySetLevel
 from app.services.inventory_service import InventoryService
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
+
+
+@router.get("", response_model=Page[InventoryOut], dependencies=[Depends(require_staff)])
+async def list_inventory(
+    low_stock: bool = Query(
+        default=False, description="Only return items where quantity_available <= reorder_level."
+    ),
+    pagination: PaginationParams = Depends(pagination_params),
+    db: AsyncSession = Depends(get_db),
+) -> Page[InventoryOut]:
+    """Staff/admin only: batched inventory read (e.g. for a low-stock
+    dashboard alert) -- replaces paging GET /inventory/{id} once per product."""
+    items, total = await InventoryService(db).list(
+        offset=pagination.offset, limit=pagination.page_size, low_stock=low_stock
+    )
+    pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
+    return Page(
+        items=[InventoryOut.model_validate(i) for i in items],
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        pages=pages,
+    )
 
 
 @router.get("/{product_id}", response_model=InventoryOut)

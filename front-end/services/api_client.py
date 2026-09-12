@@ -68,6 +68,7 @@ class ApiClient:
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
     ) -> Any:
         """Perform an HTTP request against the backend API and return the
         decoded JSON body. Raises a subclass of ApiError on any failure.
@@ -75,6 +76,8 @@ class ApiClient:
         `json` sends an `application/json` body; `data` sends a form-encoded
         (`application/x-www-form-urlencoded`) body -- the backend's
         `/auth/login` requires the latter (OAuth2-password-compatible).
+        `files` sends a `multipart/form-data` body (e.g. `{"file": (name,
+        bytes, content_type)}`) -- used for product image uploads.
         """
         url = f"{self.base_url}/{path.lstrip('/')}"
         try:
@@ -84,6 +87,7 @@ class ApiClient:
                 params=params,
                 json=json,
                 data=data,
+                files=files,
                 headers=self._headers(token),
                 timeout=self.timeout,
             )

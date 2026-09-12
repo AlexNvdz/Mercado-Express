@@ -18,7 +18,18 @@
 
 <div class="product-detail">
     <div class="product-detail__media">
+        {% if product.images %}
+        <img src="{{ product.images.0.url }}" alt="{{ product.name }}">
+        {% if product.images|length > 1 %}
+        <div class="product-detail__thumbs">
+            {% for image in product.images %}
+            <img src="{{ image.url }}" alt="{{ product.name }}" loading="lazy">
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% else %}
         <svg width="120" height="120" viewBox="0 0 24 24" fill="none"><path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.2"/><path d="M8 6V5a4 4 0 0 1 8 0v1" stroke="currentColor" stroke-width="1.2"/></svg>
+        {% endif %}
     </div>
     <div>
         {% if category %}<p class="product-detail__category"><a href="{% url 'catalog:category' category.id %}">{{ category.name }}</a></p>{% endif %}

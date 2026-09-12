@@ -1,9 +1,17 @@
 """
 Category/product catalog access. See ../API_CONTRACT.md:
-    GET  /api/v1/categories                 ?page=&page_size=
-    GET  /api/v1/categories/{category_id}
+    GET    /api/v1/categories                 ?page=&page_size=
+    GET    /api/v1/categories/{category_id}
+    POST   /api/v1/categories                 staff, create
+    PATCH  /api/v1/categories/{category_id}   staff, partial update
+    DELETE /api/v1/categories/{category_id}   staff, delete
     GET  /api/v1/products                   ?category_id=&search=&page=&page_size=
     GET  /api/v1/products/{product_id}
+    POST   /api/v1/products                          staff, create
+    PATCH  /api/v1/products/{product_id}              staff, partial update
+    DELETE /api/v1/products/{product_id}              staff, delete (purges its images too)
+    POST   /api/v1/products/{product_id}/images       staff, multipart upload (field "file")
+    DELETE /api/v1/products/{product_id}/images/{id}  staff, detach one image
 
 Both list endpoints are paginated (`{"items": [...], "total", "page",
 "page_size", "pages"}`); the functions below return that envelope as-is so
@@ -16,6 +24,8 @@ API_CONTRACT.md yet, ask the backend to add it there.
 """
 
 from __future__ import annotations
+
+import uuid
 
 from django.conf import settings
 
@@ -42,6 +52,33 @@ def get_category(category_id: str) -> dict | None:
         return api_client.get(f"/api/v1/categories/{category_id}")
     except ApiNotFoundError:
         return None
+
+
+def create_category(token: str, data: dict) -> dict:
+    """data: {"name", "description", "parent_id", "is_active"} -- staff only."""
+    if settings.API_USE_MOCKS:
+        category = {**data, "id": str(uuid.uuid4())}
+        mock_data.MOCK_CATEGORIES.append(category)
+        return category
+
+    return api_client.post("/api/v1/categories", token=token, json=data)
+
+
+def update_category(token: str, category_id: str, data: dict) -> dict:
+    if settings.API_USE_MOCKS:
+        category = get_category(category_id) or {}
+        category.update(data)
+        return category
+
+    return api_client.patch(f"/api/v1/categories/{category_id}", token=token, json=data)
+
+
+def delete_category(token: str, category_id: str) -> None:
+    if settings.API_USE_MOCKS:
+        mock_data.MOCK_CATEGORIES[:] = [c for c in mock_data.MOCK_CATEGORIES if c["id"] != str(category_id)]
+        return
+
+    api_client.delete(f"/api/v1/categories/{category_id}", token=token)
 
 
 def list_products(
@@ -72,3 +109,49 @@ def get_product(product_id: str) -> dict | None:
         return api_client.get(f"/api/v1/products/{product_id}")
     except ApiNotFoundError:
         return None
+
+
+def create_product(token: str, data: dict) -> dict:
+    if settings.API_USE_MOCKS:
+        # Real ids are UUIDs (see API_CONTRACT.md) -- product URLs key on
+        # that shape, so the mock must match it too.
+        product = {**data, "id": str(uuid.uuid4()), "images": []}
+        mock_data.MOCK_PRODUCTS.append(product)
+        return product
+
+    return api_client.post("/api/v1/products", token=token, json=data)
+
+
+def update_product(token: str, product_id: str, data: dict) -> dict:
+    if settings.API_USE_MOCKS:
+        product = get_product(product_id) or {}
+        product.update(data)
+        return product
+
+    return api_client.patch(f"/api/v1/products/{product_id}", token=token, json=data)
+
+
+def delete_product(token: str, product_id: str) -> None:
+    if settings.API_USE_MOCKS:
+        mock_data.MOCK_PRODUCTS[:] = [p for p in mock_data.MOCK_PRODUCTS if p["id"] != str(product_id)]
+        return
+
+    api_client.delete(f"/api/v1/products/{product_id}", token=token)
+
+
+def upload_product_image(token: str, product_id: str, *, filename: str, content: bytes, content_type: str) -> dict:
+    if settings.API_USE_MOCKS:
+        return {"id": "mock-image", "url": "", "position": 0, "created_at": ""}
+
+    return api_client.post(
+        f"/api/v1/products/{product_id}/images",
+        token=token,
+        files={"file": (filename, content, content_type)},
+    )
+
+
+def delete_product_image(token: str, product_id: str, image_id: str) -> None:
+    if settings.API_USE_MOCKS:
+        return
+
+    api_client.delete(f"/api/v1/products/{product_id}/images/{image_id}", token=token)

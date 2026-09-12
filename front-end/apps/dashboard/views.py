@@ -33,14 +33,14 @@ def profile(request):
             initial={"full_name": user.get("full_name") if user else "", "phone": user.get("phone") if user else ""}
         )
 
-    return render(request, "dashboard/profile.html", {"user": user, "form": form})
+    return render(request, "dashboard/profile.html", {"user": user, "form": form, "active_nav": "profile"})
 
 
 @api_login_required
 def address_list(request):
     token = auth_service.get_access_token(request)
     addresses = customers_service.list_addresses(token)
-    return render(request, "dashboard/addresses.html", {"addresses": addresses})
+    return render(request, "dashboard/addresses.html", {"addresses": addresses, "active_nav": "addresses"})
 
 
 @api_login_required
