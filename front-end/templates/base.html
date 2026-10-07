@@ -31,6 +31,7 @@
     </main>
 
     {% block footer %}{% include "partials/footer.html" %}{% endblock %}
+    {% include "partials/confirm_dialog.html" %}
     <script src="{% static 'js/app.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>

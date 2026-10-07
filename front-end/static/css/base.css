@@ -526,6 +526,8 @@ img { max-width: 100%; display: block; }
 .btn--accent:hover { background: var(--ink); }
 .btn--danger { background: var(--paper); color: var(--rose); border-color: #efc0c7; }
 .btn--danger:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+.btn--danger-solid { background: var(--rose); color: #fff; }
+.btn--danger-solid:hover { background: #a92c3e; color: #fff; }
 .btn--ghost { background: transparent; color: var(--volt-deep); }
 .btn--ghost:hover { background: var(--volt-soft); color: var(--volt-deep); }
 .btn--sm { min-height: 34px; padding: 0 12px; font-size: 0.84rem; }
@@ -1285,4 +1287,39 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
     .navbar__mark { width: 32px; height: 32px; }
     .navbar__right { gap: 0; }
     .navbar__icon-link, .navbar__toggle { width: 38px; height: 38px; }
+}
+
+/* ==========================================================================
+   Confirmation dialog (templates/partials/confirm_dialog.html + app.js)
+   Replaces the browser's confirm(): a white card over a forest-tinted
+   backdrop. Neutral actions use the action green; destructive ones
+   (data-confirm-tone="danger") switch the icon and button to rose.
+   ========================================================================== */
+.confirm {
+    width: min(440px, calc(100vw - 32px));
+    max-width: none;
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--paper);
+    color: var(--text);
+    box-shadow: var(--lift-lg);
+}
+.confirm::backdrop { background: rgba(23, 56, 42, 0.42); backdrop-filter: blur(2px); }
+.confirm[open] { animation: confirm-in 0.18s ease-out; }
+@keyframes confirm-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+.confirm__box { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 26px 26px 22px; }
+.confirm__icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 8px; border-radius: 50%; background: var(--volt-soft); color: var(--volt); }
+.confirm__icon-danger { display: none; }
+.confirm--danger .confirm__icon { background: var(--rose-soft); color: var(--rose); }
+.confirm--danger .confirm__icon-danger { display: block; }
+.confirm--danger .confirm__icon-neutral { display: none; }
+.confirm__title { font-size: 1.2rem; line-height: 1.25; }
+.confirm__message { color: var(--text-2); font-size: 0.94rem; margin: 0; }
+.confirm__message:empty { display: none; }
+.confirm__actions { display: flex; justify-content: flex-end; gap: 10px; width: 100%; margin-top: 18px; flex-wrap: wrap-reverse; }
+@media (max-width: 480px) {
+    .confirm__box { padding: 22px 20px 18px; }
+    .confirm__actions .btn { flex: 1 1 100%; }
 }

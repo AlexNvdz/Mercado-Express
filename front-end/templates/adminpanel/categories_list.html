@@ -30,7 +30,7 @@
             <td class="cell-actions">
                 <div class="actions">
                     <a class="btn btn--secondary btn--sm" href="{% url 'adminpanel:category_edit' category.id %}">Editar</a>
-                    <form method="post" action="{% url 'adminpanel:category_delete' category.id %}" onsubmit="return confirm('¿Eliminar esta categoría? Solo es posible si no tiene productos ni subcategorías.');">
+                    <form method="post" action="{% url 'adminpanel:category_delete' category.id %}" data-confirm="Solo se puede eliminar si no tiene productos. Sus subcategorías quedarán sin categoría padre." data-confirm-title="¿Eliminar la categoría «{{ category.name }}»?" data-confirm-ok="Eliminar categoría" data-confirm-tone="danger">
                         {% csrf_token %}
                         <button type="submit" class="btn btn--danger btn--sm">Eliminar</button>
                     </form>

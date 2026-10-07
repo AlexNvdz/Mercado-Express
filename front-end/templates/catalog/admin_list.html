@@ -35,7 +35,7 @@
             <td class="cell-actions">
                 <div class="actions">
                     <a class="btn btn--secondary btn--sm" href="{% url 'catalog:admin_edit' product.id %}">Editar</a>
-                    <form method="post" action="{% url 'catalog:admin_delete' product.id %}" onsubmit="return confirm('¿Eliminar este producto y todas sus imágenes? Esta acción no se puede deshacer.');">
+                    <form method="post" action="{% url 'catalog:admin_delete' product.id %}" data-confirm="Se borran también todas sus imágenes. Esta acción no se puede deshacer." data-confirm-title="¿Eliminar «{{ product.name }}»?" data-confirm-ok="Eliminar producto" data-confirm-tone="danger">
                         {% csrf_token %}
                         <button type="submit" class="btn btn--danger btn--sm">Eliminar</button>
                     </form>

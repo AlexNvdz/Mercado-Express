@@ -110,7 +110,7 @@
             <button type="submit" class="btn btn--full">Repetir pedido</button>
         </form>
         {% if cancellable %}
-        <form method="post" action="{% url 'orders:cancel' order.id %}" onsubmit="return confirm('¿Cancelar este pedido?');" class="mt-sm">
+        <form method="post" action="{% url 'orders:cancel' order.id %}" data-confirm="Liberamos los productos reservados. No se puede deshacer." data-confirm-title="¿Cancelar el pedido {{ order.order_number }}?" data-confirm-ok="Cancelar pedido" data-confirm-cancel="Mantener pedido" data-confirm-tone="danger" class="mt-sm">
             {% csrf_token %}
             <button type="submit" class="btn btn--danger btn--full">Cancelar pedido</button>
         </form>

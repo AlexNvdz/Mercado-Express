@@ -89,13 +89,13 @@
         {% if can_ship or can_deliver %}
         <div class="actions mt-md">
             {% if can_ship %}
-            <form method="post" action="{% url 'adminpanel:shipment_ship' order.id %}">
+            <form method="post" action="{% url 'adminpanel:shipment_ship' order.id %}" data-confirm="Se descuenta el stock y el pedido pasa a «Enviado». Después ya no se puede editar la guía." data-confirm-title="¿Marcar el envío como despachado?" data-confirm-ok="Marcar despachado">
                 {% csrf_token %}
                 <button type="submit" class="btn btn--sm">Marcar despachado</button>
             </form>
             {% endif %}
             {% if can_deliver %}
-            <form method="post" action="{% url 'adminpanel:shipment_deliver' order.id %}">
+            <form method="post" action="{% url 'adminpanel:shipment_deliver' order.id %}" data-confirm="El pedido pasa a «Entregado» y ya no admite más cambios." data-confirm-title="¿Marcar el pedido como entregado?" data-confirm-ok="Marcar entregado">
                 {% csrf_token %}
                 <button type="submit" class="btn btn--accent btn--sm">Marcar entregado</button>
             </form>
@@ -127,7 +127,7 @@
             <h2 class="card__title">Cambiar estado manualmente</h2>
             {% if next_statuses %}
             <p class="muted" style="margin-bottom:14px;">Esto es para correcciones y solo muestra los estados a los que este pedido puede pasar ahora. Despachar y entregar se hacen desde el envío.</p>
-            <form method="post" action="{% url 'adminpanel:order_status_update' order.id %}" class="admin-inline">
+            <form method="post" action="{% url 'adminpanel:order_status_update' order.id %}" class="admin-inline" data-confirm="Queda registrado en el historial a tu nombre. Cancelar o reembolsar libera el stock y no se puede deshacer." data-confirm-title="¿Pasar el pedido a «{status}»?" data-confirm-ok="Cambiar estado">
                 {% csrf_token %}
                 <label class="visually-hidden" for="{{ status_form.status.id_for_label }}">Nuevo estado</label>
                 {{ status_form.status }}
