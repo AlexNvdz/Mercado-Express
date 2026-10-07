@@ -222,12 +222,9 @@ separado (`SHIPMENT_STATUS_LABELS` vs. `ORDER_STATUS_LABELS`, ver
 
 ## Huecos pendientes
 
-**ENDPOINT SOLICITADO (mejora, no bloqueante):**
-METHOD: GET
-URL: `/api/v1/products?search=<q>` — ya implementado y confirmado
-funcionando (`services/products.list_products` lo usa). Pendiente: no está
-documentado todavía en `API_CONTRACT.md` -- pedir al backend que lo agregue
-a la sección `/api/v1/products`.
+**RESUELTO:** `GET /api/v1/products?search=<q>` está implementado,
+lo usa `services/products.list_products` y ya está documentado en la
+sección `/api/v1/products` de `API_CONTRACT.md`.
 
 ---
 

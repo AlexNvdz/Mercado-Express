@@ -107,7 +107,10 @@ uv run alembic downgrade -1
 The initial schema (`alembic/versions/2a6e6f24d115_initial_schema.py`) was
 hand-authored (no DB was reachable at the time it was written); every
 migration after it should use `--autogenerate` against a real database and
-be reviewed before committing.
+be reviewed before committing. Autogenerate does not detect Postgres enum
+value changes; those migrations are hand-written (see
+`6bf0432e1cd9_remove_awaiting_payment_from_order_.py` for the pattern).
+Before applying a migration to the shared dev DB, take a `pg_dump` backup.
 
 ## Code quality
 
@@ -125,23 +128,37 @@ docker compose up --build     # backend + Postgres
 
 The `api` service runs `alembic upgrade head` before starting uvicorn. See
 `docker-compose.yml` for details. This compose file is scoped to the backend
-only; a root-level compose tying frontend + backend together can be added
-later once that's needed (see `../API_CONTRACT.md` for the HTTP contract
-the frontend integrates against in the meantime).
+only. To run the whole stack (db + api + Django frontend), combine it with
+the frontend override from the repo root:
+`docker compose -f backend-api/docker-compose.yml -f front-end/docker-compose.override.yml up --build`
+(see `../CLAUDE.md`). `../API_CONTRACT.md` is the HTTP contract the
+frontend integrates against.
 
 ## Design notes
 
 - **Auth**: single `users` table with a `role` enum (`customer`, `employee`,
   `admin`) rather than separate tables per role — adding a role later is a
   one-line enum change, see `app/dependencies.py::require_roles`.
-- **Orders**: `Order` tracks mutable lifecycle state; `Sale` is an
-  append-only record created once a payment completes, for clean
-  analytics/reporting later.
+- **Orders**: `Order` tracks mutable lifecycle state (7 statuses, see
+  `API_CONTRACT.md`). Payments and shipments drive the normal flow; the
+  staff `PATCH /orders/{id}/status` is for corrections only and can't jump
+  to `paid`, `shipped` or `delivered`. Every status change locks the order
+  row and is appended to `order_status_history` (who, from/to, source).
+- **Sales ledger**: `Sale` is append-only. A completed payment writes a
+  `sale` entry; cancelling or refunding a paid order appends a negative
+  `reversal` entry instead of editing anything. `GET /reports/summary`
+  reports net revenue (gross minus reversals) from this ledger.
 - **Inventory**: single stock pool per product (`quantity_on_hand` /
   `quantity_reserved`), row-locked (`SELECT ... FOR UPDATE`) on
-  reserve/release/fulfill so concurrent orders can't oversell. Multi-warehouse
-  support would extend this table, not replace it.
+  reserve/release/fulfill so concurrent orders can't oversell. Manual staff
+  changes (adjust, set levels) are appended to `inventory_history` with the
+  values before/after and the reason. Multi-warehouse support would extend
+  this table, not replace it.
 - **Payments/Shipments**: both sit behind a small provider abstraction
   (`PaymentGateway`, `ShipmentCarrier`) with a manual/placeholder
   implementation — no real gateway or carrier is wired up yet, by design
-  (see the task's Fase 5 scope).
+  (see the task's Fase 5 scope). Staff enter the carrier and tracking
+  number when creating the shipment (order `paid` or `preparing`) and can
+  edit them until dispatch.
+- **Product images**: stored behind an `ImageStorage` port; only local disk
+  storage (`MEDIA_ROOT`) is implemented.
