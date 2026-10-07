@@ -1,8 +1,10 @@
-{# One shared confirmation dialog. A form opts in with data-confirm="..." and
+{% comment %}
+   One shared confirmation dialog. A form opts in with data-confirm="..." and
    app.js opens this instead of the browser's native confirmation popup. Optional
    attributes on the form: data-confirm-title, data-confirm-ok (button
    label), data-confirm-cancel, data-confirm-tone="danger". In the message,
-   {status} is replaced by the label of the form's selected status option. #}
+   {status} is replaced by the label of the form's selected status option.
+{% endcomment %}
 <dialog class="confirm" id="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
     <form method="dialog" class="confirm__box">
         <span class="confirm__icon" aria-hidden="true">
