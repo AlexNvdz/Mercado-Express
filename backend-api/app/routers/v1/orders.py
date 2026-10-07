@@ -80,7 +80,8 @@ async def cancel_order(
 async def update_order_status(
     order_id: uuid.UUID, data: OrderStatusUpdate, db: AsyncSession = Depends(get_db)
 ) -> OrderOut:
-    """Staff/admin only: advance order status directly (e.g. mark paid manually).
-    Prefer the /payments and /shipments endpoints for the normal flow."""
+    """Staff/admin only: manual corrections (paid -> preparing, cancel,
+    refund), checked against OrderService's _ALLOWED_TRANSITIONS. Payment,
+    dispatch and delivery go through /payments and /shipments instead."""
     order = await OrderService(db).transition_status(order_id, data.status)
     return OrderOut.model_validate(order)

@@ -36,6 +36,7 @@ def _reset_mock_data():
     categories_snapshot = copy.deepcopy(mock_data.MOCK_CATEGORIES)
     inventory_snapshot = copy.deepcopy(mock_data.MOCK_INVENTORY)
     shipments_snapshot = copy.deepcopy(mock_data.MOCK_SHIPMENTS)
+    report_summary_snapshot = copy.deepcopy(mock_data.MOCK_REPORT_SUMMARY)
     yield
     mock_data.MOCK_ORDERS[:] = orders_snapshot
     mock_data.MOCK_PAYMENTS.clear()
@@ -49,3 +50,31 @@ def _reset_mock_data():
     mock_data.MOCK_INVENTORY.update(inventory_snapshot)
     mock_data.MOCK_SHIPMENTS.clear()
     mock_data.MOCK_SHIPMENTS.update(shipments_snapshot)
+    mock_data.MOCK_REPORT_SUMMARY.clear()
+    mock_data.MOCK_REPORT_SUMMARY.update(report_summary_snapshot)
+
+
+@pytest.fixture
+def api_calls(settings, monkeypatch):
+    """Opt-in: switch one test to the real-API code path with the HTTP layer
+    stubbed out, to check which method/path/body a service sends. Each call
+    is recorded as `(method, path, kwargs)` and returns `api_calls.response`
+    (default `{}`); set it to a callable `(method, path, kwargs) -> body` to
+    answer per path/params.
+    """
+    settings.API_USE_MOCKS = False
+    calls = _RecordedCalls()
+    calls.response = {}
+
+    def fake_request(self, method, path, **kwargs):
+        calls.append((method, path, kwargs))
+        if callable(calls.response):
+            return calls.response(method, path, kwargs)
+        return calls.response
+
+    monkeypatch.setattr("services.api_client.ApiClient.request", fake_request)
+    return calls
+
+
+class _RecordedCalls(list):
+    response: object

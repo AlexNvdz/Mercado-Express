@@ -90,6 +90,27 @@ async def test_cancel_order_releases_reserved_stock(
     assert inv.json()["quantity_on_hand"] == 5
 
 
+async def test_refund_releases_reserved_stock(
+    admin_client: AsyncClient, customer_client: AsyncClient
+) -> None:
+    product_id = await _make_stocked_product(admin_client, "ORD-REF", stock=5)
+    created = await customer_client.post(
+        "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 2}]}
+    )
+    order_id = created.json()["id"]
+    await customer_client.post("/api/v1/payments", json={"order_id": order_id, "method": "card"})
+
+    refunded = await admin_client.patch(f"/api/v1/orders/{order_id}/status", json={"status": "refunded"})
+    assert refunded.status_code == 200
+    assert refunded.json()["status"] == "refunded"
+
+    # Refund is only reachable before dispatch, so the goods never left:
+    # the reservation is released and on-hand stock is untouched.
+    inv = await admin_client.get(f"/api/v1/inventory/{product_id}")
+    assert inv.json()["quantity_reserved"] == 0
+    assert inv.json()["quantity_on_hand"] == 5
+
+
 async def test_full_order_lifecycle_to_delivered(
     admin_client: AsyncClient, customer_client: AsyncClient
 ) -> None:

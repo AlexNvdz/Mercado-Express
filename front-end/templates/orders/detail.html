@@ -69,7 +69,9 @@
             </div>
             <div class="card">
                 <h2 class="card__title">Envío</h2>
-                {% if shipment %}
+                {% if shipment.status == "cancelled" %}
+                <p class="muted">El envío se canceló junto con el pedido.</p>
+                {% elif shipment %}
                 <dl class="kv">
                     <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
                     <dt>Guía</dt><dd>{{ shipment.tracking_number|default:"Sin asignar" }}</dd>

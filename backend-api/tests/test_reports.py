@@ -45,7 +45,7 @@ async def test_report_summary_reflects_paid_orders_only(
     assert resp.status_code == 200
     body = resp.json()
 
-    assert float(body["total_revenue"]) >= 100.00
+    assert float(body["net_revenue"]) >= 100.00
     assert body["sale_count"] >= 1
     assert body["customer_count"] >= 1
     assert body["product_count"] >= 1
@@ -57,6 +57,56 @@ async def test_report_summary_reflects_paid_orders_only(
     top = {row["sku"]: row for row in body["top_products"]}
     assert "RPT-001" in top
     assert top["RPT-001"]["units_sold"] >= 2
+
+
+async def test_report_summary_is_net_of_cancelled_and_refunded_orders(
+    admin_client: AsyncClient, customer_client: AsyncClient
+) -> None:
+    product_id = await _make_stocked_product(admin_client, "RPT-NET", stock=20, price="50.00")
+
+    async def paid_order(quantity: int) -> str:
+        order = await customer_client.post(
+            "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": quantity}]}
+        )
+        await _pay_order(customer_client, order.json()["id"])
+        return order.json()["id"]
+
+    await paid_order(2)  # kept: 100.00
+    refunded = await paid_order(1)  # 50.00, refunded from `paid`
+    cancelled = await paid_order(3)  # 150.00, cancelled from `preparing`
+    unpaid = await customer_client.post(
+        "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 1}]}
+    )
+
+    async def set_status(order_id: str, status: str) -> None:
+        resp = await admin_client.patch(f"/api/v1/orders/{order_id}/status", json={"status": status})
+        assert resp.status_code == 200
+
+    await set_status(refunded, "refunded")
+    await set_status(cancelled, "preparing")
+    await set_status(cancelled, "cancelled")
+    await set_status(unpaid.json()["id"], "cancelled")  # never paid: no ledger entry at all
+
+    body = (await admin_client.get("/api/v1/reports/summary")).json()
+    # Each test runs in its own rolled-back transaction, so these are exact.
+    assert body["gross_revenue"] == "300.00"
+    assert body["refunded_amount"] == "200.00"
+    assert body["net_revenue"] == "100.00"
+    assert body["sale_count"] == 3
+    assert body["reversal_count"] == 2
+
+    top = {row["sku"]: row for row in body["top_products"]}
+    assert top["RPT-NET"]["units_sold"] == 2
+    assert top["RPT-NET"]["revenue"] == "100.00"
+
+
+async def test_report_summary_money_fields_are_2dp_when_ledger_is_empty(admin_client: AsyncClient) -> None:
+    body = (await admin_client.get("/api/v1/reports/summary")).json()
+    assert body["net_revenue"] == "0.00"
+    assert body["gross_revenue"] == "0.00"
+    assert body["refunded_amount"] == "0.00"
+    assert body["sale_count"] == 0
+    assert body["reversal_count"] == 0
 
 
 async def test_report_summary_top_products_limit(

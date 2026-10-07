@@ -1,19 +1,35 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 from app.models.enums import ShipmentStatus
 
 
+def _blank_to_none(value: object) -> object:
+    """Trims text; an empty or whitespace-only value means "not set"."""
+    if isinstance(value, str):
+        return value.strip() or None
+    return value
+
+
+# max_length sits on the `str` member: blank input reaches the union as None.
+_OptionalText = Annotated[Annotated[str, Field(max_length=100)] | None, BeforeValidator(_blank_to_none)]
+
+
 class ShipmentCreate(BaseModel):
     address_id: uuid.UUID
-    carrier: str | None = Field(default=None, max_length=100)
+    carrier: _OptionalText = None
+    tracking_number: _OptionalText = None
 
 
-class ShipmentStatusUpdate(BaseModel):
-    status: ShipmentStatus
-    tracking_number: str | None = Field(default=None, max_length=100)
+class ShipmentUpdate(BaseModel):
+    """Partial update, allowed only before dispatch: only the fields sent
+    are changed, and null (or blank) clears one."""
+
+    carrier: _OptionalText = None
+    tracking_number: _OptionalText = None
 
 
 class ShipmentOut(BaseModel):

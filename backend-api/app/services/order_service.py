@@ -19,28 +19,39 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.exceptions import InvalidStateTransitionError, NotFoundError, ValidationAppError
-from app.models.enums import OrderStatus
+from app.models.enums import OrderStatus, SaleKind, ShipmentStatus
 from app.models.order import Order
 from app.models.order_item import OrderItem
+from app.models.sale import Sale
 from app.repositories.address_repository import AddressRepository
 from app.repositories.inventory_repository import InventoryRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.product_repository import ProductRepository
+from app.repositories.sale_repository import SaleRepository
+from app.repositories.shipment_repository import ShipmentRepository
 from app.schemas.order import OrderCreate
 
-# Allowed forward transitions. Cancellation is allowed from any pre-shipment
-# state; terminal states have no outgoing edges. `paid` is reached from
-# `pending` by PaymentService directly (a completed payment), not listed
-# here as a manual-override target.
+# Manual-override targets for PATCH /orders/{id}/status (staff corrections).
+# The normal flow is driven by other resources: PaymentService moves
+# `pending -> paid`, ShipmentService moves `paid -> preparing` (shipment
+# created), `-> shipped` (dispatched) and `-> delivered`. Absent on purpose:
+# - `pending -> paid`: it would mark an order paid with no payment and no Sale.
+# - `-> shipped` / `-> delivered`: only the order's shipment may move it
+#   there, so an order is never shipped without a shipment and tracking
+#   number, and its stock is fulfilled exactly once (on dispatch).
+# Cancellation/refund are only reachable before dispatch; terminal states
+# have no outgoing edges.
 _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.PENDING: {OrderStatus.CANCELLED},
     OrderStatus.PAID: {OrderStatus.PREPARING, OrderStatus.CANCELLED, OrderStatus.REFUNDED},
-    OrderStatus.PREPARING: {OrderStatus.SHIPPED, OrderStatus.CANCELLED},
-    OrderStatus.SHIPPED: {OrderStatus.DELIVERED},
+    OrderStatus.PREPARING: {OrderStatus.CANCELLED},
+    OrderStatus.SHIPPED: set(),
     OrderStatus.DELIVERED: set(),
     OrderStatus.CANCELLED: set(),
     OrderStatus.REFUNDED: set(),
 }
+
+_UNDISPATCHED_SHIPMENT_STATUSES = {ShipmentStatus.PENDING, ShipmentStatus.PREPARING}
 
 _TWO_PLACES = Decimal("0.01")
 
@@ -60,6 +71,8 @@ class OrderService:
         self.products = ProductRepository(db)
         self.inventory = InventoryRepository(db)
         self.addresses = AddressRepository(db)
+        self.sales = SaleRepository(db)
+        self.shipments = ShipmentRepository(db)
 
     async def create_order(self, customer_id: uuid.UUID, data: OrderCreate) -> Order:
         if data.shipping_address_id is not None:
@@ -143,17 +156,29 @@ class OrderService:
         total = await self.orders.count()
         return items, total
 
+    async def _get_locked(self, order_id: uuid.UUID) -> Order:
+        order = await self.orders.get_with_items(order_id, for_update=True)
+        if order is None:
+            raise NotFoundError(f"Order {order_id} not found.")
+        return order
+
     async def transition_status(self, order_id: uuid.UUID, new_status: OrderStatus) -> Order:
-        order = await self.get(order_id)
+        order = await self._get_locked(order_id)
         allowed = _ALLOWED_TRANSITIONS.get(order.status, set())
         if new_status not in allowed:
             raise InvalidStateTransitionError(
                 f"Cannot transition order from '{order.status}' to '{new_status}'."
             )
 
-        if new_status == OrderStatus.CANCELLED:
+        if new_status in (OrderStatus.CANCELLED, OrderStatus.REFUNDED):
+            # Both are only reachable before dispatch (see _ALLOWED_TRANSITIONS),
+            # so the stock is still reserved, never fulfilled: release it.
             for item in order.items:
                 await self.inventory.release(item.product_id, item.quantity)
+            await self.record_reversal(order)
+            shipment = await self.shipments.get_by_order_id(order.id)
+            if shipment is not None and shipment.status in _UNDISPATCHED_SHIPMENT_STATUSES:
+                shipment.status = ShipmentStatus.CANCELLED
 
         order.status = new_status
         await self.db.flush()
@@ -165,8 +190,26 @@ class OrderService:
         await self.db.refresh(order)
         return order
 
+    async def record_reversal(self, order: Order) -> Sale | None:
+        """Append the negative ledger entry for a paid order that is being
+        cancelled or refunded; the original `sale` entry is never touched.
+
+        Idempotent: returns None if the order was never paid (no `sale`
+        entry), and the existing reversal if there is one already. The
+        unique (order_id, kind) constraint backs this up in the database.
+        """
+        sale = await self.sales.get_for_order(order.id, SaleKind.SALE)
+        if sale is None:
+            return None
+        existing = await self.sales.get_for_order(order.id, SaleKind.REVERSAL)
+        if existing is not None:
+            return existing
+        return await self.sales.create(
+            {"order_id": order.id, "kind": SaleKind.REVERSAL, "total_amount": -sale.total_amount}
+        )
+
     async def cancel(self, order_id: uuid.UUID, customer_id: uuid.UUID | None = None) -> Order:
-        order = await self.get(order_id)
+        order = await self._get_locked(order_id)
         if customer_id is not None and order.customer_id != customer_id:
             raise NotFoundError(f"Order {order_id} not found.")
         if order.status != OrderStatus.PENDING:

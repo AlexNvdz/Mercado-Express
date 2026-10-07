@@ -67,9 +67,24 @@ class OrderStatusForm(forms.Form):
 
 
 class ShipmentCreateForm(forms.Form):
-    """Starts a shipment for a paid order. address_id comes from the order
-    itself (shipping_address_id, set at checkout) -- staff only picks the
-    carrier.
+    """Starts a shipment for a `paid` or `preparing` order. address_id comes
+    from the order itself (shipping_address_id, set at checkout) -- staff
+    only enters the carrier and tracking number, both optional and both
+    editable until dispatch (ShipmentUpdateForm).
     """
 
     carrier = forms.CharField(label="Transportadora", required=False, max_length=100)
+    tracking_number = forms.CharField(label="Número de guía", required=False, max_length=100)
+
+    def to_api_kwargs(self) -> dict:
+        data = self.cleaned_data
+        return {
+            "carrier": data["carrier"] or None,
+            "tracking_number": data["tracking_number"] or None,
+        }
+
+
+class ShipmentUpdateForm(ShipmentCreateForm):
+    """Edits carrier/tracking number of a shipment not dispatched yet. Same
+    fields as ShipmentCreateForm, rendered with the shipment's current values.
+    """

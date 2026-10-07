@@ -60,6 +60,4 @@ class Order(UUIDPKMixin, TimestampMixin, Base):
     shipment: Mapped["Shipment | None"] = relationship(
         back_populates="order", cascade="all, delete-orphan", uselist=False
     )
-    sale: Mapped["Sale | None"] = relationship(
-        back_populates="order", cascade="all, delete-orphan", uselist=False
-    )
+    sales: Mapped[list["Sale"]] = relationship(back_populates="order", cascade="all, delete-orphan")

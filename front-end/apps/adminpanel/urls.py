@@ -12,6 +12,7 @@ urlpatterns = [
     path("pedidos/<uuid:order_id>/", views.order_detail, name="order_detail"),
     path("pedidos/<uuid:order_id>/estado/", views.order_status_update, name="order_status_update"),
     path("pedidos/<uuid:order_id>/envio/crear/", views.shipment_create, name="shipment_create"),
+    path("pedidos/<uuid:order_id>/envio/editar/", views.shipment_update, name="shipment_update"),
     path("pedidos/<uuid:order_id>/envio/despachar/", views.shipment_ship, name="shipment_ship"),
     path("pedidos/<uuid:order_id>/envio/entregar/", views.shipment_deliver, name="shipment_deliver"),
     # Categories

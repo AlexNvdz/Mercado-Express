@@ -201,9 +201,7 @@ MOCK_ORDERS = [
 ]
 
 # Keyed by order_id -- mirrors GET /api/v1/shipments/order/{order_id}.
-# NOTE: the response shape for this endpoint isn't shown in API_CONTRACT.md
-# (only the POST request body is) -- see ENDPOINT SOLICITADO in
-# API_INTEGRATION_NOTES.md asking the backend to confirm/document it.
+# `status` uses the ShipmentStatus vocabulary (in_transit, not "shipped").
 MOCK_SHIPMENTS = {
     "00000000-0000-0000-0000-000000000701": {
         "id": "ship-1", "order_id": "00000000-0000-0000-0000-000000000701",
@@ -215,7 +213,7 @@ MOCK_SHIPMENTS = {
     "00000000-0000-0000-0000-000000000702": {
         "id": "ship-2", "order_id": "00000000-0000-0000-0000-000000000702",
         "carrier": "manual", "tracking_number": "MANUAL-0000000002",
-        "status": "shipped",
+        "status": "in_transit",
         "shipped_at": "2026-09-06T08:00:00Z",
         "delivered_at": None,
     },
@@ -229,4 +227,32 @@ MOCK_PAYMENTS = {
     "00000000-0000-0000-0000-000000000702": [
         {"id": "pay-2", "order_id": "00000000-0000-0000-0000-000000000702", "amount": "12900.00", "currency": "USD", "status": "completed", "provider": "manual", "method": "card", "paid_at": "2026-09-05T09:20:00Z"},
     ],
+}
+
+# Mirrors GET /api/v1/reports/summary (staff only), consistent with the seed
+# orders above: both are paid (delivered + shipped), nothing refunded yet.
+# Read-only -- services/reports.py never mutates it.
+MOCK_REPORT_SUMMARY = {
+    "net_revenue": "30600.00",
+    "gross_revenue": "30600.00",
+    "refunded_amount": "0.00",
+    "sale_count": 2,
+    "reversal_count": 0,
+    "orders_by_status": [
+        {"status": "pending", "count": 0},
+        {"status": "paid", "count": 0},
+        {"status": "preparing", "count": 0},
+        {"status": "shipped", "count": 1},
+        {"status": "delivered", "count": 1},
+        {"status": "cancelled", "count": 0},
+        {"status": "refunded", "count": 0},
+    ],
+    "top_products": [
+        {"product_id": "00000000-0000-0000-0000-000000000201", "name": "Arroz blanco 1kg", "sku": "SKU-ARR-001", "units_sold": 2, "revenue": "13000.00"},
+        {"product_id": "00000000-0000-0000-0000-000000000202", "name": "Aceite vegetal 1L", "sku": "SKU-ACE-001", "units_sold": 1, "revenue": "12900.00"},
+        {"product_id": "00000000-0000-0000-0000-000000000206", "name": "Leche entera 1L", "sku": "SKU-LEC-001", "units_sold": 1, "revenue": "4500.00"},
+    ],
+    "customer_count": 2,
+    "product_count": 8,
+    "generated_at": "2026-10-06T00:00:00Z",
 }
