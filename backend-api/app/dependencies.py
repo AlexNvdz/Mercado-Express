@@ -19,6 +19,11 @@ from app.models.enums import UserRole
 from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
+# For public endpoints with a staff-only option: the token is read if sent,
+# but its absence is not an error by itself (see ensure_staff).
+optional_oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_PREFIX}/auth/login", auto_error=False
+)
 
 
 async def get_current_user(
@@ -60,6 +65,21 @@ def require_roles(*roles: UserRole) -> Callable[[User], User]:
 
 require_admin = require_roles(UserRole.ADMIN)
 require_staff = require_roles(UserRole.ADMIN, UserRole.EMPLOYEE)
+
+_STAFF_ROLES = (UserRole.ADMIN, UserRole.EMPLOYEE)
+
+
+async def ensure_staff(token: str | None, db: AsyncSession) -> User:
+    """For a staff-only option on an otherwise public endpoint (e.g.
+    `GET /products?include_inactive=true`): 401 without a valid token, 403
+    for a non-staff user. Call it only when the option is requested, so the
+    public form of the endpoint never looks at the token."""
+    if token is None:
+        raise AuthenticationError("Not authenticated.")
+    user = await get_current_user(token, db)
+    if user.role not in _STAFF_ROLES:
+        raise AuthorizationError(f"Role '{user.role}' is not permitted to perform this action.")
+    return user
 
 
 class PaginationParams(BaseModel):

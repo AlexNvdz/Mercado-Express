@@ -12,6 +12,7 @@ Payment, preparation, dispatch and delivery are separate services/routers
 
 import secrets
 import uuid
+from collections.abc import Collection
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
@@ -19,13 +20,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.exceptions import InvalidStateTransitionError, NotFoundError, ValidationAppError
-from app.models.enums import OrderStatus, SaleKind, ShipmentStatus
+from app.models.enums import OrderStatus, OrderStatusChangeSource, SaleKind, ShipmentStatus
 from app.models.order import Order
 from app.models.order_item import OrderItem
+from app.models.order_status_change import OrderStatusChange
 from app.models.sale import Sale
 from app.repositories.address_repository import AddressRepository
 from app.repositories.inventory_repository import InventoryRepository
 from app.repositories.order_repository import OrderRepository
+from app.repositories.order_status_change_repository import OrderStatusChangeRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.sale_repository import SaleRepository
 from app.repositories.shipment_repository import ShipmentRepository
@@ -73,6 +76,7 @@ class OrderService:
         self.addresses = AddressRepository(db)
         self.sales = SaleRepository(db)
         self.shipments = ShipmentRepository(db)
+        self.status_changes = OrderStatusChangeRepository(db)
 
     async def create_order(self, customer_id: uuid.UUID, data: OrderCreate) -> Order:
         if data.shipping_address_id is not None:
@@ -127,7 +131,13 @@ class OrderService:
         for line_item in line_items:
             self.db.add(OrderItem(order_id=order.id, **line_item))
 
-        await self.db.flush()
+        await self.status_changes.record(
+            order_id=order.id,
+            from_status=None,
+            to_status=OrderStatus.PENDING,
+            source=OrderStatusChangeSource.ORDER_CREATED,
+            actor_id=customer_id,
+        )
         loaded = await self.orders.get_with_items(order.id)
         assert loaded is not None
         return loaded
@@ -144,17 +154,29 @@ class OrderService:
             raise NotFoundError(f"Order {order_id} not found.")
         return order
 
-    async def list_for_customer(
-        self, customer_id: uuid.UUID, *, offset: int, limit: int
+    async def list_orders(
+        self,
+        *,
+        customer_id: uuid.UUID | None,
+        statuses: Collection[OrderStatus] | None,
+        offset: int,
+        limit: int,
     ) -> tuple[list[Order], int]:
-        items = await self.orders.list_for_customer(customer_id, offset=offset, limit=limit)
-        total = await self.orders.count(filters=[Order.customer_id == customer_id])
+        """`customer_id=None` lists every customer's orders (staff); an empty
+        or None `statuses` means any status. `total` counts the same filters."""
+        filters: list[Any] = []
+        if customer_id is not None:
+            filters.append(Order.customer_id == customer_id)
+        if statuses:
+            filters.append(Order.status.in_(set(statuses)))
+        items = await self.orders.list_filtered(filters=filters, offset=offset, limit=limit)
+        total = await self.orders.count(filters=filters)
         return items, total
 
-    async def list_all(self, *, offset: int, limit: int) -> tuple[list[Order], int]:
-        items = await self.orders.list_all(offset=offset, limit=limit)
-        total = await self.orders.count()
-        return items, total
+    async def history(self, order_id: uuid.UUID) -> list[OrderStatusChange]:
+        if await self.orders.get(order_id) is None:
+            raise NotFoundError(f"Order {order_id} not found.")
+        return await self.status_changes.list_for_order(order_id)
 
     async def _get_locked(self, order_id: uuid.UUID) -> Order:
         order = await self.orders.get_with_items(order_id, for_update=True)
@@ -162,7 +184,14 @@ class OrderService:
             raise NotFoundError(f"Order {order_id} not found.")
         return order
 
-    async def transition_status(self, order_id: uuid.UUID, new_status: OrderStatus) -> Order:
+    async def transition_status(
+        self,
+        order_id: uuid.UUID,
+        new_status: OrderStatus,
+        *,
+        actor_id: uuid.UUID | None,
+        source: OrderStatusChangeSource = OrderStatusChangeSource.MANUAL,
+    ) -> Order:
         order = await self._get_locked(order_id)
         allowed = _ALLOWED_TRANSITIONS.get(order.status, set())
         if new_status not in allowed:
@@ -180,6 +209,13 @@ class OrderService:
             if shipment is not None and shipment.status in _UNDISPATCHED_SHIPMENT_STATUSES:
                 shipment.status = ShipmentStatus.CANCELLED
 
+        await self.status_changes.record(
+            order_id=order.id,
+            from_status=order.status,
+            to_status=new_status,
+            source=source,
+            actor_id=actor_id,
+        )
         order.status = new_status
         await self.db.flush()
         # `updated_at` has onupdate=func.now(): the column is left expired
@@ -208,7 +244,11 @@ class OrderService:
             {"order_id": order.id, "kind": SaleKind.REVERSAL, "total_amount": -sale.total_amount}
         )
 
-    async def cancel(self, order_id: uuid.UUID, customer_id: uuid.UUID | None = None) -> Order:
+    async def cancel(
+        self, order_id: uuid.UUID, *, actor_id: uuid.UUID | None, customer_id: uuid.UUID | None = None
+    ) -> Order:
+        """POST /orders/{id}/cancel. `customer_id` restricts it to that
+        customer's own order (None when staff call it)."""
         order = await self._get_locked(order_id)
         if customer_id is not None and order.customer_id != customer_id:
             raise NotFoundError(f"Order {order_id} not found.")
@@ -216,4 +256,9 @@ class OrderService:
             raise ValidationAppError(
                 f"Order in status '{order.status}' can no longer be cancelled by the customer."
             )
-        return await self.transition_status(order_id, OrderStatus.CANCELLED)
+        return await self.transition_status(
+            order_id,
+            OrderStatus.CANCELLED,
+            actor_id=actor_id,
+            source=OrderStatusChangeSource.CUSTOMER_CANCEL,
+        )

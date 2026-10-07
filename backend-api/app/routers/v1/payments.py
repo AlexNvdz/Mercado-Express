@@ -28,7 +28,7 @@ async def create_payment(
         order = await OrderService(db).get(data.order_id)
         if order.customer_id != current_user.id:
             raise NotFoundError(f"Order {data.order_id} not found.")
-    payment = await PaymentService(db).create_payment(data)
+    payment = await PaymentService(db).create_payment(data, actor_id=current_user.id)
     return PaymentOut.model_validate(payment)
 
 

@@ -11,10 +11,11 @@ from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import InvalidStateTransitionError, NotFoundError
-from app.models.enums import OrderStatus, PaymentStatus, SaleKind
+from app.models.enums import OrderStatus, OrderStatusChangeSource, PaymentStatus, SaleKind
 from app.models.payment import Payment
 from app.models.sale import Sale
 from app.repositories.order_repository import OrderRepository
+from app.repositories.order_status_change_repository import OrderStatusChangeRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.schemas.payment import PaymentCreate
 
@@ -41,9 +42,10 @@ class PaymentService:
         self.db = db
         self.payments = PaymentRepository(db)
         self.orders = OrderRepository(db)
+        self.status_changes = OrderStatusChangeRepository(db)
         self.gateway = gateway or ManualPaymentGateway()
 
-    async def create_payment(self, data: PaymentCreate) -> Payment:
+    async def create_payment(self, data: PaymentCreate, *, actor_id: uuid.UUID | None) -> Payment:
         order = await self.orders.get(data.order_id)
         if order is None:
             raise NotFoundError(f"Order {data.order_id} not found.")
@@ -67,6 +69,13 @@ class PaymentService:
         payment.provider_reference = reference
         if status == PaymentStatus.COMPLETED:
             payment.paid_at = datetime.now(UTC)
+            await self.status_changes.record(
+                order_id=order.id,
+                from_status=order.status,
+                to_status=OrderStatus.PAID,
+                source=OrderStatusChangeSource.PAYMENT,
+                actor_id=actor_id,
+            )
             order.status = OrderStatus.PAID
             self.db.add(Sale(order_id=order.id, kind=SaleKind.SALE, total_amount=order.total_amount))
         # A failed payment leaves the order `pending` (no separate

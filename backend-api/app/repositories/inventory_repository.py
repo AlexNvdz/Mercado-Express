@@ -13,11 +13,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import InsufficientStockError, NotFoundError
 from app.models.inventory import Inventory
+from app.models.product import Product
 from app.repositories.base import BaseRepository
 
 # Shared predicate for "needs restocking": available stock at or below the
 # product's own reorder level.
 _LOW_STOCK = Inventory.quantity_on_hand - Inventory.quantity_reserved <= Inventory.reorder_level
+# Rows of products still on sale. A subquery rather than a join, so the
+# same predicate also works in BaseRepository.count().
+_ACTIVE_PRODUCT = Inventory.product_id.in_(select(Product.id).where(Product.is_active.is_(True)))
 
 
 class InventoryRepository(BaseRepository[Inventory]):
@@ -28,19 +32,25 @@ class InventoryRepository(BaseRepository[Inventory]):
         result = await self.db.execute(select(Inventory).where(Inventory.product_id == product_id))
         return result.scalar_one_or_none()
 
-    async def list_filtered(
-        self, *, offset: int = 0, limit: int = 20, low_stock: bool = False
-    ) -> list[Inventory]:
-        stmt = select(Inventory)
+    @staticmethod
+    def _filters(*, low_stock: bool, include_inactive: bool) -> list[Any]:
+        filters: list[Any] = []
         if low_stock:
-            stmt = stmt.where(_LOW_STOCK)
+            filters.append(_LOW_STOCK)
+        if not include_inactive:
+            filters.append(_ACTIVE_PRODUCT)
+        return filters
+
+    async def list_filtered(
+        self, *, offset: int = 0, limit: int = 20, low_stock: bool = False, include_inactive: bool = False
+    ) -> list[Inventory]:
+        stmt = select(Inventory).where(*self._filters(low_stock=low_stock, include_inactive=include_inactive))
         stmt = stmt.order_by(Inventory.updated_at.desc()).offset(offset).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def count_filtered(self, *, low_stock: bool = False) -> int:
-        filters: list[Any] = [_LOW_STOCK] if low_stock else []
-        return await self.count(filters=filters)
+    async def count_filtered(self, *, low_stock: bool = False, include_inactive: bool = False) -> int:
+        return await self.count(filters=self._filters(low_stock=low_stock, include_inactive=include_inactive))
 
     async def get_by_product_id_locked(self, product_id: uuid.UUID) -> Inventory:
         result = await self.db.execute(
