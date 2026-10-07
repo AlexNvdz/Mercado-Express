@@ -8,7 +8,7 @@
         <h1 class="hero__title">El mercado de la semana, sin salir de casa</h1>
         <p class="hero__lead">Arma tu pedido con stock real por producto, paga al confirmar y mira en qué paso va tu envío hasta que llega a tu puerta.</p>
         <div class="hero__actions">
-            <a class="btn btn--signal btn--lg" href="{% url 'catalog:list' %}">Empezar a comprar</a>
+            <a class="btn btn--lg" href="{% url 'catalog:list' %}">Empezar a comprar</a>
             {% if is_api_authenticated %}
             <a class="btn btn--secondary btn--lg" href="{% url 'orders:list' %}">Ver mis pedidos</a>
             {% else %}
