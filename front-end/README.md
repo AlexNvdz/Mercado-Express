@@ -27,6 +27,10 @@ apps/
                     direcciones con predeterminada)
   orders/          checkout, historial (filtro por estado, repetir pedido),
                     detalle con tracker visual del pedido
+  adminpanel/      panel del personal en /panel/: resumen (ingresos netos,
+                    stock bajo), pedidos (filtro, cambio de estado, envío
+                    con guía, historial), categorías, inventario (ajustes
+                    con motivo, historial, productos inactivos), clientes
 services/          única capa que habla HTTP con el backend
   api_client.py    cliente HTTP genérico (httpx), maneja errores/timeouts
   auth.py          registro/login (JWT)/refresh/sesión
@@ -35,7 +39,8 @@ services/          única capa que habla HTTP con el backend
   inventory.py     disponibilidad de stock
   orders.py        pedidos (crear, listar, detalle, cancelar)
   payments.py      pagos (gateway manual del backend)
-  shipments.py     seguimiento de envío
+  shipments.py     envíos (crear con guía, editar, despachar, entregar)
+  reports.py       datos del resumen del panel (GET /reports/summary)
   mock_data.py     datos usados solo por la suite de tests (ver conftest.py)
 templates/         plantillas Django (base + partials + una carpeta por app)
 static/            CSS/JS propios (whitenoise sirve staticfiles)
@@ -55,7 +60,19 @@ favoritos (heart toggle, estado de sesión); carrito con actualización en
 vivo; checkout con selección/alta de dirección de envío y pago automático
 (gateway manual del backend); historial de pedidos con pestañas por estado
 y "repetir pedido"; detalle de pedido con tracker visual del ciclo de vida,
-pago y envío; perfil editable y libreta de direcciones con predeterminada.
+pago y envío; perfil editable y libreta de direcciones con predeterminada. Los productos
+inactivos se muestran como «No disponible» y no se pueden comprar.
+
+Panel del personal (`/panel/`, roles `employee`/`admin`): resumen con
+ingresos netos (ventas menos reembolsos) y stock bajo; pedidos con filtro
+por estado, cambio manual de estado, envío con transportadora y número de
+guía, e historial de cambios; categorías; inventario con ajustes (con
+motivo), historial por producto y productos inactivos; clientes. Los
+productos se administran en `/catalogo/admin/`.
+
+Diseño: una sola hoja de estilos (`static/css/base.css`) con paleta clara
+de verdes y blanco; el footer queda siempre abajo aunque la página sea
+corta.
 
 ## Requisitos
 
@@ -97,7 +114,8 @@ sin necesidad de un backend real levantado. Cubren: páginas (home, catálogo,
 carrito, cuenta, direcciones, pedidos), la capa de servicios
 (`services/api_client.py` con HTTP simulado vía `unittest.mock`, y cada
 módulo de `services/`), autenticación basada en sesión (par de tokens JWT),
-el carrito, checkout (dirección + pago automático) y cancelación de pedidos.
+el carrito, checkout (dirección + pago automático), cancelación de pedidos
+y el panel del personal (resumen, pedidos, envíos, inventario, historiales).
 
 ## Docker
 
