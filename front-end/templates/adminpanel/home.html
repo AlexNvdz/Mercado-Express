@@ -16,17 +16,12 @@
     </div>
 </div>
 
-{% if stats.orders_capped %}
-<div class="notice notice--warning" style="margin-bottom:16px;">
-    <div><strong>Cifras aproximadas.</strong> Hay más pedidos de los que este resumen lee de una vez, así que se calcula sobre los más recientes.</div>
-</div>
-{% endif %}
-
 <div class="stat-grid">
     <div class="stat-card stat-card--feature">
-        <div class="stat-card__label">Ingresos de pedidos pagados</div>
-        <div class="stat-card__value">${{ stats.revenue_total|money }}</div>
-        <div class="stat-card__hint">Suma de pedidos pagados en adelante</div>
+        <div class="stat-card__label">Ingresos netos</div>
+        <div class="stat-card__value">${{ stats.net_revenue|money }}</div>
+        <div class="stat-card__hint">Brutos ${{ stats.gross_revenue|money }} · Reembolsos ${{ stats.refunded_amount|money }}</div>
+        <div class="stat-card__hint">{{ stats.sale_count }} venta{{ stats.sale_count|pluralize }} · {{ stats.reversal_count }} reembolsada{{ stats.reversal_count|pluralize }}</div>
     </div>
     <div class="stat-card">
         <div class="stat-card__label">Pedidos</div>
@@ -34,7 +29,7 @@
         <div class="stat-card__hint">{{ stats.orders_by_status.pending|default:0 }} pendientes de pago</div>
     </div>
     <div class="stat-card">
-        <div class="stat-card__label">Productos publicados</div>
+        <div class="stat-card__label">Productos</div>
         <div class="stat-card__value">{{ stats.total_products }}</div>
         <div class="stat-card__hint"><a href="{% url 'catalog:admin_list' %}">Administrar</a></div>
     </div>
@@ -105,10 +100,10 @@
         {% if stats.top_products %}
         <div class="table-card">
         <table class="table">
-            <thead><tr><th>Producto</th><th class="num">Unidades vendidas</th></tr></thead>
+            <thead><tr><th>Producto</th><th class="num">Unidades vendidas</th><th class="num">Ingresos</th></tr></thead>
             <tbody>
                 {% for row in stats.top_products %}
-                <tr><td class="cell-title">{{ row.name }}</td><td class="num">{{ row.quantity_sold }}</td></tr>
+                <tr><td class="cell-title">{{ row.name }}</td><td class="num">{{ row.units_sold }}</td><td class="num">${{ row.revenue|money }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -130,7 +125,7 @@
             <tbody>
                 {% for row in stats.low_stock %}
                 <tr>
-                    <td class="cell-title">{{ row.product.name }}</td>
+                    <td class="cell-title">{{ row.name }}</td>
                     <td class="num"><span class="stock-badge stock-badge--{% if row.availability.quantity_available <= 0 %}out{% else %}low{% endif %}">{{ row.availability.quantity_available }}</span></td>
                     <td class="num">{{ row.availability.reorder_level }}</td>
                 </tr>
@@ -138,6 +133,9 @@
             </tbody>
         </table>
         </div>
+        {% if stats.low_stock_count > stats.low_stock|length %}
+        <p class="muted mt-md">Se muestran los {{ stats.low_stock|length }} con menos stock de {{ stats.low_stock_count }}.</p>
+        {% endif %}
         {% else %}
         <div class="empty-state"><h2>Todo el stock está en orden</h2><p>Ningún producto está por debajo de su nivel de reorden.</p></div>
         {% endif %}

@@ -6,7 +6,7 @@
 <div class="section-head">
     <div>
         <h1 class="section-title">Inventario</h1>
-        <p class="section-sub">Ajusta con cantidades positivas para reponer o negativas para descontar.</p>
+        <p class="section-sub">Ajusta con cantidades positivas para reponer o negativas para descontar.{% if total %} {{ total }} producto{{ total|pluralize }}.{% endif %}</p>
     </div>
 </div>
 
@@ -40,6 +40,7 @@
             <td>
                 <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_adjust' row.product.id %}">
                     {% csrf_token %}
+                    <input type="hidden" name="page" value="{{ page }}">
                     <label class="visually-hidden" for="{{ row.adjust_form.delta.id_for_label }}">Cantidad a ajustar de {{ row.product.name }}</label>
                     {{ row.adjust_form.delta }}
                     <button type="submit" class="btn btn--secondary btn--sm">Ajustar</button>
@@ -48,6 +49,7 @@
             <td>
                 <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_set_reorder' row.product.id %}">
                     {% csrf_token %}
+                    <input type="hidden" name="page" value="{{ page }}">
                     <label class="visually-hidden" for="{{ row.reorder_form.reorder_level.id_for_label }}">Nivel de reorden de {{ row.product.name }}</label>
                     {{ row.reorder_form.reorder_level }}
                     <button type="submit" class="btn btn--secondary btn--sm">Guardar</button>
@@ -61,6 +63,18 @@
     </tbody>
 </table>
 </div>
+
+{% if pages > 1 %}
+<nav class="pagination" aria-label="Paginación">
+    {% if has_previous %}
+    <a class="btn btn--secondary btn--sm" href="?page={{ page|add:"-1" }}">Anterior</a>
+    {% endif %}
+    <span class="pagination__info">Página {{ page }} de {{ pages }}</span>
+    {% if has_next %}
+    <a class="btn btn--secondary btn--sm" href="?page={{ page|add:"1" }}">Siguiente</a>
+    {% endif %}
+</nav>
+{% endif %}
 {% else %}
 <div class="empty-state">
     <h2>Todavía no hay productos</h2>

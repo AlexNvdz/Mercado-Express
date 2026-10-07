@@ -56,3 +56,28 @@ def test_cancel_order_sets_status():
     order = orders.create_order("any", items, shipping_address_id=ADDRESS_ID)
     result = orders.cancel_order("any", order["id"])
     assert result["status"] == "cancelled"
+
+
+def test_transitions_mirror_backend_table():
+    """Mirror of backend-api's order_service._ALLOWED_TRANSITIONS: shipped
+    and delivered are reached only through the shipment steps, never by a
+    manual override.
+    """
+    assert orders.ORDER_TRANSITIONS == {
+        "pending": ["cancelled"],
+        "paid": ["preparing", "cancelled", "refunded"],
+        "preparing": ["cancelled"],
+        "shipped": [],
+        "delivered": [],
+        "cancelled": [],
+        "refunded": [],
+    }
+    assert set(orders.ORDER_TRANSITIONS) == set(orders.ORDER_STATUSES)
+
+
+def test_update_status_rejects_transition_outside_table():
+    items = [{"product_id": ARROZ_ID, "quantity": 1}]
+    order = orders.create_order("any", items, shipping_address_id=ADDRESS_ID)
+    with pytest.raises(ApiConflictError):
+        orders.update_status("any", order["id"], "shipped")
+    assert order["status"] == "pending"

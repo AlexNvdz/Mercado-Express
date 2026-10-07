@@ -12,6 +12,7 @@ talks to backend-api only through services/*.py, per CLAUDE.md.
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.accounts.decorators import api_staff_required
@@ -30,6 +31,7 @@ from .forms import (
     OrderStatusForm,
     ReorderLevelForm,
     ShipmentCreateForm,
+    ShipmentUpdateForm,
 )
 
 
@@ -101,6 +103,12 @@ def order_detail(request, order_id):
     order = {**order, "items": _enrich_items_with_product_names(order["items"])}
     customer = customers_service.get_customer(token, order["customer_id"])
     shipment = shipments_service.get_shipment_for_order(token, str(order_id))
+    can_edit_shipment = shipment is not None and shipments_service.is_editable(shipment)
+    shipment_update_form = None
+    if can_edit_shipment:
+        shipment_update_form = ShipmentUpdateForm(
+            initial={"carrier": shipment["carrier"], "tracking_number": shipment["tracking_number"]}
+        )
 
     context = {
         "order": order,
@@ -109,8 +117,10 @@ def order_detail(request, order_id):
         "status_form": OrderStatusForm(current_status=order["status"]),
         "next_statuses": orders_service.next_statuses(order["status"]),
         "shipment_form": ShipmentCreateForm(),
-        "can_create_shipment": order["status"] == "paid" and shipment is None,
-        "can_ship": shipment is not None and shipment["status"] in ("pending", "preparing"),
+        "can_create_shipment": shipment is None and shipments_service.can_create_shipment(order["status"]),
+        "can_edit_shipment": can_edit_shipment,
+        "shipment_update_form": shipment_update_form,
+        "can_ship": shipment is not None and shipment["status"] == "preparing" and order["status"] == "preparing",
         "can_deliver": shipment is not None and shipment["status"] == "in_transit",
         "active_nav": "orders",
     }
@@ -153,14 +163,45 @@ def shipment_create(request, order_id):
     if form.is_valid():
         try:
             shipments_service.create_shipment(
-                token, str(order_id), order["shipping_address_id"], carrier=form.cleaned_data["carrier"] or None
+                token, str(order_id), order["shipping_address_id"], **form.to_api_kwargs()
             )
         except ApiConflictError:
-            messages.error(request, "No se pudo crear el envío: el pedido debe estar pagado.")
+            messages.error(
+                request, "No se pudo crear el envío: el pedido debe estar pagado o en preparación y sin envío."
+            )
+        except ApiValidationError:
+            messages.error(request, "Revisa la transportadora y el número de guía.")
         except ApiError:
             messages.error(request, "No fue posible crear el envío.")
         else:
             messages.success(request, "Envío creado.")
+    else:
+        messages.error(request, "Revisa la transportadora y el número de guía.")
+    return redirect("adminpanel:order_detail", order_id=order_id)
+
+
+@api_staff_required
+@require_POST
+def shipment_update(request, order_id):
+    token = auth_service.get_access_token(request)
+    shipment = shipments_service.get_shipment_for_order(token, str(order_id))
+    if shipment is None:
+        raise Http404("Envío no encontrado")
+
+    form = ShipmentUpdateForm(request.POST)
+    if form.is_valid():
+        try:
+            shipments_service.update_shipment(token, shipment["id"], str(order_id), **form.to_api_kwargs())
+        except ApiConflictError:
+            messages.error(request, "El envío ya fue despachado o cancelado: no se pueden cambiar sus datos.")
+        except ApiValidationError:
+            messages.error(request, "Revisa la transportadora y el número de guía.")
+        except ApiError:
+            messages.error(request, "No fue posible actualizar el envío.")
+        else:
+            messages.success(request, "Datos del envío actualizados.")
+    else:
+        messages.error(request, "Revisa la transportadora y el número de guía.")
     return redirect("adminpanel:order_detail", order_id=order_id)
 
 
@@ -173,6 +214,8 @@ def shipment_ship(request, order_id):
         raise Http404("Envío no encontrado")
     try:
         shipments_service.ship_shipment(token, shipment["id"], str(order_id))
+    except ApiConflictError:
+        messages.error(request, "Solo se puede despachar un envío en preparación de un pedido en preparación.")
     except ApiError:
         messages.error(request, "No fue posible marcar el envío como despachado.")
     else:
@@ -189,6 +232,8 @@ def shipment_deliver(request, order_id):
         raise Http404("Envío no encontrado")
     try:
         shipments_service.deliver_shipment(token, shipment["id"], str(order_id))
+    except ApiConflictError:
+        messages.error(request, "Solo se puede marcar como entregado un envío en camino.")
     except ApiError:
         messages.error(request, "No fue posible marcar el envío como entregado.")
     else:
@@ -289,12 +334,40 @@ def category_delete(request, category_id):
 # --- Inventory --------------------------------------------------------
 
 
+INVENTORY_PAGE_SIZE = 50
+
+
+def _page_number(value) -> int:
+    try:
+        return max(1, int(value))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _redirect_to_inventory_page(request):
+    """Back to the inventory page the form was posted from (hidden `page`
+    field), not always page 1.
+    """
+    page = _page_number(request.POST.get("page"))
+    url = reverse("adminpanel:inventory_list")
+    return redirect(f"{url}?page={page}" if page > 1 else url)
+
+
 @api_staff_required
 def inventory_list(request):
-    products = products_service.list_products(page_size=100)["items"]
+    """One page of products (GET /products, by name) joined to their stock
+    rows from the batched GET /inventory -- no per-product request. Products
+    with no inventory row still get a row ("Sin registro de inventario").
+    """
+    token = auth_service.get_access_token(request)
+    page = _page_number(request.GET.get("page"))
+    result = products_service.list_products(page=page, page_size=INVENTORY_PAGE_SIZE)
+    products = result["items"]
+    availability_by_id = inventory_service.availability_by_product(token, [p["id"] for p in products])
+
     rows = []
     for product in products:
-        availability = inventory_service.get_availability(product["id"])
+        availability = availability_by_id.get(product["id"])
         rows.append(
             {
                 "product": product,
@@ -306,7 +379,16 @@ def inventory_list(request):
                 ),
             }
         )
-    return render(request, "adminpanel/inventory_list.html", {"rows": rows, "active_nav": "inventory"})
+    context = {
+        "rows": rows,
+        "total": result["total"],
+        "page": result["page"],
+        "pages": result["pages"],
+        "has_previous": result["page"] > 1,
+        "has_next": result["page"] < result["pages"],
+        "active_nav": "inventory",
+    }
+    return render(request, "adminpanel/inventory_list.html", context)
 
 
 @api_staff_required
@@ -325,7 +407,7 @@ def inventory_adjust(request, product_id):
             messages.success(request, "Inventario ajustado.")
     else:
         messages.error(request, "Cantidad inválida.")
-    return redirect("adminpanel:inventory_list")
+    return _redirect_to_inventory_page(request)
 
 
 @api_staff_required
@@ -346,7 +428,7 @@ def inventory_set_reorder(request, product_id):
             messages.success(request, "Nivel de reorden actualizado.")
     else:
         messages.error(request, "Nivel inválido.")
-    return redirect("adminpanel:inventory_list")
+    return _redirect_to_inventory_page(request)
 
 
 # --- Customers --------------------------------------------------------

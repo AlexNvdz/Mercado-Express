@@ -56,22 +56,38 @@
         <dl class="kv">
             <dt>Estado</dt><dd><span class="status status--{{ shipment.status }}">{{ shipment.status|shipment_status_label }}</span></dd>
             <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
-            <dt>Guía</dt><dd>{{ shipment.tracking_number|default:"Sin asignar" }}</dd>
+            <dt>Guía</dt><dd>{% if shipment.tracking_number %}{{ shipment.tracking_number }}{% elif can_edit_shipment %}Sin asignar (se genera al despachar si la dejas vacía){% else %}Sin asignar{% endif %}</dd>
         </dl>
+        {% if can_edit_shipment %}
+        <form method="post" action="{% url 'adminpanel:shipment_update' order.id %}" class="mt-md">
+            {% csrf_token %}
+            {% for field in shipment_update_form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn--secondary btn--sm">Guardar datos del envío</button>
+        </form>
+        {% endif %}
+        {% elif can_create_shipment %}
+        <p class="muted">Todavía no tiene un envío creado. La transportadora y la guía se pueden corregir hasta que se despache.</p>
+        <form method="post" action="{% url 'adminpanel:shipment_create' order.id %}" class="mt-md">
+            {% csrf_token %}
+            {% for field in shipment_form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn--sm">Crear envío</button>
+        </form>
         {% else %}
-        <p class="muted">Todavía no tiene un envío creado.</p>
+        <p class="muted">Todavía no tiene un envío creado. Se puede crear cuando el pedido está pagado o en preparación.</p>
         {% endif %}
 
-        {% if can_create_shipment or can_ship or can_deliver %}
+        {% if can_ship or can_deliver %}
         <div class="actions mt-md">
-            {% if can_create_shipment %}
-            <form method="post" action="{% url 'adminpanel:shipment_create' order.id %}" class="admin-inline">
-                {% csrf_token %}
-                <label class="visually-hidden" for="{{ shipment_form.carrier.id_for_label }}">Transportadora</label>
-                <span class="form-field" style="margin:0;">{{ shipment_form.carrier }}</span>
-                <button type="submit" class="btn btn--sm">Crear envío</button>
-            </form>
-            {% endif %}
             {% if can_ship %}
             <form method="post" action="{% url 'adminpanel:shipment_ship' order.id %}">
                 {% csrf_token %}
@@ -110,13 +126,15 @@
         <div class="card">
             <h2 class="card__title">Cambiar estado manualmente</h2>
             {% if next_statuses %}
-            <p class="muted" style="margin-bottom:14px;">Para el flujo normal usa los botones de envío. Esto es para correcciones, y solo muestra los estados a los que este pedido puede pasar ahora.</p>
+            <p class="muted" style="margin-bottom:14px;">Esto es para correcciones y solo muestra los estados a los que este pedido puede pasar ahora. Despachar y entregar se hacen desde el envío.</p>
             <form method="post" action="{% url 'adminpanel:order_status_update' order.id %}" class="admin-inline">
                 {% csrf_token %}
                 <label class="visually-hidden" for="{{ status_form.status.id_for_label }}">Nuevo estado</label>
                 {{ status_form.status }}
                 <button type="submit" class="btn btn--secondary">Actualizar estado</button>
             </form>
+            {% elif order.status == "shipped" %}
+            <p class="muted">El pedido ya fue despachado. Márcalo como entregado desde el envío.</p>
             {% else %}
             <p class="muted">Este pedido está en un estado final ({{ order.status|order_status_label }}) y ya no admite cambios.</p>
             {% endif %}

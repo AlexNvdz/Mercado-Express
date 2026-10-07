@@ -12,16 +12,65 @@ tomadas del lado del frontend.
 | `services/auth.py` | `/auth/register`, `/auth/login` (form-encoded), `/auth/refresh`, `/auth/me` |
 | `services/customers.py` | `/customers/me` (GET/PATCH), `/customers/me/addresses` (CRUD) |
 | `services/products.py` | `/categories`, `/products` (+ `/{id}` de cada uno, `search=`) |
-| `services/inventory.py` | `/inventory/{product_id}` |
+| `services/inventory.py` | `/inventory` (staff, `low_stock=`), `/inventory/{product_id}` (+ `adjust`, PUT) |
 | `services/orders.py` | `/orders` (POST/GET), `/orders/{id}`, `/orders/{id}/cancel` |
 | `services/payments.py` | `/payments` (POST), `/payments/order/{id}` |
-| `services/shipments.py` | `/shipments/order/{id}` |
+| `services/shipments.py` | `/shipments/order/{id}` (GET/POST), `/shipments/{id}` (PATCH), `/shipments/{id}/ship`, `/shipments/{id}/deliver` |
+| `services/reports.py` | `/reports/summary` (staff) + `/inventory?low_stock=true` + `/orders` para el resumen del panel |
 
 `services/mock_data.py` sigue existiendo solo para que la suite de pruebas de
 este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=True` en todos los tests). En desarrollo/staging/producción
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
+
+## Cambios 2026-10-06: ingresos netos y flujo de envío
+
+Rama `feat/net-revenue-shipping-flow`. Formas acordadas con backend-api
+(ver `API_CONTRACT.md`):
+
+- **Resumen del panel (`/panel/`) ahora sale del backend.**
+  `services/reports.py` ya no pagina `GET /orders` (5 x 100) ni llama a
+  `GET /inventory/{id}` por producto. Usa `GET /reports/summary` (ingresos,
+  pedidos por estado, más vendidos, conteo de clientes/productos),
+  `GET /inventory?low_stock=true&page_size=100` (se muestran los 10 con menos
+  disponible, con el nombre resuelto vía `GET /products/{id}` porque
+  `InventoryOut` no trae nombre) y `GET /orders?page=1&page_size=8` para los
+  pedidos recientes. Desapareció el aviso de "cifras aproximadas".
+- **Ingresos netos.** Un pedido pagado que luego se cancela o reembolsa
+  genera un asiento de reversa negativo en el ledger de `Sale`. El resumen
+  expone `net_revenue` (lo que muestra la tarjeta principal),
+  `gross_revenue`, `refunded_amount` (positivo; `net = gross - refunded`),
+  `sale_count` (solo ventas) y `reversal_count`. `total_revenue` ya no
+  existe. `top_products` excluye pedidos revertidos.
+- **Guía de envío desde "En preparación".** Antes el envío solo se podía
+  crear con el pedido en `paid`; si el staff pasaba el pedido a mano a
+  `preparing`, nunca podía registrar la guía. Ahora
+  `POST /shipments/order/{id}` acepta `paid` o `preparing` (409 en otro
+  estado o si ya hay envío) con `{address_id, carrier, tracking_number}`, y
+  `PATCH /shipments/{id}` `{carrier, tracking_number}` corrige ambos hasta
+  el despacho (409 después). Vacío = `null`; si la guía sigue en `null` al
+  despachar, el backend genera `MANUAL-xxxxxxxxxx`. `/ship` exige pedido en
+  `preparing`.
+- **`ORDER_TRANSITIONS` sin `preparing -> shipped` ni `shipped -> delivered`.**
+  Esos pasos solo ocurren con despachar/entregar del envío (que además
+  descuentan el stock). Un pedido `shipped` no ofrece cambio manual; la
+  tarjeta lo explica. Cancelar/reembolsar a mano libera el stock reservado,
+  escribe la reversa si estaba pagado y pasa un envío no despachado a
+  `cancelled` (nuevo valor de `ShipmentStatus`, etiqueta "Cancelado"; la
+  página del cliente muestra "El envío se canceló junto con el pedido").
+- **Inventario del panel (`/panel/inventario/`) sin una llamada por
+  producto.** Antes hacía `GET /inventory/{id}` por cada producto y solo
+  miraba los primeros 100 productos. Ahora pagina la pantalla (50 productos
+  por página vía `GET /products`, orden por nombre) y cruza esa página con
+  `GET /inventory` (staff) usando
+  `services/inventory.py::availability_by_product`, que lee de a 100 (el
+  máximo del backend) y para en cuanto encontró todos los productos de la
+  página. Un producto sin fila de inventario sigue apareciendo ("Sin
+  registro de inventario"). Ajustar stock y nivel de reorden vuelven a la
+  misma página (campo oculto `page`). Ojo: `GET /products` solo lista
+  productos activos, así que un producto inactivo no aparece en esta
+  pantalla (igual que antes).
 
 ## Correcciones 2026-09-12 (estado de pedidos)
 

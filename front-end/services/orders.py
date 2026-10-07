@@ -54,18 +54,16 @@ ORDER_STATUS_LABELS = {
 }
 
 # Mirrors backend-api's order_service._ALLOWED_TRANSITIONS
-# (app/services/order_service.py) -- the staff status-override dropdown used
-# to list all 8 statuses regardless of the order's current one, so most
-# manual jumps a staff member picked were rejected by the backend with a 409
-# ("Transición de estado no válida"). Restricting the dropdown to only the
-# transitions the backend will actually accept fixes that. "paid" is reached
-# from "pending" by a completed payment (POST /payments), not listed here as
-# a manual-override target.
+# (app/services/order_service.py): the manual status override only offers
+# what the backend accepts, anything else is a 409. Only corrections live
+# here -- "paid" comes from a completed payment (POST /payments), "shipped"
+# and "delivered" only from the shipment dispatch/deliver steps
+# (services/shipments.py), so none of them is a manual-override target.
 ORDER_TRANSITIONS = {
     "pending": ["cancelled"],
     "paid": ["preparing", "cancelled", "refunded"],
-    "preparing": ["shipped", "cancelled"],
-    "shipped": ["delivered"],
+    "preparing": ["cancelled"],
+    "shipped": [],
     "delivered": [],
     "cancelled": [],
     "refunded": [],
@@ -74,8 +72,8 @@ ORDER_TRANSITIONS = {
 
 def next_statuses(current_status: str) -> list[str]:
     """Valid next values for the manual status-override form, given the
-    order's current status. Empty for terminal states (delivered/cancelled/
-    refunded) -- there is nothing left to transition to.
+    order's current status. Empty for shipped (only the shipment's deliver
+    step moves it on) and for terminal states (delivered/cancelled/refunded).
     """
     return ORDER_TRANSITIONS.get(current_status, [])
 
@@ -174,14 +172,20 @@ def cancel_order(token: str, order_id: str) -> dict:
 
 
 def update_status(token: str, order_id: str, status: str) -> dict:
-    """Staff only: force a status transition directly (see ORDER_STATUSES).
-    Prefer /payments and /shipments for the normal flow -- this is for
-    manual corrections (e.g. marking paid after an out-of-band payment).
+    """Staff only: manual correction, restricted to ORDER_TRANSITIONS (409
+    otherwise). /payments and /shipments drive the normal flow. Cancelling or
+    refunding releases reserved stock, writes a reversal ledger entry if the
+    order was paid, and cancels an undispatched shipment -- all backend-side.
     """
     if settings.API_USE_MOCKS:
         order = next((o for o in mock_data.MOCK_ORDERS if o["id"] == str(order_id)), None)
         if order is None:
             raise ApiConflictError("Pedido no encontrado.", status_code=404)
+        if status not in next_statuses(order["status"]):
+            raise ApiConflictError("Invalid status transition.", status_code=409)
         order["status"] = status
+        shipment = mock_data.MOCK_SHIPMENTS.get(str(order_id))
+        if status in ("cancelled", "refunded") and shipment and shipment["status"] in ("pending", "preparing"):
+            shipment["status"] = "cancelled"
         return order
     return api_client.patch(f"/api/v1/orders/{order_id}/status", token=token, json={"status": status})
