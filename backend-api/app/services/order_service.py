@@ -29,10 +29,11 @@ from app.repositories.product_repository import ProductRepository
 from app.schemas.order import OrderCreate
 
 # Allowed forward transitions. Cancellation is allowed from any pre-shipment
-# state; terminal states have no outgoing edges.
+# state; terminal states have no outgoing edges. `paid` is reached from
+# `pending` by PaymentService directly (a completed payment), not listed
+# here as a manual-override target.
 _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
-    OrderStatus.PENDING: {OrderStatus.AWAITING_PAYMENT, OrderStatus.CANCELLED},
-    OrderStatus.AWAITING_PAYMENT: {OrderStatus.PAID, OrderStatus.CANCELLED},
+    OrderStatus.PENDING: {OrderStatus.CANCELLED},
     OrderStatus.PAID: {OrderStatus.PREPARING, OrderStatus.CANCELLED, OrderStatus.REFUNDED},
     OrderStatus.PREPARING: {OrderStatus.SHIPPED, OrderStatus.CANCELLED},
     OrderStatus.SHIPPED: {OrderStatus.DELIVERED},
@@ -168,7 +169,7 @@ class OrderService:
         order = await self.get(order_id)
         if customer_id is not None and order.customer_id != customer_id:
             raise NotFoundError(f"Order {order_id} not found.")
-        if order.status not in (OrderStatus.PENDING, OrderStatus.AWAITING_PAYMENT):
+        if order.status != OrderStatus.PENDING:
             raise ValidationAppError(
                 f"Order in status '{order.status}' can no longer be cancelled by the customer."
             )

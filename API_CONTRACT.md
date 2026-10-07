@@ -149,7 +149,7 @@ Address body:
 | GET | `/categories` | none | Paginated list. |
 | GET | `/categories/{category_id}` | none | Get one. |
 | PATCH | `/categories/{category_id}` | staff | Partial update. |
-| DELETE | `/categories/{category_id}` | staff | Delete. |
+| DELETE | `/categories/{category_id}` | staff | Delete. `409` if any product still belongs to it; subcategories are kept with `parent_id` set to `null`. |
 
 ```json
 { "name": "Electronics", "description": "Gadgets and devices", "parent_id": null, "is_active": true }
@@ -226,12 +226,16 @@ adjusting by a delta.
 | POST | `/orders` | customer | Create an order: validates products, reserves stock, computes totals. |
 | GET | `/orders?page=&page_size=` | any user | Customers see only their own orders; staff see all. |
 | GET | `/orders/{order_id}` | any user | Get one (customers: only their own, else `404`). |
-| POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`/`awaiting_payment`); releases reserved stock. |
+| POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`); releases reserved stock. |
 | PATCH | `/orders/{order_id}/status` | staff | Force a status transition directly. |
 
-Order status lifecycle: `pending → awaiting_payment → paid → preparing → shipped → delivered`,
-with `cancelled` reachable from `pending`/`awaiting_payment`/`paid`/`preparing`,
-and `refunded` reachable from `paid`. Invalid transitions return `409`.
+7 statuses total: `pending`, `paid`, `preparing`, `shipped`, `delivered`,
+`cancelled`, `refunded` (no `awaiting_payment` -- removed 2026-09-12, see
+`alembic/versions/6bf0432e1cd9_*`; a failed payment now leaves the order
+`pending`, which was already retryable). Lifecycle: `pending → paid →
+preparing → shipped → delivered`, with `cancelled` reachable from
+`pending`/`paid`/`preparing`, and `refunded` reachable from `paid`. Invalid
+transitions return `409`.
 
 ```json
 // POST /orders request
@@ -250,6 +254,11 @@ and `refunded` reachable from `paid`. Invalid transitions return `409`.
   "customer_id": "...", "status": "pending",
   "subtotal": "39.98", "tax_amount": "0.00", "shipping_amount": "0.00", "total_amount": "39.98",
   "shipping_address_id": "c4a1...", "notes": "Leave at front door",
+  "shipping_address": {
+    "id": "c4a1...", "user_id": "...", "line1": "Calle 10 # 20-30", "line2": null,
+    "city": "Bogotá", "state": "Bogotá D.C.", "postal_code": "110111", "country": "CO",
+    "is_default": true, "created_at": "...", "updated_at": "..."
+  },
   "items": [
     { "id": "...", "product_id": "b3f2b6f0-...", "quantity": 2, "unit_price": "19.99", "line_total": "39.98" }
   ],
@@ -257,6 +266,11 @@ and `refunded` reachable from `paid`. Invalid transitions return `409`.
 }
 ```
 `409` if any item is out of stock — no partial reservation is made (all-or-nothing).
+
+`shipping_address` is the resolved address object (`null` if the order has no
+`shipping_address_id`) — added so staff can see where to ship without a
+separate address-lookup call; every `OrderOut` response (create, get, list,
+status update) includes it.
 
 ## `/api/v1/payments`
 
@@ -267,7 +281,7 @@ will not change this contract.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/payments` | customer | Pay for own order in `pending`/`awaiting_payment`. |
+| POST | `/payments` | customer | Pay for own order in `pending`. |
 | GET | `/payments/{payment_id}` | any user | Get one (customers: only for their own order). |
 | GET | `/payments/order/{order_id}` | any user | List payments for an order. |
 
@@ -337,7 +351,6 @@ include them even though earlier notes didn't have them confirmed.
   "sale_count": 12,
   "orders_by_status": [
     { "status": "pending", "count": 2 },
-    { "status": "awaiting_payment", "count": 0 },
     { "status": "paid", "count": 3 },
     { "status": "preparing", "count": 1 },
     { "status": "shipped", "count": 2 },

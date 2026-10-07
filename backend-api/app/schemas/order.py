@@ -5,6 +5,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.models.enums import OrderStatus
+from app.schemas.address import AddressOut
 
 
 class OrderItemCreate(BaseModel):
@@ -38,6 +39,7 @@ class OrderOut(BaseModel):
     shipping_amount: Decimal
     total_amount: Decimal
     shipping_address_id: uuid.UUID | None
+    shipping_address: AddressOut | None = None
     notes: str | None
     items: list[OrderItemOut]
     created_at: datetime

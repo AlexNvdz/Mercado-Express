@@ -15,7 +15,6 @@ class UserRole(StrEnum):
 
 class OrderStatus(StrEnum):
     PENDING = "pending"
-    AWAITING_PAYMENT = "awaiting_payment"
     PAID = "paid"
     PREPARING = "preparing"
     SHIPPED = "shipped"
