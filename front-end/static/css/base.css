@@ -632,7 +632,7 @@ img { max-width: 100%; display: block; }
 @keyframes ticket-in { from { opacity: 0; transform: translateY(18px) rotate(1.5deg); } to { opacity: 1; transform: rotate(-1.2deg); } }
 .ticket__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; background: var(--volt); color: #fff; }
 .ticket__id { font-family: var(--font-display); font-weight: 700; font-size: 0.98rem; letter-spacing: -0.01em; color: #fff; }
-.ticket__eta { padding: 2px 10px; border-radius: var(--r-pill); background: var(--signal); font-size: 0.78rem; font-weight: 600; color: var(--ink); }
+.ticket__eta { flex-shrink: 0; white-space: nowrap; padding: 2px 10px; border-radius: var(--r-pill); background: var(--signal); font-size: 0.78rem; font-weight: 600; color: var(--ink); }
 .ticket__body { padding: 18px 20px 8px; }
 .ticket__steps { list-style: none; margin: 0; padding: 0; }
 .ticket__step { position: relative; display: flex; gap: 14px; padding-bottom: 16px; }
@@ -648,7 +648,7 @@ img { max-width: 100%; display: block; }
 .ticket__total { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; }
 
 @media (max-width: 860px) {
-    .hero { grid-template-columns: 1fr; }
+    .hero { grid-template-columns: minmax(0, 1fr); }
     .ticket { max-width: 420px; }
 }
 @media (max-width: 520px) {
@@ -676,7 +676,7 @@ img { max-width: 100%; display: block; }
     .trust-bar__item:nth-child(n + 3) { border-top: 1px solid var(--line); }
 }
 @media (max-width: 520px) {
-    .trust-bar { grid-template-columns: 1fr; }
+    .trust-bar { grid-template-columns: minmax(0, 1fr); }
     .trust-bar__item + .trust-bar__item { border-left: 0; border-top: 1px solid var(--line); }
 }
 
@@ -741,7 +741,7 @@ img { max-width: 100%; display: block; }
 }
 .step__title { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; margin-bottom: 4px; }
 .step__text { font-size: 0.9rem; color: var(--text-2); }
-@media (max-width: 800px) { .steps { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .steps { grid-template-columns: minmax(0, 1fr); } }
 
 /* Kept for compatibility with any page still using the old benefit list */
 .benefits { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
@@ -785,7 +785,7 @@ img { max-width: 100%; display: block; }
 .category-pill.is-active { background: var(--volt); border-color: var(--volt); color: #fff; }
 
 @media (max-width: 900px) {
-    .catalog-layout { grid-template-columns: 1fr; }
+    .catalog-layout { grid-template-columns: minmax(0, 1fr); }
     .catalog-filter { display: none; }
     .category-pills { display: flex; }
 }
@@ -902,7 +902,7 @@ img { max-width: 100%; display: block; }
 .product-detail__cart-form { display: flex; flex: 1 1 auto; gap: 10px; }
 .product-detail__cart-form .btn { flex: 1; }
 @media (max-width: 860px) {
-    .product-detail { grid-template-columns: 1fr; }
+    .product-detail { grid-template-columns: minmax(0, 1fr); }
     .product-detail__media { border-right: 0; border-bottom: 1px solid var(--line); }
 }
 
@@ -998,14 +998,17 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 .auth-shell__form h1 { font-size: 1.6rem; margin-bottom: 6px; }
 .auth-shell__form .section-sub { margin-bottom: 24px; }
 @media (max-width: 780px) {
-    .auth-shell { grid-template-columns: 1fr; }
+    .auth-shell { grid-template-columns: minmax(0, 1fr); }
     .auth-shell__brand { display: none; }
 }
 
 /* ==========================================================================
    Tables
    ========================================================================== */
-.table-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); overflow-x: auto; }
+/* position: relative makes the card the containing block of absolutely
+   positioned descendants (e.g. .visually-hidden form labels), so they are
+   clipped by its horizontal scroll instead of widening the whole page. */
+.table-card { position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); overflow-x: auto; }
 .table { width: 100%; min-width: 560px; border-collapse: collapse; }
 .table th, .table td { padding: 13px 16px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
 .table th { font-size: 0.8rem; font-weight: 600; color: var(--text-2); background: var(--paper-2); white-space: nowrap; }
@@ -1025,7 +1028,7 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
    Cart + checkout
    ========================================================================== */
 .buy-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
-@media (max-width: 960px) { .buy-layout { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .buy-layout { grid-template-columns: minmax(0, 1fr); } }
 
 .cart-list { padding: 0 20px; }
 .cart-item { display: flex; align-items: center; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
@@ -1047,7 +1050,7 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 @media (min-width: 961px) { .buy-layout .cart-summary { position: sticky; top: calc(var(--header-h) + 16px); } }
 
 .checkout-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
-@media (max-width: 960px) { .checkout-layout { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .checkout-layout { grid-template-columns: minmax(0, 1fr); } }
 .checkout-layout__main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .checkout-section-title { display: flex; align-items: center; gap: 10px; font-size: 1.02rem; margin-bottom: 14px; }
 .checkout-section-title__num { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--volt); color: #fff; font-size: 0.8rem; }
@@ -1153,7 +1156,7 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 .side-layout__nav-link.is-active svg { color: var(--volt-deep); }
 .side-layout__content { min-width: 0; }
 @media (max-width: 900px) {
-    .side-layout { grid-template-columns: 1fr; }
+    .side-layout { grid-template-columns: minmax(0, 1fr); }
     .side-layout__sidebar { position: static; }
     .side-layout__user { display: none; }
     .side-layout__nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
@@ -1201,7 +1204,7 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 .admin-panel__content > .section-head:first-child, .admin-panel__content > .breadcrumbs:first-child { margin-top: 0; }
 
 @media (max-width: 960px) {
-    .console { grid-template-columns: 1fr; min-height: 0; }
+    .console { grid-template-columns: minmax(0, 1fr); min-height: 0; }
     .admin-panel__sidebar { position: sticky; top: 69px; z-index: 20; height: auto; border-right: 0; border-bottom: 1px solid var(--line); flex-direction: row; align-items: center; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; }
     .admin-panel__sidebar::-webkit-scrollbar { display: none; }
     .admin-panel__group, .admin-panel__foot { display: none; }
@@ -1244,10 +1247,29 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 
 .inline-form { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
 .inline-form input[type="number"], .inline-form input[type="text"] { width: 92px; min-height: 34px; padding: 6px 10px; font-size: 0.88rem; }
+.inline-form input[type="text"] { width: 150px; }
 .admin-inline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .admin-inline select { width: auto; min-width: 200px; }
 
 .dashboard-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; margin-bottom: 24px; }
 .dashboard-cols--wide { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
 .dashboard-cols--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 1000px) { .dashboard-cols, .dashboard-cols--wide, .dashboard-cols--three { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .dashboard-cols, .dashboard-cols--wide, .dashboard-cols--three { grid-template-columns: minmax(0, 1fr); } }
+
+/* Phones: collapsed grids must not grow to their widest child (a 1fr track
+   has a min-content minimum, so a horizontally scrolling strip such as the
+   category pills or the staff nav would push the whole page sideways).
+   Tables scroll inside their card instead of wrapping dates and IDs. */
+.admin-panel__sidebar, .admin-panel__content, .catalog-layout > *, .side-layout > * { min-width: 0; }
+@media (max-width: 700px) {
+    .table th, .table td { white-space: nowrap; }
+}
+
+/* Small phones: keep brand + wishlist/cart/menu on one row above the search. */
+@media (max-width: 420px) {
+    .navbar__inner { gap: 8px; }
+    .navbar__brand { font-size: 1.04rem; gap: 8px; }
+    .navbar__mark { width: 32px; height: 32px; }
+    .navbar__right { gap: 0; }
+    .navbar__icon-link, .navbar__toggle { width: 38px; height: 38px; }
+}
