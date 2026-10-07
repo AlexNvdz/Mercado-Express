@@ -68,9 +68,7 @@ class ProductService:
         updates = data.model_dump(exclude_unset=True)
         new_sku = updates.get("sku")
         sku_taken = (
-            new_sku is not None
-            and new_sku != product.sku
-            and await self.repo.get_by_sku(new_sku) is not None
+            new_sku is not None and new_sku != product.sku and await self.repo.get_by_sku(new_sku) is not None
         )
         if sku_taken:
             raise ConflictError(f"SKU '{new_sku}' already exists.")

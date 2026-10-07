@@ -37,9 +37,7 @@ async def test_login_and_me(client: AsyncClient) -> None:
     tokens = login.json()
     assert "access_token" in tokens and "refresh_token" in tokens
 
-    me = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": f"Bearer {tokens['access_token']}"}
-    )
+    me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {tokens['access_token']}"})
     assert me.status_code == 200
     assert me.json()["email"] == "login@test.com"
 

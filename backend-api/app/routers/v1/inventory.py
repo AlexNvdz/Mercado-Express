@@ -72,9 +72,7 @@ async def set_inventory_levels(
     product_id: uuid.UUID, data: InventorySetLevel, db: AsyncSession = Depends(get_db)
 ) -> InventoryOut:
     """Staff/admin only: set absolute stock/reorder levels."""
-    inventory = await InventoryService(db).set_levels(
-        product_id, data.quantity_on_hand, data.reorder_level
-    )
+    inventory = await InventoryService(db).set_levels(product_id, data.quantity_on_hand, data.reorder_level)
     return InventoryOut(
         id=inventory.id,
         product_id=inventory.product_id,

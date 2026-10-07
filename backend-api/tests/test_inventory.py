@@ -31,9 +31,7 @@ async def test_admin_can_adjust_stock(admin_client: AsyncClient) -> None:
     assert resp2.json()["quantity_on_hand"] == 30
 
 
-async def test_customer_cannot_adjust_stock(
-    admin_client: AsyncClient, customer_client: AsyncClient
-) -> None:
+async def test_customer_cannot_adjust_stock(admin_client: AsyncClient, customer_client: AsyncClient) -> None:
     product_id = await _make_product(admin_client, "INV-003")
     resp = await customer_client.post(f"/api/v1/inventory/{product_id}/adjust", json={"delta": 10})
     assert resp.status_code == 403

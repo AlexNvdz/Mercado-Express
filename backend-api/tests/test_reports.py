@@ -1,9 +1,7 @@
 from httpx import AsyncClient
 
 
-async def _make_stocked_product(
-    admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00"
-) -> str:
+async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00") -> str:
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     category_id = category.json()["id"]
     product = await admin_client.post(
@@ -16,9 +14,7 @@ async def _make_stocked_product(
 
 
 async def _pay_order(customer_client: AsyncClient, order_id: str) -> None:
-    resp = await customer_client.post(
-        "/api/v1/payments", json={"order_id": order_id, "method": "card"}
-    )
+    resp = await customer_client.post("/api/v1/payments", json={"order_id": order_id, "method": "card"})
     assert resp.status_code == 201
 
 
@@ -43,9 +39,7 @@ async def test_report_summary_reflects_paid_orders_only(
     await _pay_order(customer_client, paid.json()["id"])
 
     # An unpaid order must not count toward revenue or units sold.
-    await customer_client.post(
-        "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 3}]}
-    )
+    await customer_client.post("/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 3}]})
 
     resp = await admin_client.get("/api/v1/reports/summary")
     assert resp.status_code == 200

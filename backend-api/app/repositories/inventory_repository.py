@@ -25,9 +25,7 @@ class InventoryRepository(BaseRepository[Inventory]):
         super().__init__(Inventory, db)
 
     async def get_by_product_id(self, product_id: uuid.UUID) -> Inventory | None:
-        result = await self.db.execute(
-            select(Inventory).where(Inventory.product_id == product_id)
-        )
+        result = await self.db.execute(select(Inventory).where(Inventory.product_id == product_id))
         return result.scalar_one_or_none()
 
     async def list_filtered(

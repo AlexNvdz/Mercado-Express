@@ -1,9 +1,7 @@
 from httpx import AsyncClient
 
 
-async def _make_stocked_product(
-    admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00"
-) -> str:
+async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00") -> str:
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     category_id = category.json()["id"]
     product = await admin_client.post(
@@ -115,9 +113,7 @@ async def test_full_order_lifecycle_to_delivered(
     )
     address_id = address_resp.json()["id"]
 
-    pay_resp = await customer_client.post(
-        "/api/v1/payments", json={"order_id": order_id, "method": "card"}
-    )
+    pay_resp = await customer_client.post("/api/v1/payments", json={"order_id": order_id, "method": "card"})
     assert pay_resp.status_code == 201
     assert pay_resp.json()["status"] == "completed"
 

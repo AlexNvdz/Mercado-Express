@@ -20,9 +20,7 @@ class Inventory(UUIDPKMixin, TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint("quantity_on_hand >= 0", name="ck_inventory_qty_on_hand_non_negative"),
         CheckConstraint("quantity_reserved >= 0", name="ck_inventory_qty_reserved_non_negative"),
-        CheckConstraint(
-            "quantity_reserved <= quantity_on_hand", name="ck_inventory_reserved_lte_on_hand"
-        ),
+        CheckConstraint("quantity_reserved <= quantity_on_hand", name="ck_inventory_reserved_lte_on_hand"),
     )
 
     product_id: Mapped[uuid.UUID] = mapped_column(

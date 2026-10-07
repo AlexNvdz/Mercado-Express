@@ -13,9 +13,7 @@ class InventoryService:
         self.repo = InventoryRepository(db)
         self.products = ProductRepository(db)
 
-    async def list(
-        self, *, offset: int, limit: int, low_stock: bool = False
-    ) -> tuple[list[Inventory], int]:
+    async def list(self, *, offset: int, limit: int, low_stock: bool = False) -> tuple[list[Inventory], int]:
         """Batched read for dashboards (e.g. low-stock alerts) -- avoids
         callers paging `GET /inventory/{id}` once per product."""
         items = await self.repo.list_filtered(offset=offset, limit=limit, low_stock=low_stock)

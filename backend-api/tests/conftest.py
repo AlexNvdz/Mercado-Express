@@ -52,9 +52,7 @@ async def _create_schema() -> AsyncGenerator[None]:
 async def db_session() -> AsyncGenerator[AsyncSession]:
     connection = await test_engine.connect()
     trans = await connection.begin()
-    session = AsyncSession(
-        bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint"
-    )
+    session = AsyncSession(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint")
 
     async def _override_get_db() -> AsyncGenerator[AsyncSession]:
         yield session
@@ -123,9 +121,7 @@ def _authed_client(user: User) -> AsyncClient:
 
 
 @pytest_asyncio.fixture
-async def customer_client(
-    db_session: AsyncSession, customer_user: User
-) -> AsyncGenerator[AsyncClient]:
+async def customer_client(db_session: AsyncSession, customer_user: User) -> AsyncGenerator[AsyncClient]:
     async with _authed_client(customer_user) as ac:
         yield ac
 

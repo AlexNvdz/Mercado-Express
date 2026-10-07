@@ -13,8 +13,6 @@ class ProductImageRepository(BaseRepository[ProductImage]):
 
     async def list_for_product(self, product_id: uuid.UUID) -> list[ProductImage]:
         result = await self.db.execute(
-            select(ProductImage)
-            .where(ProductImage.product_id == product_id)
-            .order_by(ProductImage.position)
+            select(ProductImage).where(ProductImage.product_id == product_id).order_by(ProductImage.position)
         )
         return list(result.scalars().all())
