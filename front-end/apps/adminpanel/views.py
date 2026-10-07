@@ -106,7 +106,8 @@ def order_detail(request, order_id):
         "order": order,
         "customer": customer,
         "shipment": shipment,
-        "status_form": OrderStatusForm(initial={"status": order["status"]}),
+        "status_form": OrderStatusForm(current_status=order["status"]),
+        "next_statuses": orders_service.next_statuses(order["status"]),
         "shipment_form": ShipmentCreateForm(),
         "can_create_shipment": order["status"] == "paid" and shipment is None,
         "can_ship": shipment is not None and shipment["status"] in ("pending", "preparing"),
@@ -120,12 +121,16 @@ def order_detail(request, order_id):
 @require_POST
 def order_status_update(request, order_id):
     token = auth_service.get_access_token(request)
-    form = OrderStatusForm(request.POST)
+    order = orders_service.get_order(token, str(order_id))
+    if order is None:
+        raise Http404("Pedido no encontrado")
+
+    form = OrderStatusForm(request.POST, current_status=order["status"])
     if form.is_valid():
         try:
             orders_service.update_status(token, str(order_id), form.cleaned_data["status"])
-        except ApiConflictError as exc:
-            messages.error(request, exc.detail or "Transición de estado no válida.")
+        except ApiConflictError:
+            messages.error(request, "El pedido no puede pasar a ese estado desde su estado actual.")
         except ApiError:
             messages.error(request, "No fue posible actualizar el estado del pedido.")
         else:
@@ -150,8 +155,8 @@ def shipment_create(request, order_id):
             shipments_service.create_shipment(
                 token, str(order_id), order["shipping_address_id"], carrier=form.cleaned_data["carrier"] or None
             )
-        except ApiConflictError as exc:
-            messages.error(request, exc.detail or "No se pudo crear el envío para este pedido.")
+        except ApiConflictError:
+            messages.error(request, "No se pudo crear el envío: el pedido debe estar pagado.")
         except ApiError:
             messages.error(request, "No fue posible crear el envío.")
         else:
@@ -211,8 +216,10 @@ def category_create(request):
     if request.method == "POST" and form.is_valid():
         try:
             products_service.create_category(token, form.to_api_payload())
-        except ApiValidationError as exc:
-            form.add_error(None, exc.detail)
+        except ApiConflictError:
+            form.add_error("name", "Ya existe una categoría con ese nombre.")
+        except ApiValidationError:
+            form.add_error(None, "Revisa los datos de la categoría.")
         except ApiError:
             form.add_error(None, "No fue posible crear la categoría.")
         else:
@@ -238,8 +245,10 @@ def category_edit(request, category_id):
         if form.is_valid():
             try:
                 products_service.update_category(token, str(category_id), form.to_api_payload())
-            except ApiValidationError as exc:
-                form.add_error(None, exc.detail)
+            except ApiConflictError:
+                form.add_error("name", "Ya existe una categoría con ese nombre.")
+            except ApiValidationError:
+                form.add_error(None, "Revisa los datos de la categoría.")
             except ApiError:
                 form.add_error(None, "No fue posible actualizar la categoría.")
             else:
@@ -268,8 +277,8 @@ def category_delete(request, category_id):
     token = auth_service.get_access_token(request)
     try:
         products_service.delete_category(token, str(category_id))
-    except ApiConflictError as exc:
-        messages.error(request, exc.detail or "No se puede eliminar: tiene productos o subcategorías asociadas.")
+    except ApiConflictError:
+        messages.error(request, "No se puede eliminar: la categoría tiene productos asociados.")
     except ApiError:
         messages.error(request, "No fue posible eliminar la categoría.")
     else:

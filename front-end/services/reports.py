@@ -44,7 +44,7 @@ TOP_PRODUCTS_LIMIT = 6
 REVENUE_STATUSES = {"paid", "preparing", "shipped", "delivered"}
 # Statuses excluded when counting units sold for the "top products" list --
 # an order that never got paid never really "sold" anything.
-UNSOLD_STATUSES = {"pending", "awaiting_payment", "cancelled"}
+UNSOLD_STATUSES = {"pending", "cancelled"}
 
 
 def _to_decimal(value) -> Decimal:

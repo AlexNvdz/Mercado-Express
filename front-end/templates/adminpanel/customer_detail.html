@@ -3,25 +3,29 @@
 {% block title %}{{ customer.full_name }} - Panel de administración{% endblock %}
 
 {% block panel_content %}
-<nav class="breadcrumbs">
+<nav class="breadcrumbs" aria-label="Ruta">
     <a href="{% url 'adminpanel:customers_list' %}">Clientes</a>
     <span class="sep">/</span>
     <span class="current">{{ customer.full_name }}</span>
 </nav>
 
-<div class="section-head">
-    <h1 class="section-title">{{ customer.full_name }}</h1>
+<div class="order-head">
+    <div>
+        <h1 class="section-title">{{ customer.full_name }}</h1>
+        <p class="order-head__meta">{{ customer.email }}</p>
+    </div>
+    {% if customer.is_active %}<span class="status status--delivered">Activo</span>{% else %}<span class="status status--cancelled">Inactivo</span>{% endif %}
 </div>
 
-<div class="card" style="max-width:480px;">
-    <p><strong>Correo:</strong> {{ customer.email }}</p>
-    <p><strong>Teléfono:</strong> {{ customer.phone|default:"—" }}</p>
-    <p><strong>Rol:</strong> {{ customer.role }}</p>
-    <p><strong>Estado:</strong> {% if customer.is_active %}Activo{% else %}Inactivo{% endif %}</p>
-    {% if customer.created_at %}<p><strong>Cliente desde:</strong> {{ customer.created_at }}</p>{% endif %}
+<div class="card form-card--narrow">
+    <h2 class="card__title">Datos de la cuenta</h2>
+    <dl class="kv">
+        <dt>Correo</dt><dd>{{ customer.email }}</dd>
+        <dt>Teléfono</dt><dd>{{ customer.phone|default:"No registrado" }}</dd>
+        <dt>Rol</dt><dd>{% if customer.role == "admin" %}Administrador{% elif customer.role == "employee" %}Empleado{% else %}Cliente{% endif %}</dd>
+        {% if customer.created_at %}<dt>Cliente desde</dt><dd>{{ customer.created_at|slice:":10" }}</dd>{% endif %}
+    </dl>
 </div>
 
-<div style="margin-top:24px;">
-    <a class="btn btn--ghost" href="{% url 'adminpanel:customers_list' %}">&larr; Volver a clientes</a>
-</div>
+<a class="btn btn--ghost mt-lg" href="{% url 'adminpanel:customers_list' %}">Volver a clientes</a>
 {% endblock %}

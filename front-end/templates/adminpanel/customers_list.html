@@ -4,21 +4,24 @@
 
 {% block panel_content %}
 <div class="section-head">
-    <h1 class="section-title">Clientes</h1>
+    <div>
+        <h1 class="section-title">Clientes</h1>
+        <p class="section-sub">{{ total }} cuenta{{ total|pluralize }} registrada{{ total|pluralize }}.</p>
+    </div>
 </div>
 
 {% if customers %}
 <div class="table-card">
 <table class="table">
-    <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+    <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
     <tbody>
         {% for customer in customers %}
         <tr>
-            <td>{{ customer.full_name }}</td>
-            <td>{{ customer.email }}</td>
-            <td>{{ customer.role }}</td>
-            <td>{% if customer.is_active %}Activo{% else %}<span class="muted">Inactivo</span>{% endif %}</td>
-            <td><a class="btn btn--sm" href="{% url 'adminpanel:customer_detail' customer.id %}">Ver</a></td>
+            <td class="cell-title">{{ customer.full_name }}</td>
+            <td class="muted">{{ customer.email }}</td>
+            <td>{% if customer.role == "admin" %}Administrador{% elif customer.role == "employee" %}Empleado{% else %}Cliente{% endif %}</td>
+            <td>{% if customer.is_active %}<span class="status status--delivered">Activo</span>{% else %}<span class="status status--cancelled">Inactivo</span>{% endif %}</td>
+            <td class="cell-actions"><a class="btn btn--secondary btn--sm" href="{% url 'adminpanel:customer_detail' customer.id %}">Ver ficha</a></td>
         </tr>
         {% endfor %}
     </tbody>
@@ -26,15 +29,16 @@
 </div>
 
 {% if pages > 1 %}
-<div class="pagination">
-    {% if has_previous %}<a class="btn btn--secondary btn--sm" href="?page={{ page|add:"-1" }}">&larr; Anterior</a>{% endif %}
+<nav class="pagination" aria-label="Paginación">
+    {% if has_previous %}<a class="btn btn--secondary btn--sm" href="?page={{ page|add:"-1" }}">Anterior</a>{% endif %}
     <span class="pagination__info">Página {{ page }} de {{ pages }}</span>
-    {% if has_next %}<a class="btn btn--secondary btn--sm" href="?page={{ page|add:"1" }}">Siguiente &rarr;</a>{% endif %}
-</div>
+    {% if has_next %}<a class="btn btn--secondary btn--sm" href="?page={{ page|add:"1" }}">Siguiente</a>{% endif %}
+</nav>
 {% endif %}
 {% else %}
 <div class="empty-state">
     <h2>Todavía no hay clientes registrados</h2>
+    <p>Las cuentas nuevas aparecerán aquí.</p>
 </div>
 {% endif %}
 {% endblock %}

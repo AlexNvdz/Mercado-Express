@@ -18,6 +18,18 @@ from django.conf import settings
 from . import mock_data
 from .api_client import api_client
 
+# Mirrors backend-api's PaymentStatus enum (app/models/enums.py) -- Spanish
+# display labels, never render the raw value (see
+# apps/core/templatetags/status_labels.py).
+PAYMENT_STATUS_LABELS = {
+    "pending": "Pendiente",
+    "processing": "Procesando",
+    "completed": "Completado",
+    "failed": "Fallido",
+    "refunded": "Reembolsado",
+    "cancelled": "Cancelado",
+}
+
 
 def create_payment(token: str, order_id: str, method: str = "card", provider: str | None = None) -> dict:
     if settings.API_USE_MOCKS:

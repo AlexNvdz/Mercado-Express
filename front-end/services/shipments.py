@@ -23,6 +23,19 @@ from . import mock_data
 from .api_client import api_client
 from .exceptions import ApiNotFoundError
 
+# Mirrors backend-api's ShipmentStatus enum (app/models/enums.py) -- its own
+# vocabulary, distinct from OrderStatus (see API_INTEGRATION_NOTES.md).
+# Spanish display labels, never render the raw value (see
+# apps/core/templatetags/status_labels.py).
+SHIPMENT_STATUS_LABELS = {
+    "pending": "Pendiente",
+    "preparing": "En preparación",
+    "in_transit": "En camino",
+    "delivered": "Entregado",
+    "failed": "Fallido",
+    "returned": "Devuelto",
+}
+
 
 def get_shipment_for_order(token: str, order_id: str) -> dict | None:
     if settings.API_USE_MOCKS:

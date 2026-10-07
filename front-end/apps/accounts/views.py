@@ -51,8 +51,8 @@ def register_view(request):
             )
         except ApiConflictError:
             form.add_error("email", "Ya existe una cuenta con este correo.")
-        except ApiValidationError as exc:
-            form.add_error(None, exc.detail)
+        except ApiValidationError:
+            form.add_error(None, "Revisa los datos del formulario.")
         except ApiError:
             form.add_error(None, "No fue posible crear la cuenta. Intenta más tarde.")
         else:

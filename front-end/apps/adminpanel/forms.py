@@ -1,6 +1,6 @@
 from django import forms
 
-from services.orders import ORDER_STATUSES
+from services.orders import ORDER_STATUS_LABELS, next_statuses
 
 
 class CategoryForm(forms.Form):
@@ -48,9 +48,22 @@ class OrderStatusForm(forms.Form):
     """Force a status transition directly. See services/orders.py:update_status.
     Prefer /payments and /shipments for the normal flow -- this is for
     manual corrections.
+
+    Choices are restricted to the order's *current* status's valid next
+    values (services.orders.next_statuses) -- offering all 8 statuses
+    regardless of the current one let staff pick jumps the backend's
+    transition table would reject with a 409, which is why status changes
+    kept silently failing. Pass `current_status` both when rendering
+    (order_detail) and when validating the POST (order_status_update) so the
+    allowed choices always match the order's real state.
     """
 
-    status = forms.ChoiceField(label="Nuevo estado", choices=[(s, s) for s in ORDER_STATUSES])
+    status = forms.ChoiceField(label="Nuevo estado", choices=[])
+
+    def __init__(self, *args, current_status: str | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        options = next_statuses(current_status) if current_status else []
+        self.fields["status"].choices = [(s, ORDER_STATUS_LABELS.get(s, s)) for s in options]
 
 
 class ShipmentCreateForm(forms.Form):

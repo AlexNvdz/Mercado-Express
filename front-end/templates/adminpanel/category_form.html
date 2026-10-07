@@ -3,15 +3,22 @@
 {% block title %}{% if category %}Editar {{ category.name }}{% else %}Nueva categoría{% endif %} - Panel de administración{% endblock %}
 
 {% block panel_content %}
+<nav class="breadcrumbs" aria-label="Ruta">
+    <a href="{% url 'adminpanel:categories_list' %}">Categorías</a>
+    <span class="sep">/</span>
+    <span class="current">{% if category %}{{ category.name }}{% else %}Nueva{% endif %}</span>
+</nav>
+
 <div class="section-head">
     <h1 class="section-title">{% if category %}Editar categoría{% else %}Nueva categoría{% endif %}</h1>
-    <a class="btn btn--secondary" href="{% url 'adminpanel:categories_list' %}">&larr; Volver</a>
 </div>
 
-<div class="form-card" style="max-width:520px;">
+<div class="form-card form-card--narrow">
     <form method="post">
         {% csrf_token %}
-        {% for error in form.non_field_errors %}<p class="form-errors">{{ error }}</p>{% endfor %}
+        {% if form.non_field_errors %}
+        <ul class="form-errors">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
         {% for field in form %}
         <div class="form-field">
             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -19,7 +26,10 @@
             {% for error in field.errors %}<span class="form-errors">{{ error }}</span>{% endfor %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn">{% if category %}Guardar cambios{% else %}Crear categoría{% endif %}</button>
+        <div class="actions">
+            <button type="submit" class="btn">{% if category %}Guardar cambios{% else %}Crear categoría{% endif %}</button>
+            <a class="btn btn--ghost" href="{% url 'adminpanel:categories_list' %}">Cancelar</a>
+        </div>
     </form>
 </div>
 {% endblock %}

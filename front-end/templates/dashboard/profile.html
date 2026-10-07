@@ -1,16 +1,19 @@
 {% extends "dashboard/_layout.html" %}
 
-{% block title %}Mi perfil - MercadoExpress{% endblock %}
+{% block title %}Mis datos - MercadoExpress{% endblock %}
 
 {% block dashboard_content %}
 <div class="section-head">
-    <h1 class="section-title">Mi perfil</h1>
+    <div>
+        <h1 class="section-title">Mis datos</h1>
+        {% if user %}<p class="section-sub">{{ user.email }}</p>{% endif %}
+    </div>
 </div>
 
-<div class="form-card" style="max-width: 480px;">
-    <h3 style="margin-bottom:16px; font-size:1rem;">Datos de la cuenta</h3>
+<div class="form-card form-card--narrow">
     {% if user %}
-    <p class="muted" style="margin-bottom:16px;">{{ user.email }} &middot; {{ user.role|default:"customer" }}</p>
+    <h2 class="form-card__title">Datos de la cuenta</h2>
+    <p class="form-card__sub">Usamos tu nombre y teléfono para coordinar las entregas.</p>
     <form method="post">
         {% csrf_token %}
         {% for field in form %}
@@ -23,7 +26,7 @@
         <button type="submit" class="btn">Guardar cambios</button>
     </form>
     {% else %}
-    <p class="muted">No fue posible cargar tu información. Intenta más tarde.</p>
+    <p class="muted">No pudimos cargar tus datos. Recarga la página en unos minutos.</p>
     {% endif %}
 </div>
 {% endblock %}

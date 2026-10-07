@@ -4,32 +4,37 @@
 
 {% block panel_content %}
 <div class="section-head">
-    <h1 class="section-title">Categorías</h1>
-    <a class="btn" href="{% url 'adminpanel:category_create' %}">+ Nueva categoría</a>
+    <div>
+        <h1 class="section-title">Categorías</h1>
+        <p class="section-sub">Organizan el menú y los filtros de la tienda.</p>
+    </div>
+    <a class="btn" href="{% url 'adminpanel:category_create' %}">Nueva categoría</a>
 </div>
 
 {% if categories %}
 <div class="table-card">
 <table class="table">
-    <thead><tr><th>Nombre</th><th>Categoría padre</th><th>Estado</th><th></th></tr></thead>
+    <thead><tr><th>Nombre</th><th>Categoría padre</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
     <tbody>
         {% for category in categories %}
         <tr>
-            <td>{{ category.name }}</td>
+            <td class="cell-title">{{ category.name }}</td>
             <td>
                 {% if category.parent_id %}
                     {% for c in categories %}{% if c.id == category.parent_id %}{{ c.name }}{% endif %}{% endfor %}
                 {% else %}
-                    <span class="muted">—</span>
+                    <span class="subtle">Principal</span>
                 {% endif %}
             </td>
-            <td>{% if category.is_active %}Activa{% else %}<span class="muted">Inactiva</span>{% endif %}</td>
-            <td style="display:flex; gap:8px; justify-content:flex-end;">
-                <a class="btn btn--secondary btn--sm" href="{% url 'adminpanel:category_edit' category.id %}">Editar</a>
-                <form method="post" action="{% url 'adminpanel:category_delete' category.id %}" onsubmit="return confirm('¿Eliminar esta categoría? Solo es posible si no tiene productos o subcategorías asociadas.');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn--danger btn--sm">Eliminar</button>
-                </form>
+            <td>{% if category.is_active %}<span class="status status--delivered">Visible</span>{% else %}<span class="status status--pending">Oculta</span>{% endif %}</td>
+            <td class="cell-actions">
+                <div class="actions">
+                    <a class="btn btn--secondary btn--sm" href="{% url 'adminpanel:category_edit' category.id %}">Editar</a>
+                    <form method="post" action="{% url 'adminpanel:category_delete' category.id %}" onsubmit="return confirm('¿Eliminar esta categoría? Solo es posible si no tiene productos ni subcategorías.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--danger btn--sm">Eliminar</button>
+                    </form>
+                </div>
             </td>
         </tr>
         {% endfor %}
@@ -39,7 +44,8 @@
 {% else %}
 <div class="empty-state">
     <h2>Todavía no hay categorías</h2>
-    <a class="btn" style="margin-top:12px;" href="{% url 'adminpanel:category_create' %}">+ Nueva categoría</a>
+    <p>Crea la primera para empezar a organizar los productos.</p>
+    <a class="btn" href="{% url 'adminpanel:category_create' %}">Nueva categoría</a>
 </div>
 {% endif %}
 {% endblock %}

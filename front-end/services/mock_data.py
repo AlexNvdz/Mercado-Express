@@ -171,6 +171,7 @@ MOCK_ORDERS = [
         "shipping_amount": "0.00",
         "total_amount": "17700.00",
         "shipping_address_id": MOCK_ADDRESSES[0]["id"],
+        "shipping_address": MOCK_ADDRESSES[0],
         "notes": None,
         "items": [
             {"id": "i1", "product_id": "00000000-0000-0000-0000-000000000201", "product_name": "Arroz blanco 1kg", "quantity": 2, "unit_price": "6500.00", "line_total": "13000.00"},
@@ -189,6 +190,7 @@ MOCK_ORDERS = [
         "shipping_amount": "0.00",
         "total_amount": "12900.00",
         "shipping_address_id": MOCK_ADDRESSES[0]["id"],
+        "shipping_address": MOCK_ADDRESSES[0],
         "notes": None,
         "items": [
             {"id": "i3", "product_id": "00000000-0000-0000-0000-000000000202", "product_name": "Aceite vegetal 1L", "quantity": 1, "unit_price": "12900.00", "line_total": "12900.00"},

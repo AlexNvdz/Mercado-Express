@@ -93,8 +93,8 @@ def product_admin_create(request):
             product = products.create_product(token, form.to_api_payload())
         except ApiConflictError:
             form.add_error("sku", "Ya existe un producto con ese SKU.")
-        except ApiValidationError as exc:
-            form.add_error(None, exc.detail)
+        except ApiValidationError:
+            form.add_error(None, "Revisa los datos del producto.")
         except ApiError:
             form.add_error(None, "No fue posible crear el producto. Intenta más tarde.")
         else:
@@ -120,8 +120,8 @@ def product_admin_edit(request, product_id):
                 products.update_product(token, str(product_id), form.to_api_payload())
             except ApiConflictError:
                 form.add_error("sku", "Ya existe un producto con ese SKU.")
-            except ApiValidationError as exc:
-                form.add_error(None, exc.detail)
+            except ApiValidationError:
+                form.add_error(None, "Revisa los datos del producto.")
             except ApiError:
                 form.add_error(None, "No fue posible actualizar el producto. Intenta más tarde.")
             else:
