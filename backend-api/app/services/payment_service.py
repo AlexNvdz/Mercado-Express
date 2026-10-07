@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import InvalidStateTransitionError, NotFoundError
-from app.models.enums import OrderStatus, PaymentStatus
+from app.models.enums import OrderStatus, PaymentStatus, SaleKind
 from app.models.payment import Payment
 from app.models.sale import Sale
 from app.repositories.order_repository import OrderRepository
@@ -68,7 +68,7 @@ class PaymentService:
         if status == PaymentStatus.COMPLETED:
             payment.paid_at = datetime.now(UTC)
             order.status = OrderStatus.PAID
-            self.db.add(Sale(order_id=order.id, total_amount=order.total_amount))
+            self.db.add(Sale(order_id=order.id, kind=SaleKind.SALE, total_amount=order.total_amount))
         # A failed payment leaves the order `pending` (no separate
         # "awaiting_payment" status) -- it's already retryable from there.
 

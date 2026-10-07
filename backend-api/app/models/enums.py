@@ -39,3 +39,15 @@ class ShipmentStatus(StrEnum):
     DELIVERED = "delivered"
     FAILED = "failed"
     RETURNED = "returned"
+    # Set when the order is cancelled/refunded before the shipment was
+    # dispatched (see OrderService.transition_status).
+    CANCELLED = "cancelled"
+
+
+class SaleKind(StrEnum):
+    """Kind of entry in the append-only `sales` ledger: `sale` is written
+    when a payment completes (positive amount); `reversal` is written when
+    that paid order is later cancelled or refunded (negative amount)."""
+
+    SALE = "sale"
+    REVERSAL = "reversal"

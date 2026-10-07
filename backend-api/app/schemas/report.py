@@ -17,14 +17,25 @@ class TopProduct(BaseModel):
     name: str
     sku: str
     units_sold: int
-    revenue: Decimal = Field(..., description="Sum of line_total across sold order items.")
+    revenue: Decimal = Field(
+        ..., description="Sum of line_total across items of paid orders that were not reversed."
+    )
 
 
 class ReportSummary(BaseModel):
-    total_revenue: Decimal = Field(
-        ..., description="Sum of Sale.total_amount -- the immutable ledger, not Order.total_amount."
+    net_revenue: Decimal = Field(
+        ...,
+        description="gross_revenue - refunded_amount: the sum of the whole Sale ledger, "
+        "not Order.total_amount.",
     )
-    sale_count: int
+    gross_revenue: Decimal = Field(..., description="Sum of `sale` entries: every order ever paid.")
+    refunded_amount: Decimal = Field(
+        ...,
+        description="Sum of `reversal` entries as a positive amount: paid orders later "
+        "cancelled or refunded.",
+    )
+    sale_count: int = Field(..., description="Number of `sale` entries (orders ever paid).")
+    reversal_count: int = Field(..., description="Number of `reversal` entries.")
     orders_by_status: list[OrderStatusCount]
     top_products: list[TopProduct]
     customer_count: int

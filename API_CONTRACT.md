@@ -200,7 +200,9 @@ Address body:
 }
 ```
 `quantity_available = quantity_on_hand - quantity_reserved`. Reservations are
-made automatically when an order is created and released on cancellation.
+made automatically when an order is created, released when it is cancelled
+or refunded, and turned into a real `quantity_on_hand` decrement when its
+shipment is dispatched.
 
 `GET /inventory` returns the standard `{items, total, page, page_size, pages}`
 envelope (see Pagination), `items` shaped as above.
@@ -227,15 +229,44 @@ adjusting by a delta.
 | GET | `/orders?page=&page_size=` | any user | Customers see only their own orders; staff see all. |
 | GET | `/orders/{order_id}` | any user | Get one (customers: only their own, else `404`). |
 | POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`); releases reserved stock. |
-| PATCH | `/orders/{order_id}/status` | staff | Force a status transition directly. |
+| PATCH | `/orders/{order_id}/status` | staff | Manual correction; only the targets in the table below. |
 
 7 statuses total: `pending`, `paid`, `preparing`, `shipped`, `delivered`,
 `cancelled`, `refunded` (no `awaiting_payment` -- removed 2026-09-12, see
 `alembic/versions/6bf0432e1cd9_*`; a failed payment now leaves the order
 `pending`, which was already retryable). Lifecycle: `pending → paid →
 preparing → shipped → delivered`, with `cancelled` reachable from
-`pending`/`paid`/`preparing`, and `refunded` reachable from `paid`. Invalid
-transitions return `409`.
+`pending`/`paid`/`preparing`, and `refunded` reachable from `paid`.
+
+Who moves the order through the normal flow:
+- `pending → paid`: a completed `POST /payments`.
+- `paid → preparing`: `POST /shipments/order/{order_id}` (or the manual
+  `PATCH` below).
+- `preparing → shipped`: `POST /shipments/{shipment_id}/ship`.
+- `shipped → delivered`: `POST /shipments/{shipment_id}/deliver`.
+
+Allowed targets for `PATCH /orders/{order_id}/status` (anything else is
+`409`). Since 2026-10-06, `shipped` and `delivered` are no longer manual
+targets: an order only gets there through its shipment, so it is never
+shipped without a shipment and tracking number, and its stock is
+fulfilled exactly once.
+
+| Current | Allowed manual targets |
+|---|---|
+| `pending` | `cancelled` |
+| `paid` | `preparing`, `cancelled`, `refunded` |
+| `preparing` | `cancelled` |
+| `shipped`, `delivered`, `cancelled`, `refunded` | none |
+
+Moving to `cancelled` or `refunded`, whether through `PATCH` or
+`POST /orders/{id}/cancel`, does three things. Both statuses are only
+reachable before dispatch, so the goods never left:
+- Releases the reserved stock. Since 2026-10-06 `refunded` does this too;
+  before, the reservation leaked.
+- If the order had been paid, appends a negative `reversal` entry to the
+  sales ledger (see `/api/v1/reports`). The original sale entry is never
+  edited or deleted, and an order is reversed at most once.
+- Moves an undispatched shipment (`pending`/`preparing`) to `cancelled`.
 
 ```json
 // POST /orders request
@@ -297,27 +328,50 @@ will not change this contract.
   "method": "card", "paid_at": "2026-09-08T10:01:00Z", "created_at": "2026-09-08T10:01:00Z"
 }
 ```
-On success, the order moves to `paid` and a `Sale` record is created (see
-backend architecture notes — sales are the immutable financial ledger,
-separate from the mutable order).
+On success, the order moves to `paid` and a `sale` entry is appended to the
+sales ledger (the append-only financial record, separate from the mutable
+order; see `/api/v1/reports`).
 
 ## `/api/v1/shipments`
 
-No real carrier is integrated yet — tracking numbers are placeholders
-(`MANUAL-xxxxxxxxxx`). Swapping in a real carrier later will not change this
-contract.
+No real carrier is integrated yet. Staff can enter the carrier and tracking
+number; if no tracking number was entered by dispatch time, a placeholder
+(`MANUAL-xxxxxxxxxx`) is generated. Swapping in a real carrier later will
+not change this contract.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/shipments/order/{order_id}` | staff | Start preparing a shipment (order must be `paid`). |
+| POST | `/shipments/order/{order_id}` | staff | Create the shipment (order must be `paid` or `preparing`); order → `preparing`. |
+| PATCH | `/shipments/{shipment_id}` | staff | Edit `carrier` / `tracking_number`; only before dispatch. |
 | POST | `/shipments/{shipment_id}/ship` | staff | Mark dispatched; decrements real stock, order → `shipped`. |
 | POST | `/shipments/{shipment_id}/deliver` | staff | Mark delivered; order → `delivered`. |
 | GET | `/shipments/order/{order_id}` | any user | Get the shipment for an order. |
 
 ```json
 // POST /shipments/order/{order_id} request
-{ "address_id": "...", "carrier": null }
+{ "address_id": "...", "carrier": "DHL", "tracking_number": "1Z999AA10123456784" }
 ```
+- `address_id` is required. `carrier` and `tracking_number` are optional
+  (max 100 chars each); a blank or whitespace-only value is stored as `null`.
+- The order must be `paid` (it moves to `preparing`) or already `preparing`
+  (staff moved it there by hand; it stays `preparing`). Otherwise `409`.
+- One shipment per order: `409` if the order already has one.
+- The shipment is created with status `preparing`.
+
+```json
+// PATCH /shipments/{shipment_id} request -- every key optional
+{ "carrier": "Servientrega", "tracking_number": "SV-123456" }
+```
+Only the keys sent are changed; `null` (or blank) clears a field. Allowed
+while the shipment is `pending` or `preparing`, else `409`. Returns the
+shipment.
+
+`POST /shipments/{shipment_id}/ship` requires the shipment to be
+`preparing` and its order `preparing` (else `409`). It keeps the tracking
+number staff entered, or generates `MANUAL-...` if there is none. It turns
+the order's stock reservation into a real decrement, exactly once: a
+second call is a `409` and touches no stock. `deliver` requires the
+shipment to be `in_transit`.
 
 **Confirmed response shape** for `GET /shipments/order/{order_id}` (and the
 `POST` create/ship/deliver responses — same schema throughout the lifecycle):
@@ -336,19 +390,34 @@ contract.
 }
 ```
 `status` progresses `pending → preparing → in_transit → delivered` (or
-`failed`/`returned`). `address_id` and `updated_at` are real fields —
-include them even though earlier notes didn't have them confirmed.
+`failed`/`returned`). Since 2026-10-06 there is also `cancelled`: an
+undispatched shipment whose order was cancelled or refunded. It can be
+neither edited nor dispatched. `address_id` and `updated_at` are real
+fields — include them even though earlier notes didn't have them confirmed.
 
 ## `/api/v1/reports`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/reports/summary?top_products_limit=` | staff | Aggregate dashboard numbers, computed server-side from the `Sale` ledger (not `Order.total_amount`). |
+| GET | `/reports/summary?top_products_limit=` | staff | Aggregate dashboard numbers, computed server-side from the sales ledger (not `Order.total_amount`). |
+
+The sales ledger is append-only. Each order has at most two entries, never
+edited or deleted:
+- a `sale` entry (positive), written when its payment completes;
+- a `reversal` entry (the same amount, negated), written if that paid order
+  is later cancelled or refunded.
+
+Revenue is therefore net of returns. Paid orders that were cancelled or
+refunded before 2026-10-06 got their reversal entries backfilled by the
+migration (`bdd517b5e052`).
 
 ```json
 {
-  "total_revenue": "1249.98",
+  "net_revenue": "1049.98",
+  "gross_revenue": "1249.98",
+  "refunded_amount": "200.00",
   "sale_count": 12,
+  "reversal_count": 2,
   "orders_by_status": [
     { "status": "pending", "count": 2 },
     { "status": "paid", "count": 3 },
@@ -366,12 +435,23 @@ include them even though earlier notes didn't have them confirmed.
   "generated_at": "2026-09-12T10:00:00Z"
 }
 ```
+- `gross_revenue`: sum of the `sale` entries, i.e. every order ever paid.
+- `refunded_amount`: sum of the `reversal` entries, as a positive amount.
+- `net_revenue`: `gross_revenue - refunded_amount`, i.e. the sum of the
+  whole ledger.
+- `sale_count`: number of `sale` entries. Reversals are not counted here.
+- `reversal_count`: number of `reversal` entries.
+- Changed 2026-10-06: `total_revenue` was removed. Use `net_revenue`.
+- All money fields are 2dp strings, including `"0.00"` when the ledger is
+  empty.
+
 `orders_by_status` always lists every `OrderStatus` value, `count: 0` if none.
 `top_products` is ordered by `units_sold` descending, capped at
-`top_products_limit` (default 10, max 100). `total_revenue` and each
-product's `revenue`/`units_sold` are summed from `sales` joined to
-`order_items` — orders that were never paid (still `pending`, `cancelled`,
-etc.) never contribute, unlike summing `Order.total_amount` client-side.
+`top_products_limit` (default 10, max 100). Each product's
+`revenue`/`units_sold` is summed from `order_items` of orders that were paid
+and not reversed. Orders that were never paid (still `pending`, cancelled
+before payment, etc.) never contribute, and neither do paid orders that were
+later cancelled or refunded.
 
 ---
 
@@ -419,4 +499,4 @@ exercised without any manual setup:
 - Multi-warehouse inventory (currently single stock pool per product).
 
 ---
-_Maintained by the backend-api service. Last updated: 2026-09-12 (added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes; Phase 1-7 items unchanged: auth, catalog, inventory, orders, payments, shipments, tests, Docker, admin/demo-data seeding, product search, confirmed shipment response shape, full E2E order flow verified)._
+_Maintained by the backend-api service. Last updated: 2026-10-06 (net revenue: sales ledger gets `reversal` entries, `GET /reports/summary` returns `net_revenue`/`gross_revenue`/`refunded_amount`/`reversal_count` instead of `total_revenue`; shipment flow: create from `paid` or `preparing` with `carrier`/`tracking_number`, new `PATCH /shipments/{id}`, new shipment status `cancelled`, `shipped`/`delivered` no longer manual order targets, refund releases reserved stock). Previous update 2026-09-12: added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes._

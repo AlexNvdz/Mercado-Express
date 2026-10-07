@@ -8,7 +8,7 @@ from app.dependencies import get_current_user, require_staff
 from app.exceptions import NotFoundError
 from app.models.enums import UserRole
 from app.models.user import User
-from app.schemas.shipment import ShipmentCreate, ShipmentOut
+from app.schemas.shipment import ShipmentCreate, ShipmentOut, ShipmentUpdate
 from app.services.order_service import OrderService
 from app.services.shipment_service import ShipmentService
 
@@ -24,14 +24,25 @@ router = APIRouter(prefix="/shipments", tags=["shipments"])
 async def create_shipment(
     order_id: uuid.UUID, data: ShipmentCreate, db: AsyncSession = Depends(get_db)
 ) -> ShipmentOut:
-    """Staff/admin only: begin preparing a shipment for a paid order."""
+    """Staff/admin only: begin preparing a shipment for a `paid` or
+    `preparing` order, optionally with carrier and tracking number."""
     shipment = await ShipmentService(db).create_shipment(order_id, data)
+    return ShipmentOut.model_validate(shipment)
+
+
+@router.patch("/{shipment_id}", response_model=ShipmentOut, dependencies=[Depends(require_staff)])
+async def update_shipment(
+    shipment_id: uuid.UUID, data: ShipmentUpdate, db: AsyncSession = Depends(get_db)
+) -> ShipmentOut:
+    """Staff/admin only: edit carrier/tracking number before dispatch."""
+    shipment = await ShipmentService(db).update_shipment(shipment_id, data)
     return ShipmentOut.model_validate(shipment)
 
 
 @router.post("/{shipment_id}/ship", response_model=ShipmentOut, dependencies=[Depends(require_staff)])
 async def ship_shipment(shipment_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ShipmentOut:
-    """Staff/admin only: mark the shipment dispatched (decrements real stock)."""
+    """Staff/admin only: mark the shipment dispatched (decrements real stock;
+    keeps the tracking number staff entered, or generates one)."""
     shipment = await ShipmentService(db).mark_shipped(shipment_id)
     return ShipmentOut.model_validate(shipment)
 
