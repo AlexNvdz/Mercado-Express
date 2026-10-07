@@ -4,61 +4,140 @@
 
 {% block content %}
 <section class="hero">
-    <div class="hero__blob" aria-hidden="true"></div>
-    <p class="hero__eyebrow">Abarrotes &middot; Frutas y verduras &middot; Lácteos &middot; Limpieza</p>
-    <h1>Todo lo que necesitas, a un clic de distancia</h1>
-    <p>Explora el catálogo, arma tu carrito y sigue tu pedido en tiempo real desde que lo confirmas hasta que llega a tu puerta.</p>
-    <div class="hero__actions">
-        <a class="btn btn--accent" href="{% url 'catalog:list' %}">Ver catálogo</a>
-        {% if not is_api_authenticated %}
-        <a class="btn btn--secondary" href="{% url 'accounts:register' %}">Crear cuenta</a>
-        {% endif %}
+    <div class="hero__copy">
+        <h1 class="hero__title">El mercado de la semana, sin salir de casa</h1>
+        <p class="hero__lead">Arma tu pedido con stock real por producto, paga al confirmar y mira en qué paso va tu envío hasta que llega a tu puerta.</p>
+        <div class="hero__actions">
+            <a class="btn btn--signal btn--lg" href="{% url 'catalog:list' %}">Empezar a comprar</a>
+            {% if is_api_authenticated %}
+            <a class="btn btn--secondary btn--lg" href="{% url 'orders:list' %}">Ver mis pedidos</a>
+            {% else %}
+            <a class="btn btn--secondary btn--lg" href="{% url 'accounts:register' %}">Crear cuenta</a>
+            {% endif %}
+        </div>
+        <div class="hero__facts">
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Stock confirmado antes de pagar</span>
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Cancela gratis mientras esté pendiente</span>
+        </div>
+    </div>
+
+    <div class="ticket" aria-label="Ejemplo de seguimiento de un pedido">
+        <div class="ticket__head">
+            <span class="ticket__id">Así sigues tu pedido</span>
+            <span class="ticket__eta">En vivo</span>
+        </div>
+        <div class="ticket__body">
+            <ol class="ticket__steps">
+                <li class="ticket__step is-done">
+                    <span class="ticket__dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <div><div class="ticket__label">Pedido creado</div><div class="ticket__time">Reservamos tu stock</div></div>
+                </li>
+                <li class="ticket__step is-done">
+                    <span class="ticket__dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <div><div class="ticket__label">Pago confirmado</div><div class="ticket__time">Al instante</div></div>
+                </li>
+                <li class="ticket__step is-current">
+                    <span class="ticket__dot"></span>
+                    <div><div class="ticket__label">Preparando</div><div class="ticket__time">Empacamos tus productos</div></div>
+                </li>
+                <li class="ticket__step is-upcoming">
+                    <span class="ticket__dot"></span>
+                    <div><div class="ticket__label">Enviado</div><div class="ticket__time">Con número de guía</div></div>
+                </li>
+                <li class="ticket__step is-upcoming">
+                    <span class="ticket__dot"></span>
+                    <div><div class="ticket__label">Entregado</div></div>
+                </li>
+            </ol>
+        </div>
+        <div class="ticket__foot">
+            <span class="subtle">Cada cambio se refleja en Mis pedidos</span>
+        </div>
     </div>
 </section>
 
-<div class="benefits">
-    <div class="benefit">
-        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.8"/></svg></div>
-        <div><div class="benefit__title">Catálogo actualizado</div><div class="benefit__text">Disponibilidad real de cada producto</div></div>
+<div class="trust-bar">
+    <div class="trust-bar__item">
+        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+        <div><div class="trust-bar__title">Stock real</div><div class="trust-bar__text">Ves cuántas unidades quedan</div></div>
     </div>
-    <div class="benefit">
-        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg></div>
-        <div><div class="benefit__title">Pago seguro</div><div class="benefit__text">Tu pedido se confirma al instante</div></div>
+    <div class="trust-bar__item">
+        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg></span>
+        <div><div class="trust-bar__title">Pago al instante</div><div class="trust-bar__text">Tu pedido queda confirmado</div></div>
     </div>
-    <div class="benefit">
-        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 16V7a1 1 0 0 1 1-1h9v10M4 16h10M4 16H2m18 0h-4m0 0V10h3l2 3v3h-1" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18.5" r="1.6" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="18.5" r="1.6" stroke="currentColor" stroke-width="1.8"/></svg></div>
-        <div><div class="benefit__title">Seguimiento de envío</div><div class="benefit__text">Mira el estado de tu pedido paso a paso</div></div>
+    <div class="trust-bar__item">
+        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 16V7a1 1 0 0 1 1-1h10v10M3 16h11m0 0h3m-3 0V10h3.5l2.5 3v3h-3" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18" r="1.7" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="18" r="1.7" stroke="currentColor" stroke-width="1.8"/></svg></span>
+        <div><div class="trust-bar__title">Envío con guía</div><div class="trust-bar__text">Transportadora y número de seguimiento</div></div>
     </div>
-    <div class="benefit">
-        <div class="benefit__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9.5-8.5C.8 9.1 2.3 5.5 6 5.5c2 0 3.4 1.1 4 2.2.6-1.1 2-2.2 4-2.2 3.7 0 5.2 3.6 3.5 7C15 16.65 12 21 12 21Z" stroke="currentColor" stroke-width="1.8"/></svg></div>
-        <div><div class="benefit__title">Guarda tus favoritos</div><div class="benefit__text">Encuentra rápido lo que más compras</div></div>
+    <div class="trust-bar__item">
+        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div><div class="trust-bar__title">Repite tu compra</div><div class="trust-bar__text">Un clic desde tus pedidos</div></div>
     </div>
 </div>
 
-<div class="section-head">
-    <h2 class="section-title">Categorías</h2>
-</div>
-<div class="category-pills">
-    {% for category in categories %}
-    <a class="category-pill" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
-    {% empty %}
-    <p class="muted">No hay categorías disponibles todavía.</p>
-    {% endfor %}
-</div>
-
-<div class="section-head">
-    <h2 class="section-title">Productos destacados</h2>
-    <a class="section-link" href="{% url 'catalog:list' %}">Ver todo el catálogo &rarr;</a>
-</div>
-<div class="product-grid">
-    {% for product in featured_products %}
-        {% include "catalog/_product_card.html" %}
-    {% empty %}
-    <div class="empty-state">
-        <div class="empty-state__icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.5"/></svg></div>
-        <h2>Aún no hay productos publicados</h2>
-        <p>Vuelve pronto -- el catálogo se está preparando.</p>
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2 class="section-title">Compra por categoría</h2>
+            <p class="section-sub">Todo organizado como en tu mercado de siempre.</p>
+        </div>
     </div>
-    {% endfor %}
-</div>
+    <div class="cat-tiles">
+        {% for category in categories %}
+        <a class="cat-tile" href="{% url 'catalog:category' category.id %}">
+            <span class="cat-tile__initial" aria-hidden="true">{{ category.name|first|upper }}</span>
+            <span>
+                <span class="cat-tile__name">{{ category.name }}</span><br>
+                <span class="cat-tile__go">Ver productos</span>
+            </span>
+        </a>
+        {% empty %}
+        <p class="muted">No hay categorías disponibles todavía.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <div>
+            <h2 class="section-title">Productos destacados</h2>
+            <p class="section-sub">Lo que más se lleva la gente esta semana.</p>
+        </div>
+        <a class="section-link" href="{% url 'catalog:list' %}">Ver todos los productos</a>
+    </div>
+    <div class="product-grid">
+        {% for product in featured_products %}
+            {% include "catalog/_product_card.html" %}
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="1.6"/></svg></div>
+            <h2>Aún no hay productos publicados</h2>
+            <p>El catálogo se está preparando. Vuelve en un rato.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2 class="section-title">Cómo funciona</h2>
+    </div>
+    <div class="steps">
+        <div class="step">
+            <div class="step__num">1</div>
+            <div class="step__title">Elige</div>
+            <p class="step__text">Busca por categoría o con el buscador y añade al carrito lo que necesitas.</p>
+        </div>
+        <div class="step">
+            <div class="step__num">2</div>
+            <div class="step__title">Paga</div>
+            <p class="step__text">Confirma tu dirección de envío. El pago se aprueba en el momento.</p>
+        </div>
+        <div class="step">
+            <div class="step__num">3</div>
+            <div class="step__title">Recibe</div>
+            <p class="step__text">Sigue cada paso del envío desde Mis pedidos hasta que llegue.</p>
+        </div>
+    </div>
+</section>
 {% endblock %}

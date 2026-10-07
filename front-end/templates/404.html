@@ -4,9 +4,12 @@
 
 {% block content %}
 <div class="error-page">
-    <div class="error-page__code">404</div>
-    <h1 style="margin: 12px 0 8px;">No encontramos esta página</h1>
-    <p class="muted">El enlace puede estar roto o el producto/pedido ya no existe.</p>
-    <a class="btn" style="margin-top:20px;" href="{% url 'core:home' %}">Volver al inicio</a>
+    <div class="error-page__code">4<span>0</span>4</div>
+    <h1>No encontramos esta página</h1>
+    <p class="muted">El enlace puede estar roto, o el producto o pedido ya no existe.</p>
+    <div class="actions" style="justify-content:center; margin-top:20px;">
+        <a class="btn" href="{% url 'core:home' %}">Ir al inicio</a>
+        <a class="btn btn--secondary" href="{% url 'catalog:list' %}">Ver productos</a>
+    </div>
 </div>
 {% endblock %}

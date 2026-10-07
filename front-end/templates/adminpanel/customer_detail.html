@@ -1,0 +1,31 @@
+{% extends "adminpanel/_layout.html" %}
+
+{% block title %}{{ customer.full_name }} - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<nav class="breadcrumbs" aria-label="Ruta">
+    <a href="{% url 'adminpanel:customers_list' %}">Clientes</a>
+    <span class="sep">/</span>
+    <span class="current">{{ customer.full_name }}</span>
+</nav>
+
+<div class="order-head">
+    <div>
+        <h1 class="section-title">{{ customer.full_name }}</h1>
+        <p class="order-head__meta">{{ customer.email }}</p>
+    </div>
+    {% if customer.is_active %}<span class="status status--delivered">Activo</span>{% else %}<span class="status status--cancelled">Inactivo</span>{% endif %}
+</div>
+
+<div class="card form-card--narrow">
+    <h2 class="card__title">Datos de la cuenta</h2>
+    <dl class="kv">
+        <dt>Correo</dt><dd>{{ customer.email }}</dd>
+        <dt>Teléfono</dt><dd>{{ customer.phone|default:"No registrado" }}</dd>
+        <dt>Rol</dt><dd>{% if customer.role == "admin" %}Administrador{% elif customer.role == "employee" %}Empleado{% else %}Cliente{% endif %}</dd>
+        {% if customer.created_at %}<dt>Cliente desde</dt><dd>{{ customer.created_at|slice:":10" }}</dd>{% endif %}
+    </dl>
+</div>
+
+<a class="btn btn--ghost mt-lg" href="{% url 'adminpanel:customers_list' %}">Volver a clientes</a>
+{% endblock %}

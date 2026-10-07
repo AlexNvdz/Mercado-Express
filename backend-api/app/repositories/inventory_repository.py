@@ -6,6 +6,7 @@ placements can't oversell the same product.
 """
 
 import uuid
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,16 +15,32 @@ from app.exceptions import InsufficientStockError, NotFoundError
 from app.models.inventory import Inventory
 from app.repositories.base import BaseRepository
 
+# Shared predicate for "needs restocking": available stock at or below the
+# product's own reorder level.
+_LOW_STOCK = Inventory.quantity_on_hand - Inventory.quantity_reserved <= Inventory.reorder_level
+
 
 class InventoryRepository(BaseRepository[Inventory]):
     def __init__(self, db: AsyncSession) -> None:
         super().__init__(Inventory, db)
 
     async def get_by_product_id(self, product_id: uuid.UUID) -> Inventory | None:
-        result = await self.db.execute(
-            select(Inventory).where(Inventory.product_id == product_id)
-        )
+        result = await self.db.execute(select(Inventory).where(Inventory.product_id == product_id))
         return result.scalar_one_or_none()
+
+    async def list_filtered(
+        self, *, offset: int = 0, limit: int = 20, low_stock: bool = False
+    ) -> list[Inventory]:
+        stmt = select(Inventory)
+        if low_stock:
+            stmt = stmt.where(_LOW_STOCK)
+        stmt = stmt.order_by(Inventory.updated_at.desc()).offset(offset).limit(limit)
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def count_filtered(self, *, low_stock: bool = False) -> int:
+        filters: list[Any] = [_LOW_STOCK] if low_stock else []
+        return await self.count(filters=filters)
 
     async def get_by_product_id_locked(self, product_id: uuid.UUID) -> Inventory:
         result = await self.db.execute(

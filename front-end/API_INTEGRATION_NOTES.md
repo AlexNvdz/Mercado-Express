@@ -23,6 +23,52 @@ este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
 
+## Correcciones 2026-09-12 (estado de pedidos)
+
+- **`OrderOut` ahora incluye `shipping_address`** (objeto `AddressOut`
+  resuelto, `null` si el pedido no tiene `shipping_address_id`) además del
+  `shipping_address_id` crudo -- ver `API_CONTRACT.md#apiv1orders`. Se usa en
+  `templates/orders/detail.html` y `templates/adminpanel/order_detail.html`
+  para mostrar la dirección de envío (antes no se mostraba en ninguna
+  parte, ni para el cliente ni para administración).
+- **El selector de "cambiar estado manualmente" del panel de admin
+  (`apps/adminpanel`) ahora solo ofrece los estados a los que el pedido
+  puede pasar de verdad** (`services/orders.py::next_statuses`, espejo de
+  `_ALLOWED_TRANSITIONS` en `backend-api/app/services/order_service.py`).
+  Antes listaba los 8 estados sin importar el estado actual del pedido, así
+  que casi cualquier selección que no fuera el único paso válido siguiente
+  el backend la rechazaba con `409` ("Transición de estado no válida") --
+  esto es lo que hacía parecer que "no se puede cambiar el estado del
+  pedido": la mayoría de los intentos fallaban en silencio y por lo tanto el
+  cliente tampoco veía ningún cambio reflejado. Un pedido en estado final
+  (`delivered`/`cancelled`/`refunded`) ahora muestra un mensaje en vez de un
+  selector sin opciones válidas.
+- **Todos los estados (pedido/pago/envío) se traducen al español para
+  mostrarse** vía `apps/core/templatetags/status_labels.py`
+  (`ORDER_STATUS_LABELS`/`PAYMENT_STATUS_LABELS`/`SHIPMENT_STATUS_LABELS` en
+  sus respectivos `services/*.py`). Los valores en inglés (`pending`,
+  `paid`, etc.) se siguen usando tal cual en querystrings, clases CSS
+  (`status--pending`) y el cuerpo del `PATCH`/`POST` -- solo el texto
+  visible cambia.
+- La insignia de estado de pago en `orders/detail.html` usaba por error la
+  clase CSS del *pedido* (`status--{{ order.status }}`) en vez de la del
+  pago; corregido a `status--{{ payment.status }}`.
+
+## Corrección 2026-09-12: se eliminó `awaiting_payment`
+
+A pedido explícito, `OrderStatus` se redujo a 7 valores: `pending`, `paid`,
+`preparing`, `shipped`, `delivered`, `cancelled`, `refunded` -- ya no existe
+`awaiting_payment` (ni en backend-api ni en el frontend). Es un cambio de
+esquema real en `backend-api` (migración Alembic
+`6bf0432e1cd9_remove_awaiting_payment_from_order_.py`: recrea el tipo nativo
+de Postgres `order_status` sin ese valor y traslada las filas existentes en
+`awaiting_payment` a `pending`). Un pago fallado deja el pedido en `pending`
+en vez de moverlo a `awaiting_payment` -- ya era reintentable desde ahí, así
+que el comportamiento no cambia, solo desaparece el estado intermedio.
+`services/orders.py::ORDER_STATUSES`/`ORDER_STATUS_LABELS`/
+`ORDER_TRANSITIONS` y `apps/orders/views.py::_build_tracker`/`cancellable`
+ya no lo referencian.
+
 ## Verificado de extremo a extremo contra el backend real
 
 2026-09-08: backend-api añadió un script de seed
@@ -71,10 +117,17 @@ antes de renderizar.
 ```
 Coincide con lo que `services/shipments.py` ya asumía (salvo `address_id`/
 `created_at`, que el frontend no necesita mostrar). Nota: el `status` del
-envío usa su propio vocabulario (`preparing`/`in_transit`/`delivered`),
-distinto al `status` del pedido (`preparing`/`shipped`/`delivered`) -- el
-frontend no muestra `shipment.status` directamente para evitar esa
-confusión, solo transportadora y guía.
+envío usa su propio vocabulario (`pending`/`preparing`/`in_transit`/
+`delivered`/`failed`/`returned`), distinto al `status` del pedido
+(`pending`/`paid`/`preparing`/`shipped`/`delivered`/`cancelled`/
+`refunded`). Decisión actualizada: la vista de cliente
+(`templates/orders/detail.html`) sigue sin mostrar `shipment.status` (solo
+transportadora y guía, para no confundir con el estado del pedido), pero el
+panel de administración (`templates/adminpanel/order_detail.html`) sí lo
+muestra -- staff necesita ver en qué paso de envío está algo antes de decidir
+si despachar/entregar, y ambos vocabularios se etiquetan en español por
+separado (`SHIPMENT_STATUS_LABELS` vs. `ORDER_STATUS_LABELS`, ver
+`apps/core/templatetags/status_labels.py`) para que no se mezclen.
 
 ## Huecos pendientes
 
@@ -91,6 +144,16 @@ a la sección `/api/v1/products`.
 vistas todavía (los tokens simplemente expiran y el usuario vuelve a hacer
 login); se puede añadir un middleware que llame a `/auth/refresh` cuando
 `/auth/me` devuelva 401, si se prioriza esa mejora.
+
+---
+
+**CORREGIDO 2026-10-06:** `DELETE /api/v1/categories/{id}` de una categoría
+con productos respondía 500: el ORM intentaba poner `products.category_id`
+(NOT NULL) a `null` y Postgres lo rechazaba. Ahora `CategoryService.delete`
+cuenta los productos antes de borrar y devuelve 409. El frontend ya lo
+maneja en `adminpanel.views.category_delete` ("la categoría tiene productos
+asociados"). Las subcategorías no bloquean el borrado: quedan con
+`parent_id = null`.
 
 ## Verificado con `docker compose up` de los tres servicios (integración anterior)
 
@@ -133,3 +196,10 @@ de desarrollo del otro lado.
   y llama a `POST /payments` justo después de crear el pedido.
 - Favoritos ("wishlist") es estado de sesión en Django (como el carrito),
   no un endpoint del backend -- no hay recurso "wishlist" en el contrato.
+- Las vistas nunca muestran el `detail` de un error del backend (`exc.detail`)
+  al usuario. Ese texto está en inglés, es para desarrolladores y a veces
+  lleva UUIDs (p. ej. el 409 de stock insuficiente en `POST /orders`). Cada
+  `except` muestra un texto fijo en español según el código: 409 = conflicto
+  (stock, transición de estado, correo/SKU/categoría duplicados), 422 =
+  validación. Ojo: cancelar un pedido que ya no está `pending` devuelve 422
+  (`ValidationAppError`), no 409.

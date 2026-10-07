@@ -29,6 +29,4 @@ def configure_logging() -> None:
 
     # Quiet noisy libraries unless explicitly debugging.
     logging.getLogger("uvicorn.access").setLevel(level)
-    logging.getLogger("sqlalchemy.engine").setLevel(
-        logging.INFO if settings.DB_ECHO else logging.WARNING
-    )
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO if settings.DB_ECHO else logging.WARNING)

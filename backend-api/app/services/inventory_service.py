@@ -13,6 +13,13 @@ class InventoryService:
         self.repo = InventoryRepository(db)
         self.products = ProductRepository(db)
 
+    async def list(self, *, offset: int, limit: int, low_stock: bool = False) -> tuple[list[Inventory], int]:
+        """Batched read for dashboards (e.g. low-stock alerts) -- avoids
+        callers paging `GET /inventory/{id}` once per product."""
+        items = await self.repo.list_filtered(offset=offset, limit=limit, low_stock=low_stock)
+        total = await self.repo.count_filtered(low_stock=low_stock)
+        return items, total
+
     async def get_for_product(self, product_id: uuid.UUID) -> Inventory:
         if await self.products.get(product_id) is None:
             raise NotFoundError(f"Product {product_id} not found.")

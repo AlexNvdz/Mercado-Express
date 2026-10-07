@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1530">
     <title>{% block title %}MercadoExpress{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}MercadoExpress -- tu mercado en línea: catálogo, pedidos y seguimiento de envío.{% endblock %}">
+    <meta name="description" content="{% block meta_description %}MercadoExpress: tu mercado en línea. Catálogo con stock real, pago al instante y seguimiento de tu pedido.{% endblock %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
@@ -25,11 +26,11 @@
     </div>
     {% endif %}
 
-    <main class="page">
+    <main class="{% block main_class %}page{% endblock %}">
         {% block content %}{% endblock %}
     </main>
 
-    {% include "partials/footer.html" %}
+    {% block footer %}{% include "partials/footer.html" %}{% endblock %}
     <script src="{% static 'js/app.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>

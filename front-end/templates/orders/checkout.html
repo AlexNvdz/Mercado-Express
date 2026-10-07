@@ -1,53 +1,73 @@
 {% extends "base.html" %}
 {% load money %}
 
-{% block title %}Finalizar compra - MercadoExpress{% endblock %}
+{% block title %}Confirmar compra - MercadoExpress{% endblock %}
 
 {% block content %}
+<nav class="breadcrumbs" aria-label="Ruta">
+    <a href="{% url 'cart:detail' %}">Carrito</a>
+    <span class="sep">/</span>
+    <span class="current">Confirmar compra</span>
+</nav>
+
 <div class="section-head">
-    <h1 class="section-title">Finalizar compra</h1>
+    <h1 class="section-title">Confirmar compra</h1>
 </div>
 
-<div class="table-card">
-<table class="table">
-    <thead><tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th></tr></thead>
-    <tbody>
-        {% for item in items %}
-        <tr>
-            <td>{{ item.product.name }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>${{ item.subtotal|money }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="checkout-layout">
+    <div class="checkout-layout__main">
+        <div class="card">
+            <h2 class="checkout-section-title"><span class="checkout-section-title__num">1</span>¿A dónde lo enviamos?</h2>
+            <div class="address-options">
+                {% for address in addresses %}
+                <label class="address-option">
+                    <input type="radio" name="shipping_address_id" form="checkout-form" value="{{ address.id }}" {% if address.is_default %}checked{% endif %} required>
+                    <span class="address-option__body">
+                        <span class="address-option__line">{{ address.line1 }}{% if address.line2 %}, {{ address.line2 }}{% endif %}</span>
+                        <span class="muted">{{ address.city }}, {{ address.state }}, {{ address.country }}</span>
+                        {% if address.is_default %}<span class="badge badge--soft">Predeterminada</span>{% endif %}
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+            <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:address_add' %}?next={% url 'orders:checkout' %}">Añadir otra dirección</a>
+        </div>
+
+        <div class="card">
+            <h2 class="checkout-section-title"><span class="checkout-section-title__num">2</span>Indicaciones para la entrega</h2>
+            <textarea form="checkout-form" name="notes" rows="3" placeholder="Opcional. Ej.: dejar en portería, tocar el timbre" class="checkout-notes" aria-label="Indicaciones para la entrega"></textarea>
+        </div>
+
+        <div class="card">
+            <h2 class="checkout-section-title"><span class="checkout-section-title__num">3</span>Revisa tus productos</h2>
+            <div class="cart-list cart-list--plain">
+                {% for item in items %}
+                <div class="cart-item">
+                    <div class="cart-item__media" aria-hidden="true">
+                        {% if item.product.images %}
+                        <img src="{{ item.product.images.0.url }}" alt="" loading="lazy">
+                        {% else %}
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="1.5"/></svg>
+                        {% endif %}
+                    </div>
+                    <div class="cart-item__info">
+                        <span class="cart-item__name">{{ item.product.name }}</span>
+                        <span class="subtle">{{ item.quantity }} unidad{{ item.quantity|pluralize:"es" }}</span>
+                    </div>
+                    <div class="cart-item__subtotal">${{ item.subtotal|money }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <form id="checkout-form" method="post" class="cart-summary checkout-summary">
+        {% csrf_token %}
+        <h2 class="cart-summary__title">Resumen de compra</h2>
+        <div class="cart-summary__row"><span>Productos</span><span>${{ total|money }}</span></div>
+        <div class="cart-summary__total"><span>Total</span><span>${{ total|money }}</span></div>
+        <button type="submit" class="btn btn--lg btn--full">Confirmar y pagar</button>
+        <p class="checkout-security"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/></svg>El pago se procesa de forma segura</p>
+    </form>
 </div>
-
-<form method="post" class="cart-summary" style="max-width:520px;">
-    {% csrf_token %}
-    <div class="cart-summary__total"><span>Total</span><span>${{ total|money }}</span></div>
-
-    <div class="form-field">
-        <label>Dirección de envío</label>
-        {% for address in addresses %}
-        <label style="display:flex; gap:10px; align-items:flex-start; font-weight:400; margin-bottom:10px; padding:12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); cursor:pointer;">
-            <input type="radio" name="shipping_address_id" value="{{ address.id }}" {% if address.is_default %}checked{% endif %} required style="margin-top:3px;">
-            <span>
-                {{ address.line1 }}{% if address.line2 %}, {{ address.line2 }}{% endif %}<br>
-                <span class="muted">{{ address.city }}, {{ address.state }}, {{ address.country }}</span>
-                {% if address.is_default %}<span class="badge" style="background: var(--color-primary); margin-left:6px;">Predeterminada</span>{% endif %}
-            </span>
-        </label>
-        {% endfor %}
-    </div>
-
-    <div class="form-field">
-        <label for="notes">Notas para la entrega (opcional)</label>
-        <textarea id="notes" name="notes" rows="3" placeholder="Ej. dejar en portería, tocar el timbre..."></textarea>
-    </div>
-
-    <button type="submit" class="btn btn--full">Confirmar y pagar</button>
-</form>
-
-<p style="margin-top:14px;"><a href="{% url 'dashboard:address_add' %}?next={% url 'orders:checkout' %}">+ Añadir otra dirección</a></p>
 {% endblock %}

@@ -1,13 +1,18 @@
 <footer class="footer">
     <div class="footer__inner">
         <div class="footer__brand-col">
-            <div class="footer__brand">MercadoExpress</div>
-            <p class="footer__tagline">Tu mercado en línea: catálogo actualizado, pago seguro y seguimiento de pedido en tiempo real.</p>
+            <div class="footer__brand">
+                <span class="navbar__mark" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 7V6a3 3 0 0 1 6 0v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                MercadoExpress
+            </div>
+            <p class="footer__tagline">El mercado de todos los días, en línea. Stock real por producto, pago al instante y seguimiento del envío hasta tu puerta.</p>
         </div>
         <div>
             <div class="footer__heading">Comprar</div>
             <ul class="footer__links">
-                <li><a href="{% url 'catalog:list' %}">Catálogo completo</a></li>
+                <li><a href="{% url 'catalog:list' %}">Todos los productos</a></li>
                 <li><a href="{% url 'catalog:wishlist' %}">Favoritos</a></li>
                 <li><a href="{% url 'cart:detail' %}">Carrito</a></li>
             </ul>
@@ -16,7 +21,7 @@
             <div class="footer__heading">Mi cuenta</div>
             <ul class="footer__links">
                 {% if is_api_authenticated %}
-                <li><a href="{% url 'dashboard:profile' %}">Mi perfil</a></li>
+                <li><a href="{% url 'dashboard:profile' %}">Mis datos</a></li>
                 <li><a href="{% url 'dashboard:addresses' %}">Direcciones</a></li>
                 <li><a href="{% url 'orders:list' %}">Mis pedidos</a></li>
                 {% else %}
@@ -26,5 +31,5 @@
             </ul>
         </div>
     </div>
-    <div class="footer__bottom">&copy; {% now "Y" %} MercadoExpress &middot; Frontend Django &middot; Backend FastAPI &middot; PostgreSQL</div>
+    <div class="footer__bottom">&copy; {% now "Y" %} MercadoExpress</div>
 </footer>

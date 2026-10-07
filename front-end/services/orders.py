@@ -5,7 +5,8 @@ Order creation, listing, detail and cancellation. See
     POST /api/v1/orders                       {items, shipping_address_id, notes}
     GET  /api/v1/orders?page=&page_size=      -> own orders (customer) / all (staff)
     GET  /api/v1/orders/{order_id}
-    POST /api/v1/orders/{order_id}/cancel
+    POST  /api/v1/orders/{order_id}/cancel
+    PATCH /api/v1/orders/{order_id}/status    staff, {"status": "<OrderStatus>"}
 
 No order/pricing/inventory business logic is duplicated here: this module
 only shapes requests/responses for the views. Totals, stock reservation and
@@ -23,6 +24,60 @@ from django.conf import settings
 from . import mock_data
 from .api_client import api_client
 from .exceptions import ApiConflictError, ApiNotFoundError
+
+# Mirrors backend-api's OrderStatus enum (app/models/enums.py). 7 statuses
+# total -- no separate "awaiting_payment" (removed 2026-09-12: a failed
+# payment leaves the order "pending", already retryable from there). Used to
+# populate the staff status-override form in apps/adminpanel.
+ORDER_STATUSES = [
+    "pending",
+    "paid",
+    "preparing",
+    "shipped",
+    "delivered",
+    "cancelled",
+    "refunded",
+]
+
+# Spanish display labels -- the values above stay in English (they're the
+# API's wire vocabulary, used as-is in querystrings/CSS classes/PATCH
+# bodies); never render a raw value to a user, always go through this map
+# (see apps/core/templatetags/status_labels.py).
+ORDER_STATUS_LABELS = {
+    "pending": "Pendiente",
+    "paid": "Pagado",
+    "preparing": "En preparación",
+    "shipped": "Enviado",
+    "delivered": "Entregado",
+    "cancelled": "Cancelado",
+    "refunded": "Reembolsado",
+}
+
+# Mirrors backend-api's order_service._ALLOWED_TRANSITIONS
+# (app/services/order_service.py) -- the staff status-override dropdown used
+# to list all 8 statuses regardless of the order's current one, so most
+# manual jumps a staff member picked were rejected by the backend with a 409
+# ("Transición de estado no válida"). Restricting the dropdown to only the
+# transitions the backend will actually accept fixes that. "paid" is reached
+# from "pending" by a completed payment (POST /payments), not listed here as
+# a manual-override target.
+ORDER_TRANSITIONS = {
+    "pending": ["cancelled"],
+    "paid": ["preparing", "cancelled", "refunded"],
+    "preparing": ["shipped", "cancelled"],
+    "shipped": ["delivered"],
+    "delivered": [],
+    "cancelled": [],
+    "refunded": [],
+}
+
+
+def next_statuses(current_status: str) -> list[str]:
+    """Valid next values for the manual status-override form, given the
+    order's current status. Empty for terminal states (delivered/cancelled/
+    refunded) -- there is nothing left to transition to.
+    """
+    return ORDER_TRANSITIONS.get(current_status, [])
 
 
 def list_orders(token: str, *, page: int = 1, page_size: int = 20) -> dict:
@@ -85,6 +140,9 @@ def _mock_create_order(items: list[dict], shipping_address_id: str, notes: str |
         )
 
     next_seq = len(mock_data.MOCK_ORDERS) + 1
+    shipping_address = next(
+        (a for a in mock_data.MOCK_ADDRESSES if a["id"] == shipping_address_id), None
+    )
     order = {
         "id": str(uuid.uuid4()),
         "order_number": f"ORD-MOCK{next_seq:04d}",
@@ -95,6 +153,7 @@ def _mock_create_order(items: list[dict], shipping_address_id: str, notes: str |
         "shipping_amount": "0.00",
         "total_amount": str(subtotal),
         "shipping_address_id": shipping_address_id,
+        "shipping_address": shipping_address,
         "notes": notes,
         "items": line_items,
         "created_at": "2026-09-08T00:00:00Z",
@@ -112,3 +171,17 @@ def cancel_order(token: str, order_id: str) -> dict:
         order["status"] = "cancelled"
         return order
     return api_client.post(f"/api/v1/orders/{order_id}/cancel", token=token)
+
+
+def update_status(token: str, order_id: str, status: str) -> dict:
+    """Staff only: force a status transition directly (see ORDER_STATUSES).
+    Prefer /payments and /shipments for the normal flow -- this is for
+    manual corrections (e.g. marking paid after an out-of-band payment).
+    """
+    if settings.API_USE_MOCKS:
+        order = next((o for o in mock_data.MOCK_ORDERS if o["id"] == str(order_id)), None)
+        if order is None:
+            raise ApiConflictError("Pedido no encontrado.", status_code=404)
+        order["status"] = status
+        return order
+    return api_client.patch(f"/api/v1/orders/{order_id}/status", token=token, json={"status": status})

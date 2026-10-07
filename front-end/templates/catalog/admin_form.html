@@ -1,0 +1,72 @@
+{% extends "adminpanel/_layout.html" %}
+
+{% block title %}{% if product %}Editar {{ product.name }}{% else %}Nuevo producto{% endif %} - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<nav class="breadcrumbs" aria-label="Ruta">
+    <a href="{% url 'catalog:admin_list' %}">Productos</a>
+    <span class="sep">/</span>
+    <span class="current">{% if product %}{{ product.name }}{% else %}Nuevo{% endif %}</span>
+</nav>
+
+<div class="section-head">
+    <h1 class="section-title">{% if product %}Editar producto{% else %}Nuevo producto{% endif %}</h1>
+</div>
+
+<div class="dashboard-cols dashboard-cols--wide">
+    <div class="form-card">
+        <h2 class="form-card__title">Información</h2>
+        <p class="form-card__sub">Nombre, precio y categoría tal como los verá el cliente.</p>
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <ul class="form-errors">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+            {% for field in form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<span class="form-errors">{{ error }}</span>{% endfor %}
+            </div>
+            {% endfor %}
+            <div class="actions">
+                <button type="submit" class="btn">{% if product %}Guardar cambios{% else %}Crear producto{% endif %}</button>
+                <a class="btn btn--ghost" href="{% url 'catalog:admin_list' %}">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2 class="card__title">Imágenes</h2>
+        {% if product %}
+        <form method="post" action="{% url 'catalog:admin_upload_image' product.id %}" enctype="multipart/form-data" class="stack" style="margin-bottom:18px;">
+            {% csrf_token %}
+            <label class="visually-hidden" for="product-image-file">Archivo de imagen</label>
+            <input id="product-image-file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required>
+            <p class="subtle">JPG, PNG o WebP de hasta 5 MB.</p>
+            <div><button type="submit" class="btn btn--secondary btn--sm">Subir imagen</button></div>
+        </form>
+
+        {% if product.images %}
+        <div class="image-grid">
+            {% for image in product.images %}
+            <div class="image-grid__item">
+                <img src="{{ image.url }}" alt="Imagen {{ forloop.counter }} de {{ product.name }}">
+                <form method="post" action="{% url 'catalog:admin_delete_image' product.id image.id %}" onsubmit="return confirm('¿Quitar esta imagen del producto?');" class="image-grid__remove">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn" aria-label="Quitar imagen {{ forloop.counter }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted">Este producto todavía no tiene imágenes.</p>
+        {% endif %}
+        {% else %}
+        <p class="muted">Guarda el producto primero y luego podrás subirle imágenes.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -100,15 +100,17 @@ MOCK_PRODUCTS = [
 ]
 
 # Keyed by product_id -- mirrors GET /api/v1/inventory/{product_id}.
+# reorder_level set on a couple of rows so the dashboard's low-stock alert
+# (apps/adminpanel) has something to show against mock data.
 MOCK_INVENTORY = {
-    "00000000-0000-0000-0000-000000000201": {"quantity_on_hand": 120, "quantity_reserved": 0},
-    "00000000-0000-0000-0000-000000000202": {"quantity_on_hand": 80, "quantity_reserved": 0},
-    "00000000-0000-0000-0000-000000000203": {"quantity_on_hand": 60, "quantity_reserved": 0},
-    "00000000-0000-0000-0000-000000000204": {"quantity_on_hand": 200, "quantity_reserved": 0},
-    "00000000-0000-0000-0000-000000000205": {"quantity_on_hand": 150, "quantity_reserved": 0},
-    "00000000-0000-0000-0000-000000000206": {"quantity_on_hand": 90, "quantity_reserved": 0},
-    "00000000-0000-0000-0000-000000000207": {"quantity_on_hand": 40, "quantity_reserved": 0},
-    "00000000-0000-0000-0000-000000000208": {"quantity_on_hand": 0, "quantity_reserved": 0},
+    "00000000-0000-0000-0000-000000000201": {"quantity_on_hand": 120, "quantity_reserved": 0, "reorder_level": 20},
+    "00000000-0000-0000-0000-000000000202": {"quantity_on_hand": 80, "quantity_reserved": 0, "reorder_level": 15},
+    "00000000-0000-0000-0000-000000000203": {"quantity_on_hand": 60, "quantity_reserved": 0, "reorder_level": 10},
+    "00000000-0000-0000-0000-000000000204": {"quantity_on_hand": 200, "quantity_reserved": 0, "reorder_level": 30},
+    "00000000-0000-0000-0000-000000000205": {"quantity_on_hand": 150, "quantity_reserved": 0, "reorder_level": 20},
+    "00000000-0000-0000-0000-000000000206": {"quantity_on_hand": 90, "quantity_reserved": 0, "reorder_level": 15},
+    "00000000-0000-0000-0000-000000000207": {"quantity_on_hand": 40, "quantity_reserved": 0, "reorder_level": 10},
+    "00000000-0000-0000-0000-000000000208": {"quantity_on_hand": 0, "quantity_reserved": 0, "reorder_level": 10},
 }
 
 MOCK_USER = {
@@ -119,6 +121,31 @@ MOCK_USER = {
     "role": "customer",
     "is_active": True,
 }
+
+# Mirrors GET /api/v1/customers (staff only) -- includes the demo customer
+# plus a couple more accounts so the admin panel's customer list/dashboard
+# customer count have more than one row to render.
+MOCK_CUSTOMERS = [
+    MOCK_USER,
+    {
+        "id": "00000000-0000-0000-0000-000000000502",
+        "email": "ana.torres@mercadoexpress.test",
+        "full_name": "Ana Torres",
+        "phone": "+57 300 111 2222",
+        "role": "customer",
+        "is_active": True,
+        "created_at": "2026-08-15T09:00:00Z",
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000503",
+        "email": "admin@mercadoexpress.test",
+        "full_name": "Admin MercadoExpress",
+        "phone": None,
+        "role": "admin",
+        "is_active": True,
+        "created_at": "2026-07-01T00:00:00Z",
+    },
+]
 
 MOCK_ADDRESSES = [
     {
@@ -144,6 +171,7 @@ MOCK_ORDERS = [
         "shipping_amount": "0.00",
         "total_amount": "17700.00",
         "shipping_address_id": MOCK_ADDRESSES[0]["id"],
+        "shipping_address": MOCK_ADDRESSES[0],
         "notes": None,
         "items": [
             {"id": "i1", "product_id": "00000000-0000-0000-0000-000000000201", "product_name": "Arroz blanco 1kg", "quantity": 2, "unit_price": "6500.00", "line_total": "13000.00"},
@@ -162,6 +190,7 @@ MOCK_ORDERS = [
         "shipping_amount": "0.00",
         "total_amount": "12900.00",
         "shipping_address_id": MOCK_ADDRESSES[0]["id"],
+        "shipping_address": MOCK_ADDRESSES[0],
         "notes": None,
         "items": [
             {"id": "i3", "product_id": "00000000-0000-0000-0000-000000000202", "product_name": "Aceite vegetal 1L", "quantity": 1, "unit_price": "12900.00", "line_total": "12900.00"},

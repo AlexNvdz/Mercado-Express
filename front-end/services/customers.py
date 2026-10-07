@@ -7,6 +7,8 @@ Customer profile and address book. See ../API_CONTRACT.md#apiv1customers.
     POST  /api/v1/customers/me/addresses
     PATCH /api/v1/customers/me/addresses/{address_id}
     DELETE /api/v1/customers/me/addresses/{address_id}
+    GET   /api/v1/customers                             staff, paginated list
+    GET   /api/v1/customers/{customer_id}                staff, get one
 
 Addresses matter beyond profile display: order creation requires a
 `shipping_address_id` (see services/orders.create_order), so checkout routes
@@ -41,6 +43,24 @@ def update_profile(token: str, *, full_name: str | None = None, phone: str | Non
         mock_data.MOCK_USER.update(payload)
         return mock_data.MOCK_USER
     return api_client.patch("/api/v1/customers/me", token=token, json=payload)
+
+
+def list_customers(token: str, *, page: int = 1, page_size: int = 20) -> dict:
+    """Staff only: paginated list of every customer account."""
+    if settings.API_USE_MOCKS:
+        items = mock_data.MOCK_CUSTOMERS
+        return {"items": items, "total": len(items), "page": 1, "page_size": len(items) or 1, "pages": 1}
+    return api_client.get("/api/v1/customers", token=token, params={"page": page, "page_size": page_size})
+
+
+def get_customer(token: str, customer_id: str) -> dict | None:
+    """Staff only: one customer's account details."""
+    if settings.API_USE_MOCKS:
+        return next((c for c in mock_data.MOCK_CUSTOMERS if c["id"] == str(customer_id)), None)
+    try:
+        return api_client.get(f"/api/v1/customers/{customer_id}", token=token)
+    except ApiNotFoundError:
+        return None
 
 
 def list_addresses(token: str) -> list[dict]:

@@ -1,0 +1,71 @@
+{% extends "adminpanel/_layout.html" %}
+
+{% block title %}Inventario - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<div class="section-head">
+    <div>
+        <h1 class="section-title">Inventario</h1>
+        <p class="section-sub">Ajusta con cantidades positivas para reponer o negativas para descontar.</p>
+    </div>
+</div>
+
+{% if rows %}
+<div class="table-card">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th class="num">En bodega</th>
+            <th class="num">Reservado</th>
+            <th class="num">Disponible</th>
+            <th>Ajustar stock</th>
+            <th>Nivel de reorden</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td><div class="cell-title">{{ row.product.name }}</div><div class="cell-sub">SKU {{ row.product.sku }}</div></td>
+            {% if row.availability %}
+            <td class="num">{{ row.availability.quantity_on_hand }}</td>
+            <td class="num">{{ row.availability.quantity_reserved }}</td>
+            <td class="num">
+                {% if row.availability.quantity_available <= row.availability.reorder_level %}
+                <span class="stock-badge stock-badge--{% if row.availability.quantity_available <= 0 %}out{% else %}low{% endif %}">{{ row.availability.quantity_available }}</span>
+                {% else %}
+                <span class="stock-badge stock-badge--in">{{ row.availability.quantity_available }}</span>
+                {% endif %}
+            </td>
+            <td>
+                <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_adjust' row.product.id %}">
+                    {% csrf_token %}
+                    <label class="visually-hidden" for="{{ row.adjust_form.delta.id_for_label }}">Cantidad a ajustar de {{ row.product.name }}</label>
+                    {{ row.adjust_form.delta }}
+                    <button type="submit" class="btn btn--secondary btn--sm">Ajustar</button>
+                </form>
+            </td>
+            <td>
+                <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_set_reorder' row.product.id %}">
+                    {% csrf_token %}
+                    <label class="visually-hidden" for="{{ row.reorder_form.reorder_level.id_for_label }}">Nivel de reorden de {{ row.product.name }}</label>
+                    {{ row.reorder_form.reorder_level }}
+                    <button type="submit" class="btn btn--secondary btn--sm">Guardar</button>
+                </form>
+            </td>
+            {% else %}
+            <td colspan="5" class="muted">Sin registro de inventario.</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>Todavía no hay productos</h2>
+    <p>Crea productos para empezar a controlar su stock.</p>
+    <a class="btn" href="{% url 'catalog:admin_create' %}">Nuevo producto</a>
+</div>
+{% endif %}
+{% endblock %}

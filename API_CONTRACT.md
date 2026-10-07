@@ -149,7 +149,7 @@ Address body:
 | GET | `/categories` | none | Paginated list. |
 | GET | `/categories/{category_id}` | none | Get one. |
 | PATCH | `/categories/{category_id}` | staff | Partial update. |
-| DELETE | `/categories/{category_id}` | staff | Delete. |
+| DELETE | `/categories/{category_id}` | staff | Delete. `409` if any product still belongs to it; subcategories are kept with `parent_id` set to `null`. |
 
 ```json
 { "name": "Electronics", "description": "Gadgets and devices", "parent_id": null, "is_active": true }
@@ -163,7 +163,9 @@ Address body:
 | GET | `/products?category_id=&search=&page=&page_size=` | none | Paginated list, optionally filtered by category and/or full-text-ish search. Only active products. |
 | GET | `/products/{product_id}` | none | Get one. |
 | PATCH | `/products/{product_id}` | staff | Partial update. |
-| DELETE | `/products/{product_id}` | staff | Delete. |
+| DELETE | `/products/{product_id}` | staff | Delete. Also purges its stored image files (see below). |
+| POST | `/products/{product_id}/images` | staff | Upload one image (`multipart/form-data`, field `file`). jpeg/png/webp only, max 5MB. |
+| DELETE | `/products/{product_id}/images/{image_id}` | staff | Remove one image. Only detaches the DB row -- the file itself is only removed from storage when the whole product is deleted. |
 
 ```json
 {
@@ -172,21 +174,25 @@ Address body:
   "description": "2.4GHz wireless mouse",
   "category_id": "b3f2b6f0-1234-4a5b-9c1d-abcdef123456",
   "price": "19.99",
-  "is_active": true
+  "is_active": true,
+  "images": [
+    { "id": "...", "url": "http://127.0.0.1:8000/media/products/{product_id}/{uuid}.jpg", "position": 0, "created_at": "..." }
+  ]
 }
 ```
-`price` is a decimal-as-string in responses (2 decimal places).
+`price` is a decimal-as-string in responses (2 decimal places). `images` is returned on `GET`/list responses (empty array if none); it is not accepted on `POST`/`PATCH /products` -- images are managed only via the endpoints above. Image files are stored locally by backend-api under `MEDIA_ROOT` and served back out at `MEDIA_URL` (`/media` by default) -- `url` is an absolute link built from the request host, safe to use as-is in an `<img src>`.
 
 ## `/api/v1/inventory`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/inventory/{product_id}` | none | Check availability. |
+| GET | `/inventory?low_stock=&page=&page_size=` | staff | Paginated list of every inventory row. `low_stock=true` filters to rows where `quantity_available <= reorder_level` (for a dashboard alert -- replaces paging `GET /inventory/{id}` once per product). |
+| GET | `/inventory/{product_id}` | none | Check availability for one product. |
 | POST | `/inventory/{product_id}/adjust` | staff | Add/remove stock by a signed delta. |
 | PUT | `/inventory/{product_id}` | staff | Set absolute `quantity_on_hand` / `reorder_level`. |
 
 ```json
-// GET response
+// GET /inventory/{product_id} response, and each item of GET /inventory
 {
   "id": "...", "product_id": "...",
   "quantity_on_hand": 50, "quantity_reserved": 3, "quantity_available": 47,
@@ -196,6 +202,23 @@ Address body:
 `quantity_available = quantity_on_hand - quantity_reserved`. Reservations are
 made automatically when an order is created and released on cancellation.
 
+`GET /inventory` returns the standard `{items, total, page, page_size, pages}`
+envelope (see Pagination), `items` shaped as above.
+
+```json
+// POST /inventory/{product_id}/adjust request
+{ "delta": 50, "reason": "restock" }   // reason is optional, max 255 chars
+```
+`delta` is signed: positive adds stock, negative removes it. Rejected with
+`409` if it would take `quantity_on_hand` below `quantity_reserved`.
+
+```json
+// PUT /inventory/{product_id} request
+{ "quantity_on_hand": 100, "reorder_level": 10 }   // reorder_level is optional
+```
+Both fields (when present) must be `>= 0`. Sets absolute levels rather than
+adjusting by a delta.
+
 ## `/api/v1/orders`
 
 | Method | Path | Auth | Description |
@@ -203,12 +226,16 @@ made automatically when an order is created and released on cancellation.
 | POST | `/orders` | customer | Create an order: validates products, reserves stock, computes totals. |
 | GET | `/orders?page=&page_size=` | any user | Customers see only their own orders; staff see all. |
 | GET | `/orders/{order_id}` | any user | Get one (customers: only their own, else `404`). |
-| POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`/`awaiting_payment`); releases reserved stock. |
+| POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`); releases reserved stock. |
 | PATCH | `/orders/{order_id}/status` | staff | Force a status transition directly. |
 
-Order status lifecycle: `pending → awaiting_payment → paid → preparing → shipped → delivered`,
-with `cancelled` reachable from `pending`/`awaiting_payment`/`paid`/`preparing`,
-and `refunded` reachable from `paid`. Invalid transitions return `409`.
+7 statuses total: `pending`, `paid`, `preparing`, `shipped`, `delivered`,
+`cancelled`, `refunded` (no `awaiting_payment` -- removed 2026-09-12, see
+`alembic/versions/6bf0432e1cd9_*`; a failed payment now leaves the order
+`pending`, which was already retryable). Lifecycle: `pending → paid →
+preparing → shipped → delivered`, with `cancelled` reachable from
+`pending`/`paid`/`preparing`, and `refunded` reachable from `paid`. Invalid
+transitions return `409`.
 
 ```json
 // POST /orders request
@@ -227,6 +254,11 @@ and `refunded` reachable from `paid`. Invalid transitions return `409`.
   "customer_id": "...", "status": "pending",
   "subtotal": "39.98", "tax_amount": "0.00", "shipping_amount": "0.00", "total_amount": "39.98",
   "shipping_address_id": "c4a1...", "notes": "Leave at front door",
+  "shipping_address": {
+    "id": "c4a1...", "user_id": "...", "line1": "Calle 10 # 20-30", "line2": null,
+    "city": "Bogotá", "state": "Bogotá D.C.", "postal_code": "110111", "country": "CO",
+    "is_default": true, "created_at": "...", "updated_at": "..."
+  },
   "items": [
     { "id": "...", "product_id": "b3f2b6f0-...", "quantity": 2, "unit_price": "19.99", "line_total": "39.98" }
   ],
@@ -234,6 +266,11 @@ and `refunded` reachable from `paid`. Invalid transitions return `409`.
 }
 ```
 `409` if any item is out of stock — no partial reservation is made (all-or-nothing).
+
+`shipping_address` is the resolved address object (`null` if the order has no
+`shipping_address_id`) — added so staff can see where to ship without a
+separate address-lookup call; every `OrderOut` response (create, get, list,
+status update) includes it.
 
 ## `/api/v1/payments`
 
@@ -244,7 +281,7 @@ will not change this contract.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/payments` | customer | Pay for own order in `pending`/`awaiting_payment`. |
+| POST | `/payments` | customer | Pay for own order in `pending`. |
 | GET | `/payments/{payment_id}` | any user | Get one (customers: only for their own order). |
 | GET | `/payments/order/{order_id}` | any user | List payments for an order. |
 
@@ -302,6 +339,40 @@ contract.
 `failed`/`returned`). `address_id` and `updated_at` are real fields —
 include them even though earlier notes didn't have them confirmed.
 
+## `/api/v1/reports`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/reports/summary?top_products_limit=` | staff | Aggregate dashboard numbers, computed server-side from the `Sale` ledger (not `Order.total_amount`). |
+
+```json
+{
+  "total_revenue": "1249.98",
+  "sale_count": 12,
+  "orders_by_status": [
+    { "status": "pending", "count": 2 },
+    { "status": "paid", "count": 3 },
+    { "status": "preparing", "count": 1 },
+    { "status": "shipped", "count": 2 },
+    { "status": "delivered", "count": 4 },
+    { "status": "cancelled", "count": 1 },
+    { "status": "refunded", "count": 0 }
+  ],
+  "top_products": [
+    { "product_id": "...", "name": "Wireless Mouse", "sku": "ELEC-001", "units_sold": 14, "revenue": "279.86" }
+  ],
+  "customer_count": 8,
+  "product_count": 7,
+  "generated_at": "2026-09-12T10:00:00Z"
+}
+```
+`orders_by_status` always lists every `OrderStatus` value, `count: 0` if none.
+`top_products` is ordered by `units_sold` descending, capped at
+`top_products_limit` (default 10, max 100). `total_revenue` and each
+product's `revenue`/`units_sold` are summed from `sales` joined to
+`order_items` — orders that were never paid (still `pending`, `cancelled`,
+etc.) never contribute, unlike summing `Order.total_amount` client-side.
+
 ---
 
 ## What Django needs to configure
@@ -348,4 +419,4 @@ exercised without any manual setup:
 - Multi-warehouse inventory (currently single stock pool per product).
 
 ---
-_Maintained by the backend-api service. Last updated: 2026-09-08 (Phase 1-6 + 7: auth, catalog, inventory, orders, payments, shipments, tests, Docker, admin/demo-data seeding, product search, confirmed shipment response shape, full E2E order flow verified)._
+_Maintained by the backend-api service. Last updated: 2026-09-12 (added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes; Phase 1-7 items unchanged: auth, catalog, inventory, orders, payments, shipments, tests, Docker, admin/demo-data seeding, product search, confirmed shipment response shape, full E2E order flow verified)._

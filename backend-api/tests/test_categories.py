@@ -13,9 +13,7 @@ async def test_subcategory_references_parent(admin_client: AsyncClient) -> None:
     parent = await admin_client.post("/api/v1/categories", json={"name": "Parent Cat"})
     parent_id = parent.json()["id"]
 
-    child = await admin_client.post(
-        "/api/v1/categories", json={"name": "Child Cat", "parent_id": parent_id}
-    )
+    child = await admin_client.post("/api/v1/categories", json={"name": "Child Cat", "parent_id": parent_id})
     assert child.status_code == 201
     assert child.json()["parent_id"] == parent_id
 
@@ -29,6 +27,38 @@ async def test_delete_category(admin_client: AsyncClient) -> None:
 
     fetched = await admin_client.get(f"/api/v1/categories/{category_id}")
     assert fetched.status_code == 404
+
+
+async def test_delete_category_with_products_conflicts(admin_client: AsyncClient) -> None:
+    created = await admin_client.post("/api/v1/categories", json={"name": "Stocked Cat"})
+    category_id = created.json()["id"]
+    product = await admin_client.post(
+        "/api/v1/products",
+        json={"sku": "SKU-CAT-DEL", "name": "Kept", "category_id": category_id, "price": "1.00"},
+    )
+    assert product.status_code == 201
+
+    deleted = await admin_client.delete(f"/api/v1/categories/{category_id}")
+    assert deleted.status_code == 409
+
+    fetched = await admin_client.get(f"/api/v1/categories/{category_id}")
+    assert fetched.status_code == 200
+
+
+async def test_delete_parent_category_keeps_subcategories(admin_client: AsyncClient) -> None:
+    parent = await admin_client.post("/api/v1/categories", json={"name": "Old Parent"})
+    parent_id = parent.json()["id"]
+    child = await admin_client.post(
+        "/api/v1/categories", json={"name": "Orphan Child", "parent_id": parent_id}
+    )
+    child_id = child.json()["id"]
+
+    deleted = await admin_client.delete(f"/api/v1/categories/{parent_id}")
+    assert deleted.status_code == 204
+
+    fetched = await admin_client.get(f"/api/v1/categories/{child_id}")
+    assert fetched.status_code == 200
+    assert fetched.json()["parent_id"] is None
 
 
 async def test_customer_cannot_create_category(customer_client: AsyncClient) -> None:

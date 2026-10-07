@@ -1,97 +1,119 @@
 {% extends "base.html" %}
 {% load money %}
+{% load status_labels %}
 
 {% block title %}Pedido {{ order.order_number }} - MercadoExpress{% endblock %}
 
 {% block content %}
-<nav class="breadcrumbs">
+<nav class="breadcrumbs" aria-label="Ruta">
     <a href="{% url 'orders:list' %}">Mis pedidos</a>
     <span class="sep">/</span>
     <span class="current">{{ order.order_number }}</span>
 </nav>
 
-<div class="section-head">
-    <h1 class="section-title">Pedido {{ order.order_number }}</h1>
-    <span class="status status--{{ order.status }}">{{ order.status }}</span>
+<div class="order-head">
+    <div>
+        <h1 class="section-title">Pedido {{ order.order_number }}</h1>
+        <p class="order-head__meta">Realizado el {{ order.created_at|slice:":10" }}</p>
+    </div>
+    <span class="status status--{{ order.status }}">{{ order.status|order_status_label }}</span>
 </div>
 
 {% if tracker_steps %}
 <div class="order-tracker">
     {% for step in tracker_steps %}
     <div class="order-tracker__step is-{{ step.state }}">
-        <div class="order-tracker__dot">{% if step.state == "done" %}✓{% else %}{{ forloop.counter }}{% endif %}</div>
+        <div class="order-tracker__dot">{% if step.state == "done" %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>{% else %}{{ forloop.counter }}{% endif %}</div>
         <div class="order-tracker__label">{{ step.label }}</div>
     </div>
     {% endfor %}
 </div>
 {% elif order.status == "cancelled" %}
-<div class="card" style="border-color: var(--color-danger); margin-bottom: 24px;">
-    <strong style="color: var(--color-danger);">Este pedido fue cancelado.</strong>
-</div>
+<div class="notice notice--danger"><strong>Este pedido fue cancelado.</strong> Las unidades reservadas volvieron al inventario.</div>
 {% elif order.status == "refunded" %}
-<div class="card" style="margin-bottom: 24px;">
-    <strong>Este pedido fue reembolsado.</strong>
-</div>
+<div class="notice notice--info"><strong>Este pedido fue reembolsado.</strong></div>
 {% endif %}
 
-<div class="table-card" style="margin-top:24px;">
-<table class="table">
-    <thead>
-        <tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr>
-    </thead>
-    <tbody>
-        {% for item in order.items %}
-        <tr>
-            <td>{{ item.product_name }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>${{ item.unit_price|money }}</td>
-            <td>${{ item.line_total|money }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
+<div class="buy-layout mt-md">
+    <div class="stack">
+        <div class="table-card">
+        <table class="table">
+            <thead>
+                <tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Subtotal</th></tr>
+            </thead>
+            <tbody>
+                {% for item in order.items %}
+                <tr>
+                    <td class="cell-title">{{ item.product_name }}</td>
+                    <td class="num">{{ item.quantity }}</td>
+                    <td class="num">${{ item.unit_price|money }}</td>
+                    <td class="num"><strong>${{ item.line_total|money }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
 
-<div class="cart-summary">
-    <div class="cart-summary__row"><span>Subtotal</span><span>${{ order.subtotal|money }}</span></div>
-    <div class="cart-summary__row"><span>Envío</span><span>${{ order.shipping_amount|money }}</span></div>
-    <div class="cart-summary__row"><span>Impuestos</span><span>${{ order.tax_amount|money }}</span></div>
-    <div class="cart-summary__total"><span>Total</span><span>${{ order.total_amount|money }}</span></div>
-</div>
-
-<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:32px;">
-    <div class="card">
-        <h3 style="margin-bottom:12px; font-size:1rem;">Pago</h3>
-        {% if payments %}
-            {% for payment in payments %}
-            <p>{{ payment.method }} &middot; <span class="status status--{{ order.status }}" style="text-transform:none;">{{ payment.status }}</span> &middot; ${{ payment.amount|money }}</p>
-            {% endfor %}
-        {% else %}
-            <p class="muted">Sin pagos registrados todavía.</p>
-        {% endif %}
+        <div class="info-grid">
+            <div class="card">
+                <h2 class="card__title">Dirección de envío</h2>
+                {% if order.shipping_address %}
+                <address class="address-block">
+                    <strong>{{ order.shipping_address.line1 }}{% if order.shipping_address.line2 %}, {{ order.shipping_address.line2 }}{% endif %}</strong>
+                    <span class="muted">{{ order.shipping_address.city }}, {{ order.shipping_address.state }}</span><br>
+                    <span class="muted">{{ order.shipping_address.postal_code }}, {{ order.shipping_address.country }}</span>
+                </address>
+                {% else %}
+                <p class="muted">Este pedido no tiene una dirección de envío asociada.</p>
+                {% endif %}
+            </div>
+            <div class="card">
+                <h2 class="card__title">Envío</h2>
+                {% if shipment %}
+                <dl class="kv">
+                    <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
+                    <dt>Guía</dt><dd>{{ shipment.tracking_number|default:"Sin asignar" }}</dd>
+                </dl>
+                {% else %}
+                <p class="muted">Tu pedido aún no ha sido despachado. Verás aquí la guía cuando salga.</p>
+                {% endif %}
+            </div>
+            <div class="card">
+                <h2 class="card__title">Pago</h2>
+                {% if payments %}
+                <div class="stack">
+                    {% for payment in payments %}
+                    <div class="flex-between">
+                        <span>{% if payment.method == "card" %}Tarjeta{% else %}{{ payment.method }}{% endif %}</span>
+                        <span class="status status--{{ payment.status }}">{{ payment.status|payment_status_label }}</span>
+                        <strong class="num">${{ payment.amount|money }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="muted">Sin pagos registrados todavía.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    <div class="card">
-        <h3 style="margin-bottom:12px; font-size:1rem;">Envío</h3>
-        {% if shipment %}
-            <p>Transportadora: {{ shipment.carrier|default:"—" }}</p>
-            <p>Guía de seguimiento: {{ shipment.tracking_number|default:"—" }}</p>
-        {% else %}
-            <p class="muted">Tu pedido aún no ha sido despachado.</p>
-        {% endif %}
-    </div>
-</div>
 
-<div style="display:flex; gap:12px; margin-top:32px; flex-wrap:wrap;">
-    <form method="post" action="{% url 'orders:reorder' order.id %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn--secondary">Repetir pedido</button>
-    </form>
-    {% if cancellable %}
-    <form method="post" action="{% url 'orders:cancel' order.id %}" onsubmit="return confirm('¿Cancelar este pedido?');">
-        {% csrf_token %}
-        <button type="submit" class="btn btn--danger">Cancelar pedido</button>
-    </form>
-    {% endif %}
-    <a class="btn btn--ghost" href="{% url 'orders:list' %}">&larr; Volver a mis pedidos</a>
+    <aside class="cart-summary">
+        <h2 class="cart-summary__title">Resumen</h2>
+        <div class="cart-summary__row"><span>Subtotal</span><span>${{ order.subtotal|money }}</span></div>
+        <div class="cart-summary__row"><span>Envío</span><span>${{ order.shipping_amount|money }}</span></div>
+        <div class="cart-summary__row"><span>Impuestos</span><span>${{ order.tax_amount|money }}</span></div>
+        <div class="cart-summary__total"><span>Total</span><span>${{ order.total_amount|money }}</span></div>
+        <form method="post" action="{% url 'orders:reorder' order.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--full">Repetir pedido</button>
+        </form>
+        {% if cancellable %}
+        <form method="post" action="{% url 'orders:cancel' order.id %}" onsubmit="return confirm('¿Cancelar este pedido?');" class="mt-sm">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--danger btn--full">Cancelar pedido</button>
+        </form>
+        {% endif %}
+        <a class="btn btn--ghost btn--full mt-sm" href="{% url 'orders:list' %}">Volver a mis pedidos</a>
+    </aside>
 </div>
 {% endblock %}

@@ -31,11 +31,43 @@ async def test_admin_can_adjust_stock(admin_client: AsyncClient) -> None:
     assert resp2.json()["quantity_on_hand"] == 30
 
 
-async def test_customer_cannot_adjust_stock(
-    admin_client: AsyncClient, customer_client: AsyncClient
-) -> None:
+async def test_customer_cannot_adjust_stock(admin_client: AsyncClient, customer_client: AsyncClient) -> None:
     product_id = await _make_product(admin_client, "INV-003")
     resp = await customer_client.post(f"/api/v1/inventory/{product_id}/adjust", json={"delta": 10})
+    assert resp.status_code == 403
+
+
+async def test_list_inventory_paginates(admin_client: AsyncClient) -> None:
+    await _make_product(admin_client, "INV-LIST-1")
+    await _make_product(admin_client, "INV-LIST-2")
+
+    resp = await admin_client.get("/api/v1/inventory", params={"page_size": 1})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["page_size"] == 1
+    assert len(body["items"]) == 1
+    assert body["total"] >= 2
+
+
+async def test_list_inventory_low_stock_filter(admin_client: AsyncClient) -> None:
+    below_reorder = await _make_product(admin_client, "INV-LOW-1")
+    await admin_client.put(
+        f"/api/v1/inventory/{below_reorder}", json={"quantity_on_hand": 1, "reorder_level": 5}
+    )
+    above_reorder = await _make_product(admin_client, "INV-LOW-2")
+    await admin_client.put(
+        f"/api/v1/inventory/{above_reorder}", json={"quantity_on_hand": 50, "reorder_level": 5}
+    )
+
+    resp = await admin_client.get("/api/v1/inventory", params={"low_stock": "true"})
+    assert resp.status_code == 200
+    product_ids = {row["product_id"] for row in resp.json()["items"]}
+    assert below_reorder in product_ids
+    assert above_reorder not in product_ids
+
+
+async def test_list_inventory_requires_staff(customer_client: AsyncClient) -> None:
+    resp = await customer_client.get("/api/v1/inventory")
     assert resp.status_code == 403
 
 

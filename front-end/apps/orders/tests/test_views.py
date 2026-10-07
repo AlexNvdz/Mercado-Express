@@ -2,6 +2,7 @@ import pytest
 from django.urls import reverse
 
 from services import mock_data
+from services.exceptions import ApiConflictError, ApiValidationError
 
 ARROZ_ID = mock_data.MOCK_PRODUCTS[0]["id"]
 
@@ -103,6 +104,48 @@ def test_checkout_out_of_stock_product_redirects_to_cart(client):
     response = client.post(reverse("orders:checkout"), {"shipping_address_id": address_id})
     assert response.status_code == 302
     assert response.url == reverse("cart:detail")
+
+
+@pytest.mark.django_db
+def test_checkout_insufficient_stock_shows_spanish_message(client, monkeypatch):
+    # The real backend's 409 `detail` is English and names the product by
+    # UUID (inventory_repository.reserve); it must never reach the customer.
+    english_detail = f"Insufficient stock for product {ARROZ_ID}: requested 5, available 1."
+
+    def raise_conflict(*args, **kwargs):
+        raise ApiConflictError("409", status_code=409, payload={"detail": english_detail})
+
+    monkeypatch.setattr("apps.orders.views.orders_service.create_order", raise_conflict)
+    _login(client)
+    client.post(reverse("cart:add", kwargs={"product_id": ARROZ_ID}), {"quantity": 5})
+
+    address_id = mock_data.MOCK_ADDRESSES[0]["id"]
+    response = client.post(reverse("orders:checkout"), {"shipping_address_id": address_id}, follow=True)
+
+    content = response.content.decode()
+    assert response.redirect_chain[-1][0] == reverse("cart:detail")
+    assert "ya no tienen stock suficiente" in content
+    assert "Insufficient stock" not in content
+
+
+@pytest.mark.django_db
+def test_cancel_non_pending_order_shows_spanish_message(client, monkeypatch):
+    # The real backend answers 422 with an English `detail` once the order
+    # has left `pending` (OrderService.cancel).
+    english_detail = "Order in status 'paid' can no longer be cancelled by the customer."
+
+    def raise_validation(*args, **kwargs):
+        raise ApiValidationError("422", status_code=422, payload={"detail": english_detail})
+
+    monkeypatch.setattr("apps.orders.views.orders_service.cancel_order", raise_validation)
+    _login(client)
+    order_id = mock_data.MOCK_ORDERS[0]["id"]
+
+    response = client.post(reverse("orders:cancel", kwargs={"order_id": order_id}), follow=True)
+
+    content = response.content.decode()
+    assert "Este pedido ya no se puede cancelar." in content
+    assert "can no longer be cancelled" not in content
 
 
 @pytest.mark.django_db

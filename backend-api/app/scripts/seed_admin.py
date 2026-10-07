@@ -26,9 +26,7 @@ logger = logging.getLogger(__name__)
 
 async def seed_admin() -> None:
     if not settings.FIRST_ADMIN_EMAIL or not settings.FIRST_ADMIN_PASSWORD:
-        logger.warning(
-            "FIRST_ADMIN_EMAIL/FIRST_ADMIN_PASSWORD not set -- skipping admin seed."
-        )
+        logger.warning("FIRST_ADMIN_EMAIL/FIRST_ADMIN_PASSWORD not set -- skipping admin seed.")
         return
 
     async with AsyncSessionLocal() as session:

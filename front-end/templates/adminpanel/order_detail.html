@@ -1,0 +1,135 @@
+{% extends "adminpanel/_layout.html" %}
+{% load money %}
+{% load status_labels %}
+
+{% block title %}Pedido {{ order.order_number }} - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<nav class="breadcrumbs" aria-label="Ruta">
+    <a href="{% url 'adminpanel:orders_list' %}">Pedidos</a>
+    <span class="sep">/</span>
+    <span class="current">{{ order.order_number }}</span>
+</nav>
+
+<div class="order-head">
+    <div>
+        <h1 class="section-title">Pedido {{ order.order_number }}</h1>
+        <p class="order-head__meta">Creado el {{ order.created_at|slice:":10" }}</p>
+    </div>
+    <span class="status status--{{ order.status }}">{{ order.status|order_status_label }}</span>
+</div>
+
+<div class="dashboard-cols dashboard-cols--three">
+    <div class="card">
+        <h2 class="card__title">Cliente</h2>
+        {% if customer %}
+        <dl class="kv">
+            <dt>Nombre</dt><dd>{{ customer.full_name }}</dd>
+            <dt>Correo</dt><dd>{{ customer.email }}</dd>
+            <dt>Teléfono</dt><dd>{{ customer.phone|default:"No registrado" }}</dd>
+        </dl>
+        <a class="btn btn--secondary btn--sm mt-md" href="{% url 'adminpanel:customer_detail' customer.id %}">Ver ficha del cliente</a>
+        {% else %}
+        <p class="muted">Cliente no disponible.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2 class="card__title">Dirección de envío</h2>
+        {% if order.shipping_address %}
+        <address class="address-block">
+            <strong>{{ order.shipping_address.line1 }}{% if order.shipping_address.line2 %}, {{ order.shipping_address.line2 }}{% endif %}</strong>
+            <span class="muted">{{ order.shipping_address.city }}, {{ order.shipping_address.state }}</span><br>
+            <span class="muted">{{ order.shipping_address.postal_code }}, {{ order.shipping_address.country }}</span>
+        </address>
+        {% else %}
+        <p class="muted">Este pedido no tiene una dirección de envío asociada.</p>
+        {% endif %}
+        {% if order.notes %}
+        <div class="notice mt-md"><div><strong>Indicaciones:</strong> {{ order.notes }}</div></div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2 class="card__title">Envío</h2>
+        {% if shipment %}
+        <dl class="kv">
+            <dt>Estado</dt><dd><span class="status status--{{ shipment.status }}">{{ shipment.status|shipment_status_label }}</span></dd>
+            <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
+            <dt>Guía</dt><dd>{{ shipment.tracking_number|default:"Sin asignar" }}</dd>
+        </dl>
+        {% else %}
+        <p class="muted">Todavía no tiene un envío creado.</p>
+        {% endif %}
+
+        {% if can_create_shipment or can_ship or can_deliver %}
+        <div class="actions mt-md">
+            {% if can_create_shipment %}
+            <form method="post" action="{% url 'adminpanel:shipment_create' order.id %}" class="admin-inline">
+                {% csrf_token %}
+                <label class="visually-hidden" for="{{ shipment_form.carrier.id_for_label }}">Transportadora</label>
+                <span class="form-field" style="margin:0;">{{ shipment_form.carrier }}</span>
+                <button type="submit" class="btn btn--sm">Crear envío</button>
+            </form>
+            {% endif %}
+            {% if can_ship %}
+            <form method="post" action="{% url 'adminpanel:shipment_ship' order.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--sm">Marcar despachado</button>
+            </form>
+            {% endif %}
+            {% if can_deliver %}
+            <form method="post" action="{% url 'adminpanel:shipment_deliver' order.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--accent btn--sm">Marcar entregado</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="dashboard-cols dashboard-cols--wide">
+    <div class="stack">
+        <div class="table-card">
+        <table class="table">
+            <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Subtotal</th></tr></thead>
+            <tbody>
+                {% for item in order.items %}
+                <tr>
+                    <td class="cell-title">{{ item.product_name }}</td>
+                    <td class="num">{{ item.quantity }}</td>
+                    <td class="num">${{ item.unit_price|money }}</td>
+                    <td class="num"><strong>${{ item.line_total|money }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        <div class="card">
+            <h2 class="card__title">Cambiar estado manualmente</h2>
+            {% if next_statuses %}
+            <p class="muted" style="margin-bottom:14px;">Para el flujo normal usa los botones de envío. Esto es para correcciones, y solo muestra los estados a los que este pedido puede pasar ahora.</p>
+            <form method="post" action="{% url 'adminpanel:order_status_update' order.id %}" class="admin-inline">
+                {% csrf_token %}
+                <label class="visually-hidden" for="{{ status_form.status.id_for_label }}">Nuevo estado</label>
+                {{ status_form.status }}
+                <button type="submit" class="btn btn--secondary">Actualizar estado</button>
+            </form>
+            {% else %}
+            <p class="muted">Este pedido está en un estado final ({{ order.status|order_status_label }}) y ya no admite cambios.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <aside class="cart-summary">
+        <h2 class="cart-summary__title">Totales</h2>
+        <div class="cart-summary__row"><span>Subtotal</span><span>${{ order.subtotal|money }}</span></div>
+        <div class="cart-summary__row"><span>Envío</span><span>${{ order.shipping_amount|money }}</span></div>
+        <div class="cart-summary__row"><span>Impuestos</span><span>${{ order.tax_amount|money }}</span></div>
+        <div class="cart-summary__total"><span>Total</span><span>${{ order.total_amount|money }}</span></div>
+        <a class="btn btn--ghost btn--full" href="{% url 'adminpanel:orders_list' %}">Volver a pedidos</a>
+    </aside>
+</div>
+{% endblock %}

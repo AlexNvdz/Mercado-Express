@@ -1,8 +1,14 @@
 """
 Stock availability. See ../API_CONTRACT.md#apiv1inventory.
 
+    GET  /api/v1/inventory/{product_id}
+    POST /api/v1/inventory/{product_id}/adjust   staff, {"delta": int, "reason": str|None}
+    PUT  /api/v1/inventory/{product_id}          staff, {"quantity_on_hand": int, "reorder_level": int|None}
+
 Stock is a separate resource from the product itself (single stock pool per
-product on the backend); this module is the only place that reads it.
+product on the backend); this module is the only place that reads/writes it.
+`delta` is signed: positive restocks, negative removes (shrinkage,
+correction) -- confirmed against backend-api/app/schemas/inventory.py.
 """
 
 from __future__ import annotations
@@ -36,3 +42,31 @@ def get_availability(product_id: str) -> dict | None:
         return api_client.get(f"/api/v1/inventory/{product_id}")
     except ApiNotFoundError:
         return None
+
+
+def adjust_stock(token: str, product_id: str, delta: int, reason: str | None = None) -> dict:
+    """Add (delta > 0) or remove (delta < 0) stock -- restock/shrinkage/correction."""
+    if settings.API_USE_MOCKS:
+        record = mock_data.MOCK_INVENTORY.setdefault(
+            str(product_id), {"quantity_on_hand": 0, "quantity_reserved": 0, "reorder_level": 0}
+        )
+        record["quantity_on_hand"] = max(0, record["quantity_on_hand"] + delta)
+        return get_availability(product_id)
+
+    payload = {"delta": delta, "reason": reason}
+    return api_client.post(f"/api/v1/inventory/{product_id}/adjust", token=token, json=payload)
+
+
+def set_levels(token: str, product_id: str, quantity_on_hand: int, reorder_level: int | None = None) -> dict:
+    """Set absolute on-hand/reorder levels (inventory count correction)."""
+    if settings.API_USE_MOCKS:
+        record = mock_data.MOCK_INVENTORY.setdefault(
+            str(product_id), {"quantity_on_hand": 0, "quantity_reserved": 0, "reorder_level": 0}
+        )
+        record["quantity_on_hand"] = quantity_on_hand
+        if reorder_level is not None:
+            record["reorder_level"] = reorder_level
+        return get_availability(product_id)
+
+    payload = {"quantity_on_hand": quantity_on_hand, "reorder_level": reorder_level}
+    return api_client.put(f"/api/v1/inventory/{product_id}", token=token, json=payload)

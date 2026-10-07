@@ -5,20 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error del servidor - MercadoExpress</title>
     <style>
-        body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f7f8f6; color: #17241b; margin: 0; }
-        .wrap { max-width: 480px; margin: 15vh auto; text-align: center; padding: 0 20px; }
-        .code { font-size: 4.5rem; font-weight: 700; color: #16a34a; line-height: 1; }
-        a.btn { display: inline-block; margin-top: 20px; padding: 11px 22px; background: #16a34a; color: #fff; border-radius: 999px; text-decoration: none; font-weight: 600; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: "Figtree", "Segoe UI", system-ui, sans-serif; color: #fff; background-color: #0b1530; background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size: 32px 32px; }
+        .wrap { max-width: 480px; padding: 0 20px; text-align: center; }
+        .code { font-family: "Sora", "Segoe UI", system-ui, sans-serif; font-size: 6rem; font-weight: 700; letter-spacing: -0.06em; line-height: 1; color: #ffd23f; }
+        h1 { font-size: 1.5rem; margin: 16px 0 8px; }
+        p { color: rgba(255,255,255,.7); }
+        a.btn { display: inline-block; margin-top: 20px; padding: 13px 22px; border-radius: 6px; background: #ffd23f; color: #0b1530; font-weight: 600; text-decoration: none; }
     </style>
 </head>
 <body>
-    <!-- Deliberately standalone (no {% extends %}, no context processors): a
-         500 means something in the app already broke, so this page must not
-         depend on the DB, session, or backend API to render. -->
+    <!-- Deliberately standalone (no template inheritance, no context
+         processors): a 500 means something in the app already broke, so
+         this page must not depend on the DB, session, or backend API to
+         render. NOTE: never type a percent-brace template tag delimiter
+         pair inside this comment (open-brace-percent ... percent-close-
+         brace) -- Django's template lexer scans for that sequence
+         regardless of HTML comment syntax and will try to parse it as a
+         real tag, crashing this exact page when a 500 happens. -->
     <div class="wrap">
         <div class="code">500</div>
-        <h1>Algo salió mal de nuestro lado</h1>
-        <p>Ya estamos al tanto. Intenta de nuevo en unos minutos.</p>
+        <h1>Algo falló de nuestro lado</h1>
+        <p>No es por algo que hayas hecho. Intenta de nuevo en unos minutos.</p>
         <a class="btn" href="/">Volver al inicio</a>
     </div>
 </body>

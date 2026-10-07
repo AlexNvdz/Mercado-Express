@@ -1,46 +1,80 @@
-<header class="navbar">
+<header class="navbar{% if is_api_staff %} navbar--console{% endif %}">
     <div class="navbar__inner">
-        <a class="navbar__brand" href="{% url 'core:home' %}">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M8 6V5a4 4 0 0 1 8 0v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-            MercadoExpress
+        <a class="navbar__brand" href="{% if is_api_staff %}{% url 'adminpanel:home' %}{% else %}{% url 'core:home' %}{% endif %}">
+            <span class="navbar__mark" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 7V6a3 3 0 0 1 6 0v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span>MercadoExpress{% if is_api_staff %} <span class="navbar__brand-sub">Admin</span>{% endif %}</span>
         </a>
 
+        {% if not is_api_staff %}
         <div class="navbar__search">
-            <form action="{% url 'catalog:list' %}" method="get">
-                <input type="search" name="q" placeholder="Buscar productos..." value="{{ request.GET.q }}" aria-label="Buscar productos">
+            <form action="{% url 'catalog:list' %}" method="get" role="search">
+                <input type="search" name="q" placeholder="Buscar arroz, leche, detergente..." value="{{ request.GET.q }}" aria-label="Buscar productos">
                 <button type="submit" aria-label="Buscar">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 </button>
             </form>
         </div>
+        {% endif %}
 
-        <button type="button" class="navbar__toggle" aria-label="Abrir menú" aria-expanded="false">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
+        <div class="navbar__right">
+            <nav class="navbar__links" aria-label="Cuenta">
+                {% if is_api_authenticated %}
+                    {% if is_api_staff %}
+                    <a class="navbar__text-link" href="{% url 'catalog:list' %}">Ver tienda</a>
+                    {% else %}
+                    <a class="navbar__text-link" href="{% url 'dashboard:profile' %}">Mi cuenta</a>
+                    <a class="navbar__text-link" href="{% url 'orders:list' %}">Mis pedidos</a>
+                    {% endif %}
+                    <a class="navbar__text-link" href="{% url 'accounts:logout' %}">Salir</a>
+                {% else %}
+                    <a class="navbar__text-link" href="{% url 'accounts:login' %}">Ingresar</a>
+                    <a class="navbar__text-link navbar__text-link--cta" href="{% url 'accounts:register' %}">Crear cuenta</a>
+                {% endif %}
+            </nav>
 
-        <nav class="navbar__actions">
+            {% if not is_api_staff %}
             <a class="navbar__icon-link" href="{% url 'catalog:wishlist' %}" aria-label="Favoritos">
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8.1 2.3 4.5 6 4.5c2 0 3.4 1.1 4 2.2.6-1.1 2-2.2 4-2.2 3.7 0 5.2 3.6 3.5 7-2.5 4.15-9.5 8.5-9.5 8.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8.1 2.3 4.5 6 4.5c2 0 3.4 1.1 4 2.2.6-1.1 2-2.2 4-2.2 3.7 0 5.2 3.6 3.5 7-2.5 4.15-9.5 8.5-9.5 8.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
                 {% if wishlist and wishlist|length > 0 %}<span class="badge">{{ wishlist|length }}</span>{% endif %}
             </a>
             <a class="navbar__icon-link" href="{% url 'cart:detail' %}" aria-label="Carrito">
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.2 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 8H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.2 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 8H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg>
                 {% if cart and cart|length > 0 %}<span class="badge">{{ cart|length }}</span>{% endif %}
             </a>
-        </nav>
-
-        <nav class="navbar__links">
-            {% if is_api_authenticated %}
-                <a class="navbar__text-link" href="{% url 'dashboard:profile' %}">Mi perfil</a>
-                <a class="navbar__text-link" href="{% url 'orders:list' %}">Mis pedidos</a>
-                <a class="navbar__text-link" href="{% url 'accounts:logout' %}">Salir</a>
-            {% else %}
-                <a class="navbar__text-link" href="{% url 'accounts:login' %}">Ingresar</a>
-                <a class="navbar__text-link navbar__text-link--cta" href="{% url 'accounts:register' %}">Crear cuenta</a>
             {% endif %}
-        </nav>
+
+            <button type="button" class="navbar__toggle" aria-label="Abrir menú" aria-expanded="false">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
     </div>
+
+    {% if not is_api_staff %}
+    <div class="navbar__sub">
+        <div class="navbar__sub-inner">
+            <details class="navdrop">
+                <summary class="navbar__sublink">
+                    Categorías
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </summary>
+                <div class="navdrop__panel">
+                    <a class="navdrop__item navdrop__item--all" href="{% url 'catalog:list' %}">Ver todos los productos</a>
+                    {% for category in nav_categories %}
+                    <a class="navdrop__item{% if category.id == active_category.id %} is-active{% endif %}" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
+                    {% empty %}
+                    <span class="navdrop__item muted">Sin categorías todavía</span>
+                    {% endfor %}
+                </div>
+            </details>
+            <a class="navbar__sublink" href="{% url 'catalog:wishlist' %}">Favoritos</a>
+            {% if is_api_authenticated %}
+            <a class="navbar__sublink" href="{% url 'orders:list' %}">Seguir mi pedido</a>
+            <a class="navbar__sublink" href="{% url 'dashboard:addresses' %}">Direcciones</a>
+            {% endif %}
+            <span class="navbar__sub-note">Pago al instante y seguimiento de cada envío</span>
+        </div>
+    </div>
+    {% endif %}
 </header>

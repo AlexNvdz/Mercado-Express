@@ -10,7 +10,7 @@ from services import orders as orders_service
 from services import payments as payments_service
 from services import products as products_service
 from services import shipments as shipments_service
-from services.exceptions import ApiConflictError, ApiError
+from services.exceptions import ApiConflictError, ApiError, ApiValidationError
 
 
 @api_login_required
@@ -45,11 +45,8 @@ def _build_tracker(status: str) -> list[dict] | None:
     if status in ("cancelled", "refunded"):
         return None
 
-    # awaiting_payment sits at the same visual step as pending (still
-    # "pedido creado" from the customer's point of view).
-    effective = "pending" if status == "awaiting_payment" else status
     order_index = {key: i for i, (key, _label) in enumerate(TRACKER_STEPS)}
-    current = order_index.get(effective, 0)
+    current = order_index.get(status, 0)
 
     steps = []
     for i, (key, label) in enumerate(TRACKER_STEPS):
@@ -92,7 +89,7 @@ def order_detail(request, order_id):
     order = {**order, "items": _enrich_items_with_product_names(order["items"])}
     shipment = shipments_service.get_shipment_for_order(token, str(order_id))
     payments = payments_service.list_payments_for_order(token, str(order_id))
-    cancellable = order["status"] in ("pending", "awaiting_payment")
+    cancellable = order["status"] == "pending"
 
     context = {
         "order": order,
@@ -110,8 +107,10 @@ def order_cancel(request, order_id):
         token = auth_service.get_access_token(request)
         try:
             orders_service.cancel_order(token, str(order_id))
-        except ApiConflictError as exc:
-            messages.error(request, exc.detail)
+        except (ApiConflictError, ApiValidationError):
+            # 422 = the order is no longer `pending`. The backend's `detail`
+            # is English, for developers -- never shown to the customer.
+            messages.error(request, "Este pedido ya no se puede cancelar.")
         except ApiError:
             messages.error(request, "No fue posible cancelar el pedido.")
         else:
@@ -180,8 +179,12 @@ def checkout(request):
             shipping_address_id=shipping_address_id,
             notes=request.POST.get("notes") or None,
         )
-    except ApiConflictError as exc:
-        messages.error(request, exc.detail or "Uno o más productos ya no tienen stock suficiente.")
+    except ApiConflictError:
+        # 409 = insufficient stock. The backend's `detail` is English and
+        # names the product by UUID, so it is not shown to the customer.
+        messages.error(
+            request, "Uno o más productos ya no tienen stock suficiente. Revisa las cantidades de tu carrito."
+        )
         return redirect("cart:detail")
     except ApiError:
         messages.error(request, "No fue posible crear el pedido. Intenta más tarde.")

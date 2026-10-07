@@ -25,3 +25,6 @@ htmlcov/
 .vscode/
 .idea/
 
+# Locally-stored product images (see app/services/storage_service.py)
+media/
+

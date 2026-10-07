@@ -4,10 +4,10 @@
 {% block title %}{{ product.name }} - MercadoExpress{% endblock %}
 
 {% block content %}
-<nav class="breadcrumbs">
+<nav class="breadcrumbs" aria-label="Ruta">
     <a href="{% url 'core:home' %}">Inicio</a>
     <span class="sep">/</span>
-    <a href="{% url 'catalog:list' %}">Catálogo</a>
+    <a href="{% url 'catalog:list' %}">Productos</a>
     {% if category %}
     <span class="sep">/</span>
     <a href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
@@ -18,49 +18,72 @@
 
 <div class="product-detail">
     <div class="product-detail__media">
-        <svg width="120" height="120" viewBox="0 0 24 24" fill="none"><path d="M3 6h18l-1.5 11.2a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6Z" stroke="currentColor" stroke-width="1.2"/><path d="M8 6V5a4 4 0 0 1 8 0v1" stroke="currentColor" stroke-width="1.2"/></svg>
-    </div>
-    <div>
-        {% if category %}<p class="product-detail__category"><a href="{% url 'catalog:category' category.id %}">{{ category.name }}</a></p>{% endif %}
-        <h1 class="product-detail__name">{{ product.name }}</h1>
-        <p class="product-detail__sku">SKU: {{ product.sku }}</p>
-
-        {% if availability %}
-            {% if availability.quantity_available > 10 %}
-            <span class="stock-badge stock-badge--in">✓ En stock</span>
-            {% elif availability.quantity_available > 0 %}
-            <span class="stock-badge stock-badge--low">Quedan {{ availability.quantity_available }} unidades</span>
-            {% else %}
-            <span class="stock-badge stock-badge--out">Agotado</span>
-            {% endif %}
-        {% else %}
-            <span class="stock-badge stock-badge--unknown">Disponibilidad no confirmada</span>
+        {% if product.images %}
+        <img src="{{ product.images.0.url }}" alt="{{ product.name }}">
+        {% if product.images|length > 1 %}
+        <div class="product-detail__thumbs">
+            {% for image in product.images %}
+            <img src="{{ image.url }}" alt="{{ product.name }}, imagen {{ forloop.counter }}" loading="lazy">
+            {% endfor %}
+        </div>
         {% endif %}
+        {% else %}
+        <svg width="140" height="140" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="1"/><path d="M9 7V6a3 3 0 0 1 6 0v1" stroke="currentColor" stroke-width="1"/></svg>
+        {% endif %}
+    </div>
 
-        <p class="product-detail__desc">{{ product.description }}</p>
+    <div class="product-detail__buy">
+        {% if category %}<a class="product-detail__category" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>{% endif %}
+        <h1 class="product-detail__name">{{ product.name }}</h1>
+        <p class="product-detail__sku">SKU {{ product.sku }}</p>
+
         <div class="product-detail__price">${{ product.price|money }}</div>
 
+        <div>
+            {% if availability %}
+                {% if availability.quantity_available > 10 %}
+                <span class="stock-badge stock-badge--in">En stock</span>
+                {% elif availability.quantity_available > 0 %}
+                <span class="stock-badge stock-badge--low">Quedan {{ availability.quantity_available }} unidades</span>
+                {% else %}
+                <span class="stock-badge stock-badge--out">Agotado</span>
+                {% endif %}
+            {% else %}
+                <span class="stock-badge stock-badge--unknown">Disponibilidad no confirmada</span>
+            {% endif %}
+        </div>
+
+        <div class="product-detail__ship">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 16V7a1 1 0 0 1 1-1h10v10M3 16h11m0 0h3m-3 0V10h3.5l2.5 3v3h-3" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18" r="1.7" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="18" r="1.7" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span>Reservamos las unidades al confirmar tu pedido y te damos número de guía al despacharlo.</span>
+        </div>
+
         <div class="product-detail__actions">
-            <form method="post" action="{% url 'cart:add' product.id %}" style="display:flex; gap:12px; align-items:center;">
+            <form method="post" action="{% url 'cart:add' product.id %}" class="product-detail__cart-form">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <div class="qty-stepper">
-                    <button type="button" data-step="-1" aria-label="Restar">&minus;</button>
+                    <button type="button" data-step="-1" aria-label="Restar una unidad">&minus;</button>
                     <input type="number" name="quantity" value="1" min="1" {% if availability %}max="{{ availability.quantity_available }}"{% endif %} aria-label="Cantidad">
-                    <button type="button" data-step="1" aria-label="Sumar">&plus;</button>
+                    <button type="button" data-step="1" aria-label="Sumar una unidad">&plus;</button>
                 </div>
-                <button type="submit" class="btn" {% if availability and availability.quantity_available <= 0 %}disabled{% endif %}>
-                    Añadir al carrito
-                </button>
+                <button type="submit" class="btn btn--lg" {% if availability and availability.quantity_available <= 0 %}disabled{% endif %}>Añadir al carrito</button>
             </form>
             <form method="post" action="{% url 'catalog:wishlist_toggle' product.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
-                <button type="submit" class="icon-btn btn--icon{% if product.id|in_wishlist:wishlist %} is-active{% endif %}" aria-label="Favorito">
+                <button type="submit" class="icon-btn btn--icon{% if product.id|in_wishlist:wishlist %} is-active{% endif %}" aria-label="{% if product.id|in_wishlist:wishlist %}Quitar de favoritos{% else %}Añadir a favoritos{% endif %}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-8.5C.8 8.1 2.3 4.5 6 4.5c2 0 3.4 1.1 4 2.2.6-1.1 2-2.2 4-2.2 3.7 0 5.2 3.6 3.5 7-2.5 4.15-9.5 8.5-9.5 8.5Z" {% if product.id|in_wishlist:wishlist %}fill="currentColor"{% endif %} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
                 </button>
             </form>
         </div>
+
+        {% if product.description %}
+        <div class="product-detail__desc">
+            <h2 class="card__title">Descripción</h2>
+            <p>{{ product.description }}</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

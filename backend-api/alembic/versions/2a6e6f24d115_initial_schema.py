@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-09-08 03:59:17.204416
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -142,9 +143,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("product_id", name="uq_inventory_product_id"),
         sa.CheckConstraint("quantity_on_hand >= 0", name="ck_inventory_qty_on_hand_non_negative"),
         sa.CheckConstraint("quantity_reserved >= 0", name="ck_inventory_qty_reserved_non_negative"),
-        sa.CheckConstraint(
-            "quantity_reserved <= quantity_on_hand", name="ck_inventory_reserved_lte_on_hand"
-        ),
+        sa.CheckConstraint("quantity_reserved <= quantity_on_hand", name="ck_inventory_reserved_lte_on_hand"),
     )
     op.create_index("ix_inventory_product_id", "inventory", ["product_id"])
 

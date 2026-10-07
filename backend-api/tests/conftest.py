@@ -14,8 +14,10 @@ instances and can safely be used together in the same test.
 """
 
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -50,9 +52,7 @@ async def _create_schema() -> AsyncGenerator[None]:
 async def db_session() -> AsyncGenerator[AsyncSession]:
     connection = await test_engine.connect()
     trans = await connection.begin()
-    session = AsyncSession(
-        bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint"
-    )
+    session = AsyncSession(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint")
 
     async def _override_get_db() -> AsyncGenerator[AsyncSession]:
         yield session
@@ -65,6 +65,16 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
         await session.close()
         await trans.rollback()
         await connection.close()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_media_root(tmp_path: Path) -> Generator[None]:
+    """Redirect product image storage (app/services/storage_service.py) to a
+    per-test temp dir so tests never write into the real `media/` folder."""
+    original = settings.MEDIA_ROOT
+    settings.MEDIA_ROOT = str(tmp_path / "media")
+    yield
+    settings.MEDIA_ROOT = original
 
 
 @pytest_asyncio.fixture
@@ -111,9 +121,7 @@ def _authed_client(user: User) -> AsyncClient:
 
 
 @pytest_asyncio.fixture
-async def customer_client(
-    db_session: AsyncSession, customer_user: User
-) -> AsyncGenerator[AsyncClient]:
+async def customer_client(db_session: AsyncSession, customer_user: User) -> AsyncGenerator[AsyncClient]:
     async with _authed_client(customer_user) as ac:
         yield ac
 

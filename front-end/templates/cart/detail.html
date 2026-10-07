@@ -6,46 +6,61 @@
 {% block content %}
 <div class="section-head">
     <h1 class="section-title">Tu carrito</h1>
+    {% if items %}<span class="muted">{{ items|length }} producto{{ items|length|pluralize }}</span>{% endif %}
 </div>
 
 {% if items %}
-<div class="table-card" style="padding: 4px 24px;">
-    {% for item in items %}
-    <div class="cart-item">
-        <div>
-            <div class="cart-item__name">{{ item.product.name }}</div>
-            <span class="muted">${{ item.unit_price|money }} c/u</span>
-        </div>
-        <form method="post" action="{% url 'cart:update' item.product.id %}" onchange="this.requestSubmit()">
-            {% csrf_token %}
-            <div class="qty-stepper">
-                <button type="button" data-step="-1" aria-label="Restar">&minus;</button>
-                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" aria-label="Cantidad">
-                <button type="button" data-step="1" aria-label="Sumar">&plus;</button>
+<div class="buy-layout">
+    <div class="table-card cart-list">
+        {% for item in items %}
+        <div class="cart-item">
+            <a class="cart-item__media" href="{% url 'catalog:detail' item.product.id %}" tabindex="-1" aria-hidden="true">
+                {% if item.product.images %}
+                <img src="{{ item.product.images.0.url }}" alt="" loading="lazy">
+                {% else %}
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="1.5"/></svg>
+                {% endif %}
+            </a>
+            <div class="cart-item__info">
+                <a class="cart-item__name" href="{% url 'catalog:detail' item.product.id %}">{{ item.product.name }}</a>
+                <span class="subtle">${{ item.unit_price|money }} por unidad</span>
             </div>
-        </form>
-        <div class="cart-item__name">${{ item.subtotal|money }}</div>
-        <form method="post" action="{% url 'cart:remove' item.product.id %}">
-            {% csrf_token %}
-            <button type="submit" class="icon-btn" aria-label="Quitar">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-        </form>
+            <div class="cart-item__controls">
+                <form method="post" action="{% url 'cart:update' item.product.id %}" onchange="this.requestSubmit()">
+                    {% csrf_token %}
+                    <div class="qty-stepper">
+                        <button type="button" data-step="-1" aria-label="Restar una unidad">&minus;</button>
+                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" aria-label="Cantidad de {{ item.product.name }}">
+                        <button type="button" data-step="1" aria-label="Sumar una unidad">&plus;</button>
+                    </div>
+                </form>
+                <div class="cart-item__subtotal">${{ item.subtotal|money }}</div>
+                <form method="post" action="{% url 'cart:remove' item.product.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn" aria-label="Quitar {{ item.product.name }}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
 
-<div class="cart-summary">
-    <div class="cart-summary__total"><span>Total</span><span>${{ total|money }}</span></div>
-    <a class="btn btn--full" href="{% url 'orders:checkout' %}">Finalizar compra</a>
-    <a class="btn btn--ghost btn--full" style="margin-top:8px;" href="{% url 'catalog:list' %}">Seguir comprando</a>
+    <aside class="cart-summary">
+        <h2 class="cart-summary__title">Resumen de compra</h2>
+        <div class="cart-summary__row"><span>Productos</span><span>${{ total|money }}</span></div>
+        <div class="cart-summary__row"><span>Envío e impuestos</span><span>Se calculan al confirmar</span></div>
+        <div class="cart-summary__total"><span>Total</span><span>${{ total|money }}</span></div>
+        <a class="btn btn--lg btn--full" href="{% url 'orders:checkout' %}">Continuar compra</a>
+        <a class="btn btn--ghost btn--full" href="{% url 'catalog:list' %}">Seguir comprando</a>
+    </aside>
 </div>
 {% else %}
 <div class="empty-state">
-    <div class="empty-state__icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.2 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.4" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="20" r="1.4" stroke="currentColor" stroke-width="1.5"/></svg></div>
+    <div class="empty-state__icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.2 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 8H6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.4" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="20" r="1.4" stroke="currentColor" stroke-width="1.6"/></svg></div>
     <h2>Tu carrito está vacío</h2>
-    <p>Explora el catálogo y añade productos para empezar tu pedido.</p>
-    <a class="btn" style="margin-top:12px;" href="{% url 'catalog:list' %}">Ir al catálogo</a>
+    <p>Añade productos desde el catálogo para empezar tu pedido.</p>
+    <a class="btn" href="{% url 'catalog:list' %}">Explorar productos</a>
 </div>
 {% endif %}
 {% endblock %}

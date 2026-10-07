@@ -52,9 +52,7 @@ def require_roles(*roles: UserRole) -> Callable[[User], User]:
 
     def _check(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in roles:
-            raise AuthorizationError(
-                f"Role '{current_user.role}' is not permitted to perform this action."
-            )
+            raise AuthorizationError(f"Role '{current_user.role}' is not permitted to perform this action.")
         return current_user
 
     return _check

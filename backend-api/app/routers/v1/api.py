@@ -11,6 +11,7 @@ from app.routers.v1 import (
     orders,
     payments,
     products,
+    reports,
     shipments,
 )
 
@@ -23,3 +24,4 @@ api_router.include_router(inventory.router)
 api_router.include_router(orders.router)
 api_router.include_router(payments.router)
 api_router.include_router(shipments.router)
+api_router.include_router(reports.router)

@@ -39,9 +39,7 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
 
-    addresses: Mapped[list["Address"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
+    addresses: Mapped[list["Address"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     orders: Mapped[list["Order"]] = relationship(back_populates="customer")
 
     def __repr__(self) -> str:  # pragma: no cover

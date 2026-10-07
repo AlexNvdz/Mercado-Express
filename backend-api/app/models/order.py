@@ -55,12 +55,8 @@ class Order(UUIDPKMixin, TimestampMixin, Base):
 
     customer: Mapped["User"] = relationship(back_populates="orders")
     shipping_address: Mapped["Address | None"] = relationship()
-    items: Mapped[list["OrderItem"]] = relationship(
-        back_populates="order", cascade="all, delete-orphan"
-    )
-    payments: Mapped[list["Payment"]] = relationship(
-        back_populates="order", cascade="all, delete-orphan"
-    )
+    items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+    payments: Mapped[list["Payment"]] = relationship(back_populates="order", cascade="all, delete-orphan")
     shipment: Mapped["Shipment | None"] = relationship(
         back_populates="order", cascade="all, delete-orphan", uselist=False
     )

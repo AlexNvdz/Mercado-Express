@@ -4,13 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import ConflictError, NotFoundError
 from app.models.category import Category
+from app.models.product import Product
 from app.repositories.category_repository import CategoryRepository
+from app.repositories.product_repository import ProductRepository
 from app.schemas.category import CategoryCreate, CategoryUpdate
 
 
 class CategoryService:
     def __init__(self, db: AsyncSession) -> None:
         self.repo = CategoryRepository(db)
+        self.products = ProductRepository(db)
 
     async def create(self, data: CategoryCreate) -> Category:
         if await self.repo.get_by_name(data.name) is not None:
@@ -43,4 +46,12 @@ class CategoryService:
 
     async def delete(self, category_id: uuid.UUID) -> None:
         category = await self.get(category_id)
+        # products.category_id is NOT NULL: without this check the ORM tries
+        # to null it out on delete and the request fails with a 500.
+        # Subcategories need no check -- their parent_id is simply cleared.
+        product_count = await self.products.count(filters=[Product.category_id == category_id])
+        if product_count:
+            raise ConflictError(
+                f"Category {category_id} still has {product_count} product(s); move or delete them first."
+            )
         await self.repo.delete(category)

@@ -87,9 +87,7 @@ async def seed_demo_data() -> None:
                 )
                 session.add(product)
                 await session.flush()
-                session.add(
-                    Inventory(product_id=product.id, quantity_on_hand=stock, quantity_reserved=0)
-                )
+                session.add(Inventory(product_id=product.id, quantity_on_hand=stock, quantity_reserved=0))
                 created_products += 1
                 logger.info("Created product %s (%s) with %d units in stock", sku, name, stock)
 

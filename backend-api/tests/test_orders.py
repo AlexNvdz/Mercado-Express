@@ -1,9 +1,7 @@
 from httpx import AsyncClient
 
 
-async def _make_stocked_product(
-    admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00"
-) -> str:
+async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00") -> str:
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     category_id = category.json()["id"]
     product = await admin_client.post(
@@ -115,9 +113,7 @@ async def test_full_order_lifecycle_to_delivered(
     )
     address_id = address_resp.json()["id"]
 
-    pay_resp = await customer_client.post(
-        "/api/v1/payments", json={"order_id": order_id, "method": "card"}
-    )
+    pay_resp = await customer_client.post("/api/v1/payments", json={"order_id": order_id, "method": "card"})
     assert pay_resp.status_code == 201
     assert pay_resp.json()["status"] == "completed"
 
@@ -150,3 +146,28 @@ async def test_full_order_lifecycle_to_delivered(
 async def test_orders_require_authentication(client: AsyncClient) -> None:
     resp = await client.post("/api/v1/orders", json={"items": []})
     assert resp.status_code == 401
+
+
+async def test_staff_can_list_all_orders_with_items(
+    admin_client: AsyncClient, customer_client: AsyncClient
+) -> None:
+    """Regression test: OrderService.list_all used to reuse the generic
+    BaseRepository.list(), which doesn't eager-load Order.items -- serializing
+    OrderOut.items then triggered an async lazy-load outside the request's
+    greenlet context (MissingGreenlet) instead of returning order data. Found
+    via the frontend's admin dashboard (apps/adminpanel), which was the first
+    caller to ever exercise plain `GET /orders` as staff.
+    """
+    product_id = await _make_stocked_product(admin_client, "ORD-006", stock=5, price="10.00")
+    created = await customer_client.post(
+        "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 1}]}
+    )
+    assert created.status_code == 201
+    order_id = created.json()["id"]
+
+    resp = await admin_client.get("/api/v1/orders")
+    assert resp.status_code == 200
+    body = resp.json()
+    listed = next(o for o in body["items"] if o["id"] == order_id)
+    assert len(listed["items"]) == 1
+    assert listed["items"][0]["product_id"] == product_id

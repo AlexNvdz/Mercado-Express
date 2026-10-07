@@ -47,7 +47,7 @@ class PaymentService:
         order = await self.orders.get(data.order_id)
         if order is None:
             raise NotFoundError(f"Order {data.order_id} not found.")
-        if order.status not in (OrderStatus.PENDING, OrderStatus.AWAITING_PAYMENT):
+        if order.status != OrderStatus.PENDING:
             raise InvalidStateTransitionError(
                 f"Order in status '{order.status}' cannot accept a new payment."
             )
@@ -68,11 +68,9 @@ class PaymentService:
         if status == PaymentStatus.COMPLETED:
             payment.paid_at = datetime.now(UTC)
             order.status = OrderStatus.PAID
-            self.db.add(
-                Sale(order_id=order.id, total_amount=order.total_amount)
-            )
-        elif status == PaymentStatus.FAILED:
-            order.status = OrderStatus.AWAITING_PAYMENT
+            self.db.add(Sale(order_id=order.id, total_amount=order.total_amount))
+        # A failed payment leaves the order `pending` (no separate
+        # "awaiting_payment" status) -- it's already retryable from there.
 
         await self.db.flush()
         await self.db.refresh(payment)
