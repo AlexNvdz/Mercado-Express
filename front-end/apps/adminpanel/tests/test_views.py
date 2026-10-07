@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from services import mock_data
 from services import orders as orders_service
-from services.exceptions import ApiConflictError
+from services.exceptions import ApiConflictError, ApiError
 
 ORDER_ID = mock_data.MOCK_ORDERS[0]["id"]
 CATEGORY_ID = mock_data.MOCK_CATEGORIES[0]["id"]
@@ -212,7 +212,10 @@ def test_inventory_list_batches_stock_reads_and_paginates(client, api_calls):
     paths = [path for _, path, _ in api_calls]
     assert not [path for path in paths if path.startswith("/api/v1/inventory/")]
     products_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/products")
-    assert products_call["params"] == {"page": 2, "page_size": 50}
+    assert products_call["params"] == {"page": 2, "page_size": 50, "include_inactive": "true"}
+    assert products_call["token"] == "mock-access-token"
+    inventory_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/inventory")
+    assert inventory_call["params"]["include_inactive"] == "true"
 
 
 @pytest.mark.django_db
@@ -432,6 +435,219 @@ def test_manual_cancel_cancels_undispatched_shipment(client):
     assert "status--cancelled" in detail
     assert "Marcar despachado" not in detail
     assert "Guardar datos del envío" not in detail
+
+
+@pytest.mark.django_db
+def test_orders_list_filters_by_status(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:orders_list") + "?status=shipped").content.decode()
+    assert mock_data.MOCK_ORDERS[1]["order_number"] in content  # shipped
+    assert mock_data.MOCK_ORDERS[0]["order_number"] not in content  # delivered
+
+
+@pytest.mark.django_db
+def test_orders_list_status_filter_is_server_side_and_kept_across_pages(client, api_calls):
+    def respond(method, path, kwargs):
+        if path == "/api/v1/orders":
+            return {"items": [mock_data.MOCK_ORDERS[0]], "total": 45, "page": 1, "page_size": 20, "pages": 3}
+        return {"items": [], "total": 0, "page": 1, "page_size": 8, "pages": 0}
+
+    api_calls.response = respond
+    _login_as_staff(client)
+
+    content = client.get(reverse("adminpanel:orders_list") + "?status=paid").content.decode()
+
+    orders_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/orders")
+    assert orders_call["params"] == {"page": 1, "page_size": 20, "status": "paid"}
+    assert "?status=paid&page=2" in content
+
+
+@pytest.mark.django_db
+def test_orders_list_ignores_unknown_status(client, api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 20, "pages": 0}
+    _login_as_staff(client)
+
+    client.get(reverse("adminpanel:orders_list") + "?status=bogus")
+
+    orders_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/orders")
+    assert "status" not in orders_call["params"]
+
+
+@pytest.mark.django_db
+def test_inventory_list_marks_inactive_products(client):
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+    _login_as_staff(client)
+
+    content = client.get(reverse("adminpanel:inventory_list")).content.decode()
+
+    assert mock_data.MOCK_PRODUCTS[0]["name"] in content
+    assert content.count("Inactivo") == 1
+
+
+@pytest.mark.django_db
+def test_inventory_list_offers_reason_field_and_history_link(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:inventory_list")).content.decode()
+    assert f'name="{PRODUCT_ID}-reason"' in content
+    assert reverse("adminpanel:inventory_history", kwargs={"product_id": PRODUCT_ID}) in content
+
+
+@pytest.mark.django_db
+def test_inventory_adjust_reason_reaches_history(client):
+    _login_as_staff(client)
+    client.post(
+        reverse("adminpanel:inventory_adjust", kwargs={"product_id": PRODUCT_ID}),
+        {f"{PRODUCT_ID}-delta": -3, f"{PRODUCT_ID}-reason": "Conteo físico"},
+    )
+
+    content = client.get(reverse("adminpanel:inventory_history", kwargs={"product_id": PRODUCT_ID})).content.decode()
+
+    assert "Conteo físico" in content
+    assert "(-3)" in content
+    assert "Ajuste de stock" in content
+
+
+@pytest.mark.django_db
+def test_inventory_adjust_sends_reason_to_api(client, api_calls):
+    _login_as_staff(client)
+    client.post(
+        reverse("adminpanel:inventory_adjust", kwargs={"product_id": PRODUCT_ID}),
+        {f"{PRODUCT_ID}-delta": 5, f"{PRODUCT_ID}-reason": "Reposición proveedor"},
+    )
+    method, path, kwargs = next(call for call in api_calls if call[1].endswith("/adjust"))
+    assert (method, path) == ("POST", f"/api/v1/inventory/{PRODUCT_ID}/adjust")
+    assert kwargs["json"] == {"delta": 5, "reason": "Reposición proveedor"}
+
+
+@pytest.mark.django_db
+def test_inventory_history_page_shows_entries_in_spanish(client):
+    _login_as_staff(client)
+    detergent_id = "00000000-0000-0000-0000-000000000208"
+
+    content = client.get(reverse("adminpanel:inventory_history", kwargs={"product_id": detergent_id})).content.decode()
+
+    assert "Detergente en polvo 1kg" in content
+    assert "Lote dañado por humedad" in content
+    assert "12 → 0" in content and "(-12)" in content
+    assert "Admin MercadoExpress" in content and "Administrador" in content
+    assert "30/09/2026 12:45" in content  # 17:45 UTC in America/Bogota
+
+
+@pytest.mark.django_db
+def test_inventory_history_empty_state(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:inventory_history", kwargs={"product_id": PRODUCT_ID})).content.decode()
+    assert "Sin cambios registrados" in content
+
+
+@pytest.mark.django_db
+def test_inventory_history_unknown_product_is_404(client):
+    _login_as_staff(client)
+    response = client.get(
+        reverse("adminpanel:inventory_history", kwargs={"product_id": "00000000-0000-0000-0000-000000000999"})
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_inventory_history_requests_page(client, api_calls):
+    def respond(method, path, kwargs):
+        if path == f"/api/v1/products/{PRODUCT_ID}":
+            return mock_data.MOCK_PRODUCTS[0]
+        if path == f"/api/v1/inventory/{PRODUCT_ID}/history":
+            return {"items": [], "total": 25, "page": 2, "page_size": 20, "pages": 2}
+        if path == f"/api/v1/inventory/{PRODUCT_ID}":
+            return None
+        return {"items": [], "total": 0, "page": 1, "page_size": 8, "pages": 0}
+
+    api_calls.response = respond
+    _login_as_staff(client)
+
+    client.get(reverse("adminpanel:inventory_history", kwargs={"product_id": PRODUCT_ID}) + "?page=2")
+
+    history_call = next(kwargs for _, path, kwargs in api_calls if path.endswith("/history"))
+    assert history_call["params"] == {"page": 2, "page_size": 20}
+    assert history_call["token"] == "mock-access-token"
+
+
+@pytest.mark.django_db
+def test_reorder_conflict_shows_spanish_error(client, monkeypatch):
+    def raise_conflict(*args, **kwargs):
+        raise ApiConflictError("409", status_code=409, payload={"detail": "quantity_on_hand below reserved"})
+
+    monkeypatch.setattr("apps.adminpanel.views.inventory_service.set_levels", raise_conflict)
+    _login_as_staff(client)
+
+    response = client.post(
+        reverse("adminpanel:inventory_set_reorder", kwargs={"product_id": PRODUCT_ID}),
+        {f"{PRODUCT_ID}-reorder_level": 5},
+        follow=True,
+    )
+
+    content = response.content.decode()
+    assert "no puede quedar por debajo de lo reservado" in content
+    assert "below reserved" not in content
+
+
+@pytest.mark.django_db
+def test_order_detail_shows_status_history_in_spanish(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:order_detail", kwargs={"order_id": ORDER_ID})).content.decode()
+
+    assert "Historial de estados" in content
+    for label in ("Pedido creado", "Pago", "Envío creado", "Envío despachado", "Envío entregado"):
+        assert label in content
+    assert "cliente.demo@mercadoexpress.test · Cliente" in content
+    assert "admin@mercadoexpress.test · Administrador" in content
+    assert "21/08/2026 05:15" in content  # 10:15 UTC in America/Bogota
+    assert "shipment_delivered" not in content
+
+
+@pytest.mark.django_db
+def test_order_detail_history_empty_state(client):
+    _login_as_staff(client)
+    order = _order_in_status("pending")
+    content = client.get(reverse("adminpanel:order_detail", kwargs={"order_id": order["id"]})).content.decode()
+    assert "Sin cambios registrados" in content
+
+
+@pytest.mark.django_db
+def test_order_detail_survives_history_error(client, monkeypatch):
+    def fail(*args, **kwargs):
+        raise ApiError("boom", status_code=500)
+
+    monkeypatch.setattr("apps.adminpanel.views.orders_service.get_status_history", fail)
+    _login_as_staff(client)
+
+    response = client.get(reverse("adminpanel:order_detail", kwargs={"order_id": ORDER_ID}))
+
+    assert response.status_code == 200
+    assert "No fue posible cargar el historial" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_order_detail_requests_history(client, api_calls):
+    order = mock_data.MOCK_ORDERS[0]
+
+    def respond(method, path, kwargs):
+        if path == f"/api/v1/orders/{ORDER_ID}":
+            return order
+        if path == f"/api/v1/orders/{ORDER_ID}/history":
+            return []
+        if path.startswith("/api/v1/shipments/") or path.startswith("/api/v1/customers/"):
+            return None
+        if path.startswith("/api/v1/products/"):
+            return mock_data.MOCK_PRODUCTS[0]
+        return {"items": [], "total": 0, "page": 1, "page_size": 8, "pages": 0}
+
+    api_calls.response = respond
+    _login_as_staff(client)
+
+    response = client.get(reverse("adminpanel:order_detail", kwargs={"order_id": ORDER_ID}))
+
+    assert response.status_code == 200
+    history_call = next(kwargs for _, path, kwargs in api_calls if path.endswith("/history"))
+    assert history_call["token"] == "mock-access-token"
 
 
 @pytest.mark.django_db

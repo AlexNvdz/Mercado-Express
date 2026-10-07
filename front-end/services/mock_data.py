@@ -256,3 +256,64 @@ MOCK_REPORT_SUMMARY = {
     "product_count": 8,
     "generated_at": "2026-10-06T00:00:00Z",
 }
+
+# The `actor` object of history entries ({id, email, full_name, role}) for
+# changes made by staff -- the admin account above.
+MOCK_STAFF_ACTOR = {k: MOCK_CUSTOMERS[2][k] for k in ("id", "email", "full_name", "role")}
+_MOCK_CUSTOMER_ACTOR = {k: MOCK_USER[k] for k in ("id", "email", "full_name", "role")}
+
+
+def _history_entry(order_id, n, from_status, to_status, source, actor, created_at):
+    return {
+        "id": f"hist-{order_id[-3:]}-{n}",
+        "order_id": order_id,
+        "from_status": from_status,
+        "to_status": to_status,
+        "source": source,
+        "actor": actor,
+        "created_at": created_at,
+    }
+
+
+_ORDER_1 = MOCK_ORDERS[0]["id"]
+_ORDER_2 = MOCK_ORDERS[1]["id"]
+
+# Keyed by order_id -- mirrors GET /api/v1/orders/{order_id}/history (staff),
+# oldest first, consistent with the seed orders' timestamps. Orders without
+# an entry here behave like orders created before the history existed.
+MOCK_ORDER_HISTORY = {
+    _ORDER_1: [
+        _history_entry(_ORDER_1, 1, None, "pending", "order_created", _MOCK_CUSTOMER_ACTOR, "2026-08-20T14:30:00Z"),
+        _history_entry(_ORDER_1, 2, "pending", "paid", "payment", _MOCK_CUSTOMER_ACTOR, "2026-08-20T14:35:00Z"),
+        _history_entry(_ORDER_1, 3, "paid", "preparing", "shipment_created", MOCK_STAFF_ACTOR, "2026-08-20T16:00:00Z"),
+        _history_entry(_ORDER_1, 4, "preparing", "shipped", "shipment_dispatched", MOCK_STAFF_ACTOR, "2026-08-20T18:00:00Z"),
+        _history_entry(_ORDER_1, 5, "shipped", "delivered", "shipment_delivered", MOCK_STAFF_ACTOR, "2026-08-21T10:15:00Z"),
+    ],
+    _ORDER_2: [
+        _history_entry(_ORDER_2, 1, None, "pending", "order_created", _MOCK_CUSTOMER_ACTOR, "2026-09-05T09:10:00Z"),
+        _history_entry(_ORDER_2, 2, "pending", "paid", "payment", _MOCK_CUSTOMER_ACTOR, "2026-09-05T09:20:00Z"),
+        _history_entry(_ORDER_2, 3, "paid", "preparing", "shipment_created", MOCK_STAFF_ACTOR, "2026-09-05T15:00:00Z"),
+        _history_entry(_ORDER_2, 4, "preparing", "shipped", "shipment_dispatched", MOCK_STAFF_ACTOR, "2026-09-06T08:00:00Z"),
+    ],
+}
+
+# Keyed by product_id -- mirrors GET /api/v1/inventory/{product_id}/history
+# (staff), newest first. services/inventory.py prepends an entry on every
+# mock adjust_stock/set_levels.
+MOCK_INVENTORY_HISTORY = {
+    "00000000-0000-0000-0000-000000000208": [
+        {
+            "id": "invhist-208-1",
+            "product_id": "00000000-0000-0000-0000-000000000208",
+            "kind": "adjust",
+            "quantity_on_hand_before": 12,
+            "quantity_on_hand_after": 0,
+            "quantity_delta": -12,
+            "reorder_level_before": 10,
+            "reorder_level_after": 10,
+            "reason": "Lote dañado por humedad",
+            "actor": MOCK_STAFF_ACTOR,
+            "created_at": "2026-09-30T17:45:00Z",
+        },
+    ],
+}

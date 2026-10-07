@@ -24,7 +24,11 @@
             {% csrf_token %}
             <input type="hidden" name="quantity" value="1">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            {% if product.is_active is False %}
+            <button type="submit" class="btn btn--soft btn--sm btn--full" disabled>No disponible</button>
+            {% else %}
             <button type="submit" class="btn btn--soft btn--sm btn--full">Añadir al carrito</button>
+            {% endif %}
         </form>
     </div>
 </article>

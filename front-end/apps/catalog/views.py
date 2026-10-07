@@ -78,7 +78,10 @@ def wishlist_view(request):
 
 @api_staff_required
 def product_admin_list(request):
-    result = products.list_products(page=1, page_size=100)
+    # include_inactive: a product hidden from the catalog must stay listed
+    # here, or staff could never edit it back to visible.
+    token = auth_service.get_access_token(request)
+    result = products.list_products(page=1, page_size=100, include_inactive=True, token=token)
     return render(request, "catalog/admin_list.html", {"products": result["items"], "active_nav": "products"})
 
 

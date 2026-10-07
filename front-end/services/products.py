@@ -5,7 +5,7 @@ Category/product catalog access. See ../API_CONTRACT.md:
     POST   /api/v1/categories                 staff, create
     PATCH  /api/v1/categories/{category_id}   staff, partial update
     DELETE /api/v1/categories/{category_id}   staff, delete
-    GET  /api/v1/products                   ?category_id=&search=&page=&page_size=
+    GET  /api/v1/products                   ?category_id=&search=&page=&page_size=&include_inactive=
     GET  /api/v1/products/{product_id}
     POST   /api/v1/products                          staff, create
     PATCH  /api/v1/products/{product_id}              staff, partial update
@@ -82,10 +82,22 @@ def delete_category(token: str, category_id: str) -> None:
 
 
 def list_products(
-    *, category_id: str | None = None, search: str | None = None, page: int = 1, page_size: int = 24
+    *,
+    category_id: str | None = None,
+    search: str | None = None,
+    page: int = 1,
+    page_size: int = 24,
+    include_inactive: bool = False,
+    token: str | None = None,
 ) -> dict:
+    """Active products only, unless `include_inactive` -- a staff-only flag:
+    the backend rejects it without a staff `token` (401/403), so only staff
+    views pass it. Each item carries `is_active`.
+    """
     if settings.API_USE_MOCKS:
         items = mock_data.MOCK_PRODUCTS
+        if not include_inactive:
+            items = [p for p in items if p.get("is_active", True)]
         if category_id:
             items = [p for p in items if p["category_id"] == str(category_id)]
         if search:
@@ -98,6 +110,9 @@ def list_products(
         params["category_id"] = category_id
     if search:
         params["search"] = search
+    if include_inactive:
+        params["include_inactive"] = "true"
+        return api_client.get("/api/v1/products", token=token, params=params)
     return api_client.get("/api/v1/products", params=params)
 
 

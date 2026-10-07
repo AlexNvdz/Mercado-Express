@@ -23,7 +23,7 @@ from services import orders as orders_service
 from services import products as products_service
 from services import reports as reports_service
 from services import shipments as shipments_service
-from services.exceptions import ApiConflictError, ApiError, ApiValidationError
+from services.exceptions import ApiConflictError, ApiError, ApiNotFoundError, ApiValidationError
 
 from .forms import (
     CategoryForm,
@@ -73,15 +73,15 @@ def orders_list(request):
     except ValueError:
         page = 1
 
-    result = orders_service.list_orders(token, page=page, page_size=20)
-    orders = result["items"]
-
+    # Unknown values are ignored rather than sent (the backend would 422).
     status_filter = request.GET.get("status") or ""
-    if status_filter:
-        orders = [o for o in orders if o["status"] == status_filter]
+    if status_filter not in orders_service.ORDER_STATUSES:
+        status_filter = ""
+
+    result = orders_service.list_orders(token, page=page, page_size=20, status=status_filter or None)
 
     context = {
-        "orders": orders,
+        "orders": result["items"],
         "statuses": orders_service.ORDER_STATUSES,
         "status_filter": status_filter,
         "page": result["page"],
@@ -104,6 +104,10 @@ def order_detail(request, order_id):
     customer = customers_service.get_customer(token, order["customer_id"])
     shipment = shipments_service.get_shipment_for_order(token, str(order_id))
     can_edit_shipment = shipment is not None and shipments_service.is_editable(shipment)
+    try:
+        status_history = orders_service.get_status_history(token, str(order_id))
+    except ApiError:
+        status_history = None  # the template says it couldn't be loaded
     shipment_update_form = None
     if can_edit_shipment:
         shipment_update_form = ShipmentUpdateForm(
@@ -122,6 +126,7 @@ def order_detail(request, order_id):
         "shipment_update_form": shipment_update_form,
         "can_ship": shipment is not None and shipment["status"] == "preparing" and order["status"] == "preparing",
         "can_deliver": shipment is not None and shipment["status"] == "in_transit",
+        "status_history": status_history,
         "active_nav": "orders",
     }
     return render(request, "adminpanel/order_detail.html", context)
@@ -355,13 +360,16 @@ def _redirect_to_inventory_page(request):
 
 @api_staff_required
 def inventory_list(request):
-    """One page of products (GET /products, by name) joined to their stock
-    rows from the batched GET /inventory -- no per-product request. Products
-    with no inventory row still get a row ("Sin registro de inventario").
+    """One page of products (GET /products, by name, inactive ones included)
+    joined to their stock rows from the batched GET /inventory -- no
+    per-product request. Products with no inventory row still get a row
+    ("Sin registro de inventario").
     """
     token = auth_service.get_access_token(request)
     page = _page_number(request.GET.get("page"))
-    result = products_service.list_products(page=page, page_size=INVENTORY_PAGE_SIZE)
+    result = products_service.list_products(
+        page=page, page_size=INVENTORY_PAGE_SIZE, include_inactive=True, token=token
+    )
     products = result["items"]
     availability_by_id = inventory_service.availability_by_product(token, [p["id"] for p in products])
 
@@ -422,6 +430,8 @@ def inventory_set_reorder(request, product_id):
             inventory_service.set_levels(
                 token, str(product_id), current_on_hand, form.cleaned_data["reorder_level"]
             )
+        except ApiConflictError:
+            messages.error(request, "El stock en bodega no puede quedar por debajo de lo reservado.")
         except ApiError:
             messages.error(request, "No fue posible actualizar el nivel de reorden.")
         else:
@@ -429,6 +439,35 @@ def inventory_set_reorder(request, product_id):
     else:
         messages.error(request, "Nivel inválido.")
     return _redirect_to_inventory_page(request)
+
+
+@api_staff_required
+def inventory_history(request, product_id):
+    """Manual stock changes of one product (adjust / set levels), newest
+    first: who, before/after, reason, when.
+    """
+    token = auth_service.get_access_token(request)
+    product = products_service.get_product(str(product_id))
+    if product is None:
+        raise Http404("Producto no encontrado")
+
+    page = _page_number(request.GET.get("page"))
+    try:
+        result = inventory_service.list_history(token, str(product_id), page=page, page_size=20)
+    except ApiNotFoundError:
+        raise Http404("Producto no encontrado") from None
+
+    context = {
+        "product": product,
+        "availability": inventory_service.get_availability(str(product_id)),
+        "entries": result["items"],
+        "page": result["page"],
+        "pages": result["pages"],
+        "has_previous": result["page"] > 1,
+        "has_next": result["page"] < result["pages"],
+        "active_nav": "inventory",
+    }
+    return render(request, "adminpanel/inventory_history.html", context)
 
 
 # --- Customers --------------------------------------------------------

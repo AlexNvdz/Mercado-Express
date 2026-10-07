@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.dependencies import PaginationParams, pagination_params, require_staff
+from app.dependencies import (
+    PaginationParams,
+    ensure_staff,
+    optional_oauth2_scheme,
+    pagination_params,
+    require_staff,
+)
 from app.schemas.common import Page
 from app.schemas.product import ProductCreate, ProductImageOut, ProductOut, ProductUpdate
 from app.services.product_image_service import ProductImageService
@@ -28,14 +34,23 @@ async def create_product(data: ProductCreate, db: AsyncSession = Depends(get_db)
 async def list_products(
     category_id: uuid.UUID | None = None,
     search: str | None = Query(default=None, description="Case-insensitive match on name or SKU."),
+    include_inactive: bool = Query(
+        default=False,
+        description="Staff only: also return inactive products. 401 without a token, 403 for non-staff.",
+    ),
     pagination: PaginationParams = Depends(pagination_params),
+    token: str | None = Depends(optional_oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> Page[ProductOut]:
+    """Public: active products only. Staff can add `include_inactive=true`."""
+    if include_inactive:
+        await ensure_staff(token, db)
     items, total = await ProductService(db).list(
         offset=pagination.offset,
         limit=pagination.page_size,
         category_id=category_id,
         search=search,
+        active_only=not include_inactive,
     )
     pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
     return Page(
@@ -49,6 +64,8 @@ async def list_products(
 
 @router.get("/{product_id}", response_model=ProductOut)
 async def get_product(product_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ProductOut:
+    """Public, inactive products included (check `is_active`): past orders
+    and carts still resolve them by id; POST /orders rejects them."""
     product = await ProductService(db).get(product_id)
     return ProductOut.model_validate(product)
 

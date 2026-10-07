@@ -15,18 +15,16 @@ from app.services.shipment_service import ShipmentService
 router = APIRouter(prefix="/shipments", tags=["shipments"])
 
 
-@router.post(
-    "/order/{order_id}",
-    response_model=ShipmentOut,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_staff)],
-)
+@router.post("/order/{order_id}", response_model=ShipmentOut, status_code=status.HTTP_201_CREATED)
 async def create_shipment(
-    order_id: uuid.UUID, data: ShipmentCreate, db: AsyncSession = Depends(get_db)
+    order_id: uuid.UUID,
+    data: ShipmentCreate,
+    current_user: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
 ) -> ShipmentOut:
     """Staff/admin only: begin preparing a shipment for a `paid` or
     `preparing` order, optionally with carrier and tracking number."""
-    shipment = await ShipmentService(db).create_shipment(order_id, data)
+    shipment = await ShipmentService(db).create_shipment(order_id, data, actor_id=current_user.id)
     return ShipmentOut.model_validate(shipment)
 
 
@@ -39,18 +37,26 @@ async def update_shipment(
     return ShipmentOut.model_validate(shipment)
 
 
-@router.post("/{shipment_id}/ship", response_model=ShipmentOut, dependencies=[Depends(require_staff)])
-async def ship_shipment(shipment_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ShipmentOut:
+@router.post("/{shipment_id}/ship", response_model=ShipmentOut)
+async def ship_shipment(
+    shipment_id: uuid.UUID,
+    current_user: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+) -> ShipmentOut:
     """Staff/admin only: mark the shipment dispatched (decrements real stock;
     keeps the tracking number staff entered, or generates one)."""
-    shipment = await ShipmentService(db).mark_shipped(shipment_id)
+    shipment = await ShipmentService(db).mark_shipped(shipment_id, actor_id=current_user.id)
     return ShipmentOut.model_validate(shipment)
 
 
-@router.post("/{shipment_id}/deliver", response_model=ShipmentOut, dependencies=[Depends(require_staff)])
-async def deliver_shipment(shipment_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ShipmentOut:
+@router.post("/{shipment_id}/deliver", response_model=ShipmentOut)
+async def deliver_shipment(
+    shipment_id: uuid.UUID,
+    current_user: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+) -> ShipmentOut:
     """Staff/admin only: mark the shipment delivered, closing the order."""
-    shipment = await ShipmentService(db).mark_delivered(shipment_id)
+    shipment = await ShipmentService(db).mark_delivered(shipment_id, actor_id=current_user.id)
     return ShipmentOut.model_validate(shipment)
 
 

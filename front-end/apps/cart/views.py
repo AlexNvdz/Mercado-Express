@@ -19,6 +19,11 @@ def add(request, product_id):
     if product is None:
         messages.error(request, "Producto no encontrado.")
         return redirect("core:home")
+    if product.get("is_active") is False:
+        # GET /products/{id} still returns inactive products, but POST /orders
+        # rejects them -- don't let one into the cart.
+        messages.error(request, f"{product['name']} ya no está disponible.")
+        return redirect(request.POST.get("next") or "catalog:list")
 
     quantity = int(request.POST.get("quantity", 1))
     request.cart.add(str(product_id), quantity)

@@ -160,8 +160,8 @@ Address body:
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/products` | staff | Create product (also creates its zero-stock inventory row). |
-| GET | `/products?category_id=&search=&page=&page_size=` | none | Paginated list, optionally filtered by category and/or full-text-ish search. Only active products. |
-| GET | `/products/{product_id}` | none | Get one. |
+| GET | `/products?category_id=&search=&include_inactive=&page=&page_size=` | none | Paginated list, optionally filtered by category and/or full-text-ish search. Only active products, unless `include_inactive=true`, which is staff-only: `401` without a token, `403` for customers. |
+| GET | `/products/{product_id}` | none | Get one. Inactive products are still returned (check `is_active`); `POST /orders` rejects them with `404`, so the storefront must not offer them for purchase. |
 | PATCH | `/products/{product_id}` | staff | Partial update. |
 | DELETE | `/products/{product_id}` | staff | Delete. Also purges its stored image files (see below). |
 | POST | `/products/{product_id}/images` | staff | Upload one image (`multipart/form-data`, field `file`). jpeg/png/webp only, max 5MB. |
@@ -186,10 +186,11 @@ Address body:
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/inventory?low_stock=&page=&page_size=` | staff | Paginated list of every inventory row. `low_stock=true` filters to rows where `quantity_available <= reorder_level` (for a dashboard alert -- replaces paging `GET /inventory/{id}` once per product). |
+| GET | `/inventory?low_stock=&include_inactive=&page=&page_size=` | staff | Paginated list of inventory rows of active products (`include_inactive=true` adds inactive products' rows). `low_stock=true` filters to rows where `quantity_available <= reorder_level` (for a dashboard alert -- replaces paging `GET /inventory/{id}` once per product). |
 | GET | `/inventory/{product_id}` | none | Check availability for one product. |
-| POST | `/inventory/{product_id}/adjust` | staff | Add/remove stock by a signed delta. |
-| PUT | `/inventory/{product_id}` | staff | Set absolute `quantity_on_hand` / `reorder_level`. |
+| GET | `/inventory/{product_id}/history?page=&page_size=` | staff | Paginated history of manual stock changes (adjust / set levels), newest first. |
+| POST | `/inventory/{product_id}/adjust` | staff | Add/remove stock by a signed delta. Recorded in the history. |
+| PUT | `/inventory/{product_id}` | staff | Set absolute `quantity_on_hand` / `reorder_level`. Recorded in the history. |
 
 ```json
 // GET /inventory/{product_id} response, and each item of GET /inventory
@@ -216,18 +217,34 @@ envelope (see Pagination), `items` shaped as above.
 
 ```json
 // PUT /inventory/{product_id} request
-{ "quantity_on_hand": 100, "reorder_level": 10 }   // reorder_level is optional
+{ "quantity_on_hand": 100, "reorder_level": 10, "reason": "conteo físico" }   // reorder_level and reason are optional
 ```
-Both fields (when present) must be `>= 0`. Sets absolute levels rather than
-adjusting by a delta.
+Both numbers (when present) must be `>= 0`. Sets absolute levels rather than
+adjusting by a delta. `409` if `quantity_on_hand` would go below
+`quantity_reserved`.
+
+```json
+// each item of GET /inventory/{product_id}/history (standard page envelope)
+{
+  "id": "...", "product_id": "...", "kind": "adjust",          // adjust | set_levels
+  "quantity_on_hand_before": 10, "quantity_on_hand_after": 7, "quantity_delta": -3,
+  "reorder_level_before": 0, "reorder_level_after": 0,
+  "reason": "Producto dañado",                                  // null if none was sent
+  "actor": { "id": "...", "email": "admin@...", "full_name": "...", "role": "admin" },  // null if the user no longer exists
+  "created_at": "2026-10-07T10:00:00Z"
+}
+```
+The history is append-only. Stock movements caused by orders (reserve,
+release, dispatch) are not recorded here, only manual staff changes.
 
 ## `/api/v1/orders`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/orders` | customer | Create an order: validates products, reserves stock, computes totals. |
-| GET | `/orders?page=&page_size=` | any user | Customers see only their own orders; staff see all. |
+| GET | `/orders?status=&page=&page_size=` | any user | Customers see only their own orders; staff see all. Optional `status`, repeatable (`?status=paid&status=preparing`); `total`/`pages` count the filter. Unknown status = `422`. |
 | GET | `/orders/{order_id}` | any user | Get one (customers: only their own, else `404`). |
+| GET | `/orders/{order_id}/history` | staff | Every status change of the order, oldest first (flat list, not paginated). |
 | POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`); releases reserved stock. |
 | PATCH | `/orders/{order_id}/status` | staff | Manual correction; only the targets in the table below. |
 
@@ -302,6 +319,26 @@ reachable before dispatch, so the goods never left:
 `shipping_address_id`) — added so staff can see where to ship without a
 separate address-lookup call; every `OrderOut` response (create, get, list,
 status update) includes it.
+
+```json
+// each item of GET /orders/{order_id}/history
+{
+  "id": "...", "order_id": "...",
+  "from_status": "paid", "to_status": "preparing",   // from_status is null only for the first entry
+  "source": "shipment_created",
+  "actor": { "id": "...", "email": "admin@...", "full_name": "...", "role": "admin" },  // null if the user no longer exists
+  "created_at": "2026-10-07T10:00:00Z"
+}
+```
+`source` is one of `order_created` (POST /orders), `payment` (completed
+POST /payments), `manual` (PATCH /orders/{id}/status), `customer_cancel`
+(POST /orders/{id}/cancel), `shipment_created`, `shipment_dispatched`,
+`shipment_delivered`. The history is append-only.
+- A rejected transition (`409`) leaves no entry.
+- Creating a shipment for an order that staff already moved to
+  `preparing` changes no status, so it leaves no entry either.
+- The history starts when migration `377398800f5e` is applied: older
+  orders have no entries, or only the ones made after it.
 
 ## `/api/v1/payments`
 
@@ -499,4 +536,4 @@ exercised without any manual setup:
 - Multi-warehouse inventory (currently single stock pool per product).
 
 ---
-_Maintained by the backend-api service. Last updated: 2026-10-06 (net revenue: sales ledger gets `reversal` entries, `GET /reports/summary` returns `net_revenue`/`gross_revenue`/`refunded_amount`/`reversal_count` instead of `total_revenue`; shipment flow: create from `paid` or `preparing` with `carrier`/`tracking_number`, new `PATCH /shipments/{id}`, new shipment status `cancelled`, `shipped`/`delivered` no longer manual order targets, refund releases reserved stock). Previous update 2026-09-12: added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes._
+_Maintained by the backend-api service. Last updated: 2026-10-07 (`GET /orders?status=` filter; staff-only `include_inactive` on `GET /products` and `GET /inventory`, which now hides inactive products' rows by default; append-only `GET /orders/{id}/history` and `GET /inventory/{id}/history`; `PUT /inventory` takes `reason` and returns `409` below reserved stock). Previous update 2026-10-06 (net revenue: sales ledger gets `reversal` entries, `GET /reports/summary` returns `net_revenue`/`gross_revenue`/`refunded_amount`/`reversal_count` instead of `total_revenue`; shipment flow: create from `paid` or `preparing` with `carrier`/`tracking_number`, new `PATCH /shipments/{id}`, new shipment status `cancelled`, `shipped`/`delivered` no longer manual order targets, refund releases reserved stock). Previous update 2026-09-12: added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes._

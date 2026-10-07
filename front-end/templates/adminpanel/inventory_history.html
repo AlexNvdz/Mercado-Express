@@ -1,0 +1,75 @@
+{% extends "adminpanel/_layout.html" %}
+{% load money %}
+{% load status_labels %}
+
+{% block title %}Historial de {{ product.name }} - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<nav class="breadcrumbs" aria-label="Ruta">
+    <a href="{% url 'adminpanel:inventory_list' %}">Inventario</a>
+    <span class="sep">/</span>
+    <span class="current">{{ product.name }}</span>
+</nav>
+
+<div class="order-head">
+    <div>
+        <h1 class="section-title">Historial de inventario</h1>
+        <p class="order-head__meta">{{ product.name }} · SKU {{ product.sku }}</p>
+    </div>
+    {% if not product.is_active %}<span class="status status--cancelled">Inactivo</span>{% endif %}
+</div>
+
+{% if availability %}
+<div class="card form-card--narrow">
+    <h2 class="card__title">Stock actual</h2>
+    <dl class="kv">
+        <dt>En bodega</dt><dd>{{ availability.quantity_on_hand }}</dd>
+        <dt>Reservado</dt><dd>{{ availability.quantity_reserved }}</dd>
+        <dt>Disponible</dt><dd>{{ availability.quantity_available }}</dd>
+        <dt>Nivel de reorden</dt><dd>{{ availability.reorder_level }}</dd>
+    </dl>
+</div>
+{% endif %}
+
+<section class="panel-section">
+    <div class="panel-section__head"><h2>Cambios manuales</h2></div>
+    <p class="muted">Ajustes y niveles fijados por el equipo. Las reservas y despachos de pedidos se ven en el historial de cada pedido.</p>
+    {% if entries %}
+    <div class="table-card">
+    <table class="table">
+        <thead>
+            <tr><th>Fecha</th><th>Tipo</th><th class="num">En bodega</th><th class="num">Nivel de reorden</th><th>Motivo</th><th>Quién</th></tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td class="muted">{{ entry.created_at|api_datetime }}</td>
+                <td>{{ entry.kind|inventory_change_kind_label }}</td>
+                <td class="num">{{ entry.quantity_on_hand_before }} → {{ entry.quantity_on_hand_after }} <span class="cell-sub">({% if entry.quantity_delta > 0 %}+{% endif %}{{ entry.quantity_delta }})</span></td>
+                <td class="num">{% if entry.reorder_level_before == entry.reorder_level_after %}{{ entry.reorder_level_after }}{% else %}{{ entry.reorder_level_before }} → {{ entry.reorder_level_after }}{% endif %}</td>
+                <td>{{ entry.reason|default:"—" }}</td>
+                <td>{% if entry.actor %}<div class="cell-title">{{ entry.actor.full_name }}</div><div class="cell-sub">{{ entry.actor.email }} · {{ entry.actor.role|user_role_label }}</div>{% else %}<span class="muted">Usuario eliminado</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    {% if pages > 1 %}
+    <nav class="pagination" aria-label="Paginación">
+        {% if has_previous %}
+        <a class="btn btn--secondary btn--sm" href="?page={{ page|add:"-1" }}">Anterior</a>
+        {% endif %}
+        <span class="pagination__info">Página {{ page }} de {{ pages }}</span>
+        {% if has_next %}
+        <a class="btn btn--secondary btn--sm" href="?page={{ page|add:"1" }}">Siguiente</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-state"><h2>Sin cambios registrados</h2><p>Aquí aparecerán los ajustes de stock y cambios de nivel de reorden.</p></div>
+    {% endif %}
+</section>
+
+<a class="btn btn--ghost mt-lg" href="{% url 'adminpanel:inventory_list' %}">Volver a inventario</a>
+{% endblock %}

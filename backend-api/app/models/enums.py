@@ -44,6 +44,25 @@ class ShipmentStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class OrderStatusChangeSource(StrEnum):
+    """What triggered an order status change (`order_status_history.source`)."""
+
+    ORDER_CREATED = "order_created"  # POST /orders (initial `pending`)
+    PAYMENT = "payment"  # completed POST /payments
+    MANUAL = "manual"  # staff PATCH /orders/{id}/status
+    CUSTOMER_CANCEL = "customer_cancel"  # POST /orders/{id}/cancel
+    SHIPMENT_CREATED = "shipment_created"  # POST /shipments/order/{id}
+    SHIPMENT_DISPATCHED = "shipment_dispatched"  # POST /shipments/{id}/ship
+    SHIPMENT_DELIVERED = "shipment_delivered"  # POST /shipments/{id}/deliver
+
+
+class InventoryChangeKind(StrEnum):
+    """Manual staff change recorded in `inventory_history`."""
+
+    ADJUST = "adjust"  # POST /inventory/{product_id}/adjust (signed delta)
+    SET_LEVELS = "set_levels"  # PUT /inventory/{product_id} (absolute values)
+
+
 class SaleKind(StrEnum):
     """Kind of entry in the append-only `sales` ledger: `sale` is written
     when a payment completes (positive amount); `reversal` is written when

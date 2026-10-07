@@ -1,4 +1,8 @@
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.enums import UserRole
+from tests.conftest import _authed_client, _create_user
 
 
 async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00") -> str:
@@ -192,3 +196,50 @@ async def test_staff_can_list_all_orders_with_items(
     listed = next(o for o in body["items"] if o["id"] == order_id)
     assert len(listed["items"]) == 1
     assert listed["items"][0]["product_id"] == product_id
+
+
+async def test_list_orders_filters_by_one_or_more_statuses(
+    admin_client: AsyncClient, customer_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    product_id = await _make_stocked_product(admin_client, "ORD-FLT", stock=10)
+
+    async def place_order(client: AsyncClient) -> str:
+        resp = await client.post(
+            "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 1}]}
+        )
+        assert resp.status_code == 201
+        return resp.json()["id"]
+
+    await place_order(customer_client)  # stays pending
+    paid = await place_order(customer_client)
+    await customer_client.post("/api/v1/payments", json={"order_id": paid, "method": "card"})
+    cancelled = await place_order(customer_client)
+    await customer_client.post(f"/api/v1/orders/{cancelled}/cancel")
+
+    # A second customer's paid order: staff see it, the first customer doesn't.
+    other_user = await _create_user(db_session, email="other-filter@test.com", role=UserRole.CUSTOMER)
+    async with _authed_client(other_user) as other_client:
+        other_paid = await place_order(other_client)
+        await other_client.post("/api/v1/payments", json={"order_id": other_paid, "method": "card"})
+
+    mine = (await customer_client.get("/api/v1/orders", params={"status": "paid"})).json()
+    assert [o["id"] for o in mine["items"]] == [paid]
+    assert mine["total"] == 1
+
+    all_paid = (await admin_client.get("/api/v1/orders", params={"status": "paid"})).json()
+    assert {o["id"] for o in all_paid["items"]} == {paid, other_paid}
+    assert all_paid["total"] == 2
+
+    params = [("status", "paid"), ("status", "cancelled"), ("page_size", "1")]
+    two_statuses = (await customer_client.get("/api/v1/orders", params=params)).json()
+    assert two_statuses["total"] == 2
+    assert two_statuses["pages"] == 2
+    assert len(two_statuses["items"]) == 1
+
+    assert (await customer_client.get("/api/v1/orders")).json()["total"] == 3
+    assert (await admin_client.get("/api/v1/orders")).json()["total"] == 4
+
+
+async def test_list_orders_rejects_unknown_status(customer_client: AsyncClient) -> None:
+    resp = await customer_client.get("/api/v1/orders", params={"status": "lost"})
+    assert resp.status_code == 422

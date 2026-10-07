@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,31 +33,17 @@ class OrderRepository(BaseRepository[Order]):
         result = await self.db.execute(select(Order).where(Order.order_number == order_number))
         return result.scalar_one_or_none()
 
-    async def list_for_customer(
-        self, customer_id: uuid.UUID, *, offset: int = 0, limit: int = 20
-    ) -> list[Order]:
-        result = await self.db.execute(
-            select(Order)
-            .where(Order.customer_id == customer_id)
-            .options(selectinload(Order.items), selectinload(Order.shipping_address))
-            .order_by(Order.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
-        return list(result.scalars().all())
-
-    async def list_all(self, *, offset: int = 0, limit: int = 20) -> list[Order]:
-        """Staff-only "every order" listing (see OrderService.list_all).
-        Same shape as list_for_customer minus the customer filter -- items
-        and shipping_address must be eager-loaded here too: OrderOut
-        serializes both, and the generic BaseRepository.list() this used to
-        call doesn't load either relationship, so accessing them during
-        Pydantic validation triggered an async lazy-load outside the
-        request's greenlet context (`MissingGreenlet`) instead of a normal
-        500 with a clear cause.
+    async def list_filtered(self, *, filters: list[Any], offset: int = 0, limit: int = 20) -> list[Order]:
+        """Newest first, matching `filters` (see OrderService.list_orders).
+        Items and shipping_address must be eager-loaded here: OrderOut
+        serializes both, and the generic BaseRepository.list() doesn't load
+        either relationship, so accessing them during Pydantic validation
+        triggered an async lazy-load outside the request's greenlet context
+        (`MissingGreenlet`) instead of a normal 500 with a clear cause.
         """
         result = await self.db.execute(
             select(Order)
+            .where(*filters)
             .options(selectinload(Order.items), selectinload(Order.shipping_address))
             .order_by(Order.created_at.desc())
             .offset(offset)

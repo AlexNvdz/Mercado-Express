@@ -159,6 +159,14 @@ def checkout(request):
         messages.info(request, "Añade una dirección de envío para continuar.")
         return redirect(f"{reverse('dashboard:address_add')}?next={reverse('orders:checkout')}")
 
+    unavailable = [item["product"]["name"] for item in request.cart if item["product"].get("is_active") is False]
+    if unavailable:
+        messages.error(
+            request,
+            f"Ya no están disponibles: {', '.join(unavailable)}. Quítalos del carrito para continuar.",
+        )
+        return redirect("cart:detail")
+
     if request.method != "POST":
         context = {
             "items": list(request.cart),

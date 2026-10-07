@@ -100,3 +100,45 @@ async def test_search_matches_name_or_sku_case_insensitively(admin_client: Async
     skus = [p["sku"] for p in by_sku.json()["items"]]
     assert "SRCH-002" in skus
     assert "SRCH-001" not in skus
+
+
+async def test_inactive_products_are_listed_only_for_staff_on_request(
+    client: AsyncClient, admin_client: AsyncClient, customer_client: AsyncClient
+) -> None:
+    category_id = await _make_category(admin_client, "Inactive Cat")
+
+    async def create(sku: str, *, active: bool) -> str:
+        resp = await admin_client.post(
+            "/api/v1/products",
+            json={"sku": sku, "name": sku, "category_id": category_id, "price": "3.00", "is_active": active},
+        )
+        assert resp.status_code == 201
+        return resp.json()["id"]
+
+    await create("ACT-1", active=True)
+    inactive_id = await create("INACT-1", active=False)
+
+    async def skus(c: AsyncClient, **params: str) -> set[str]:
+        resp = await c.get("/api/v1/products", params=params)
+        assert resp.status_code == 200
+        return {p["sku"] for p in resp.json()["items"]}
+
+    # Default: active only, for everyone (staff included).
+    assert await skus(client) == {"ACT-1"}
+    assert await skus(admin_client) == {"ACT-1"}
+    assert await skus(admin_client, include_inactive="true") == {"ACT-1", "INACT-1"}
+
+    # The option is staff-only: rejected, not silently ignored.
+    anonymous = await client.get("/api/v1/products", params={"include_inactive": "true"})
+    assert anonymous.status_code == 401
+    customer = await customer_client.get("/api/v1/products", params={"include_inactive": "true"})
+    assert customer.status_code == 403
+
+    # Detail by id stays public for inactive products; ordering one is refused.
+    detail = await client.get(f"/api/v1/products/{inactive_id}")
+    assert detail.status_code == 200
+    assert detail.json()["is_active"] is False
+    order = await customer_client.post(
+        "/api/v1/orders", json={"items": [{"product_id": inactive_id, "quantity": 1}]}
+    )
+    assert order.status_code == 404

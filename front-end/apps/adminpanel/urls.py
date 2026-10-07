@@ -24,6 +24,7 @@ urlpatterns = [
     path("inventario/", views.inventory_list, name="inventory_list"),
     path("inventario/<uuid:product_id>/ajustar/", views.inventory_adjust, name="inventory_adjust"),
     path("inventario/<uuid:product_id>/reorden/", views.inventory_set_reorder, name="inventory_set_reorder"),
+    path("inventario/<uuid:product_id>/historial/", views.inventory_history, name="inventory_history"),
     # Customers
     path("clientes/", views.customers_list, name="customers_list"),
     path("clientes/<uuid:customer_id>/", views.customer_detail, name="customer_detail"),

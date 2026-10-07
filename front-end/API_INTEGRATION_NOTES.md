@@ -11,9 +11,9 @@ tomadas del lado del frontend.
 |---|---|
 | `services/auth.py` | `/auth/register`, `/auth/login` (form-encoded), `/auth/refresh`, `/auth/me` |
 | `services/customers.py` | `/customers/me` (GET/PATCH), `/customers/me/addresses` (CRUD) |
-| `services/products.py` | `/categories`, `/products` (+ `/{id}` de cada uno, `search=`) |
-| `services/inventory.py` | `/inventory` (staff, `low_stock=`), `/inventory/{product_id}` (+ `adjust`, PUT) |
-| `services/orders.py` | `/orders` (POST/GET), `/orders/{id}`, `/orders/{id}/cancel` |
+| `services/products.py` | `/categories`, `/products` (+ `/{id}` de cada uno, `search=`, `include_inactive=` solo staff) |
+| `services/inventory.py` | `/inventory` (staff, `low_stock=`, `include_inactive=`), `/inventory/{product_id}` (+ `adjust`, PUT, `history`) |
+| `services/orders.py` | `/orders` (POST/GET, `status=`), `/orders/{id}`, `/orders/{id}/cancel`, `/orders/{id}/status`, `/orders/{id}/history` |
 | `services/payments.py` | `/payments` (POST), `/payments/order/{id}` |
 | `services/shipments.py` | `/shipments/order/{id}` (GET/POST), `/shipments/{id}` (PATCH), `/shipments/{id}/ship`, `/shipments/{id}/deliver` |
 | `services/reports.py` | `/reports/summary` (staff) + `/inventory?low_stock=true` + `/orders` para el resumen del panel |
@@ -23,6 +23,48 @@ este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=True` en todos los tests). En desarrollo/staging/producción
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
+
+## Cambios 2026-10-07: filtros del panel e historial de cambios
+
+Rama `feat/panel-filters-audit`. Formas acordadas con backend-api (ver
+`API_CONTRACT.md`):
+
+- **Filtro por estado en `/panel/pedidos/` del lado del servidor.** Antes se
+  filtraba solo la página actual en Django; ahora `services/orders.py::list_orders`
+  manda `GET /orders?status=<estado>`, así que `total`/`pages` cuentan solo
+  los pedidos de ese estado y la paginación conserva el filtro. Un estado
+  desconocido en la querystring se ignora (el backend respondería 422). El
+  backend acepta `status` repetido; el panel usa uno a la vez.
+- **Productos inactivos en `/panel/inventario/` y `/catalogo/admin/`.**
+  `GET /products?include_inactive=true` es solo para staff (401 sin token,
+  403 para un cliente), así que `list_products(include_inactive=True,
+  token=...)` solo se llama desde vistas staff. El inventario los marca con
+  "Inactivo". El listado de `/catalogo/admin/` también los pide: antes un
+  producto oculto desaparecía de ahí y no había forma de volver a
+  publicarlo desde la UI. `GET /inventory` (staff) ahora devuelve por
+  defecto solo filas de productos activos (la alerta de stock bajo del
+  resumen ya no cuenta descontinuados); el inventario pide
+  `include_inactive=true` para cruzar todas las filas.
+- **Historial de estados del pedido** (`GET /orders/{id}/history`, staff,
+  arreglo sin paginar, del más antiguo al más nuevo): se muestra al final
+  de `/panel/pedidos/<id>/` con fecha (hora de Bogotá, filtro
+  `api_datetime`), cambio (`from_status` → `to_status` con las etiquetas de
+  estado), origen (`ORDER_STATUS_SOURCE_LABELS`) y quién (`actor`, `null` =
+  usuario eliminado). Los pedidos anteriores al despliegue no tienen
+  entradas (sin backfill): se muestra un mensaje. Si la llamada falla, la
+  página carga igual y avisa que no se pudo cargar el historial.
+- **Historial de inventario** (`GET /inventory/{product_id}/history`, staff,
+  paginado, del más nuevo al más antiguo): nueva página
+  `/panel/inventario/<id>/historial/` (enlace "Historial" en cada fila) con
+  tipo (`adjust`/`set_levels`), en bodega antes → después (delta), nivel de
+  reorden, motivo y quién. Solo registra cambios manuales del staff; las
+  reservas/despachos de pedidos se ven en el historial del pedido.
+- **El motivo del ajuste ahora sí se envía.** `InventoryAdjustForm` ya
+  tenía `reason` y la vista lo pasaba a `POST /inventory/{id}/adjust`, pero
+  la plantilla del inventario no mostraba el campo, así que siempre llegaba
+  vacío. Ahora hay un input "Motivo (opcional)" junto a la cantidad.
+  `set_levels` también acepta `reason` (`PUT /inventory/{id}`), y un `409`
+  (en bodega por debajo de lo reservado) muestra un mensaje en español.
 
 ## Cambios 2026-10-06: ingresos netos y flujo de envío
 
