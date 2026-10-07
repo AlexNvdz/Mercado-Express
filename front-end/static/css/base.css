@@ -413,8 +413,7 @@ img { max-width: 100%; display: block; }
     }
     .navbar__links.is-open .navbar__text-link { padding: 12px; }
     .navbar__links.is-open .navbar__text-link--cta { margin: 4px 0 0; text-align: center; }
-    .navbar__sub-inner { overflow-x: auto; scrollbar-width: none; }
-    .navbar__sub-inner::-webkit-scrollbar { display: none; }
+    .navbar__sub-inner { flex-wrap: wrap; row-gap: 0; padding-block: 4px; }
     .navbar__sub-note { display: none; }
     .navdrop { position: static; }
     .navdrop__panel { left: 16px; right: 16px; width: auto; }
@@ -769,7 +768,7 @@ img { max-width: 100%; display: block; }
 .catalog-filter__link.is-active { background: var(--volt-soft); color: var(--volt-deep); font-weight: 600; }
 .catalog-toolbar { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 16px; }
 
-.category-pills { display: none; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 18px; scrollbar-width: none; }
+.category-pills { display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .category-pills::-webkit-scrollbar { display: none; }
 .category-pill {
     flex-shrink: 0;
@@ -1101,7 +1100,7 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 /* ==========================================================================
    Tabs, empty states, cards, info blocks
    ========================================================================== */
-.tabs { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 16px; padding: 4px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); scrollbar-width: none; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; padding: 4px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex-shrink: 0; padding: 8px 14px; border-radius: var(--r-sm); font-size: 0.88rem; font-weight: 500; color: var(--text-2); white-space: nowrap; }
 .tab:hover { background: var(--paper-2); color: var(--text); text-decoration: none; }
@@ -1159,8 +1158,8 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
     .side-layout { grid-template-columns: minmax(0, 1fr); }
     .side-layout__sidebar { position: static; }
     .side-layout__user { display: none; }
-    .side-layout__nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
-    .side-layout__nav-link { flex-shrink: 0; }
+    .side-layout__nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    .side-layout__nav-link { padding: 8px 12px; }
 }
 
 /* Staff console: full-bleed, light sidebar on white, mint canvas content.
@@ -1203,15 +1202,29 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 .admin-panel__content { min-width: 0; padding: clamp(20px, 3vw, 32px) clamp(16px, 3vw, 36px) 64px; }
 .admin-panel__content > .section-head:first-child, .admin-panel__content > .breadcrumbs:first-child { margin-top: 0; }
 
-@media (max-width: 960px) {
+/* Below 1024px (phones, tablets, and phones in "desktop site" mode, whose
+   layout viewport is 980px) the sidebar becomes a block of wrapping chips
+   above the content: every section stays visible, nothing hides behind a
+   horizontal scroll. */
+@media (max-width: 1024px) {
     .console { grid-template-columns: minmax(0, 1fr); min-height: 0; }
-    .admin-panel__sidebar { position: sticky; top: 69px; z-index: 20; height: auto; border-right: 0; border-bottom: 1px solid var(--line); flex-direction: row; align-items: center; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; }
-    .admin-panel__sidebar::-webkit-scrollbar { display: none; }
+    .admin-panel__sidebar {
+        position: static;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px var(--gutter);
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        overflow: visible;
+    }
     .admin-panel__group, .admin-panel__foot { display: none; }
-    .admin-panel__nav { flex-direction: row; }
-    .admin-panel__nav + .admin-panel__nav { margin-left: 2px; }
-    .admin-panel__nav-link { flex-shrink: 0; padding: 8px 12px; }
-    .admin-panel__nav-link.is-active::before { left: 12px; right: 12px; top: auto; bottom: -8px; width: auto; height: 3px; border-radius: 3px 3px 0 0; }
+    .admin-panel__nav { display: contents; }
+    .admin-panel__nav-link { padding: 7px 12px; gap: 8px; font-size: 0.88rem; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--paper); }
+    .admin-panel__nav-link.is-active { border-color: var(--volt); background: var(--volt); color: #fff; }
+    .admin-panel__nav-link.is-active svg { color: #fff; }
+    .admin-panel__nav-link.is-active::before { display: none; }
 }
 
 /* Staff pages render inside base.html, but .page's max-width would box the
