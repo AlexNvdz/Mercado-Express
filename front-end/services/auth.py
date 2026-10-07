@@ -22,6 +22,14 @@ from . import mock_data
 from .api_client import api_client
 from .exceptions import ApiAuthenticationError
 
+# Mirrors backend-api's UserRole enum. Spanish display labels (see
+# apps/core/templatetags/status_labels.py:user_role_label).
+USER_ROLE_LABELS = {
+    "customer": "Cliente",
+    "employee": "Empleado",
+    "admin": "Administrador",
+}
+
 
 def register(email: str, password: str, full_name: str, phone: str | None = None) -> dict:
     """Return the created customer, or raise ApiError (e.g. ApiConflictError

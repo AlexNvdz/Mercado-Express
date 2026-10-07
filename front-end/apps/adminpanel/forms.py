@@ -31,11 +31,17 @@ class CategoryForm(forms.Form):
 
 class InventoryAdjustForm(forms.Form):
     """Quick stock movement: positive delta restocks, negative removes
-    (shrinkage/correction). See services/inventory.py:adjust_stock.
+    (shrinkage/correction). `reason` is optional and is stored in the
+    product's inventory history. See services/inventory.py:adjust_stock.
     """
 
     delta = forms.IntegerField(label="Cantidad (+/-)", widget=forms.NumberInput(attrs={"placeholder": "+10 / -5"}))
-    reason = forms.CharField(label="Motivo", required=False, max_length=255)
+    reason = forms.CharField(
+        label="Motivo",
+        required=False,
+        max_length=255,
+        widget=forms.TextInput(attrs={"placeholder": "Motivo (opcional)"}),
+    )
 
 
 class ReorderLevelForm(forms.Form):

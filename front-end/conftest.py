@@ -37,6 +37,8 @@ def _reset_mock_data():
     inventory_snapshot = copy.deepcopy(mock_data.MOCK_INVENTORY)
     shipments_snapshot = copy.deepcopy(mock_data.MOCK_SHIPMENTS)
     report_summary_snapshot = copy.deepcopy(mock_data.MOCK_REPORT_SUMMARY)
+    order_history_snapshot = copy.deepcopy(mock_data.MOCK_ORDER_HISTORY)
+    inventory_history_snapshot = copy.deepcopy(mock_data.MOCK_INVENTORY_HISTORY)
     yield
     mock_data.MOCK_ORDERS[:] = orders_snapshot
     mock_data.MOCK_PAYMENTS.clear()
@@ -52,6 +54,10 @@ def _reset_mock_data():
     mock_data.MOCK_SHIPMENTS.update(shipments_snapshot)
     mock_data.MOCK_REPORT_SUMMARY.clear()
     mock_data.MOCK_REPORT_SUMMARY.update(report_summary_snapshot)
+    mock_data.MOCK_ORDER_HISTORY.clear()
+    mock_data.MOCK_ORDER_HISTORY.update(order_history_snapshot)
+    mock_data.MOCK_INVENTORY_HISTORY.clear()
+    mock_data.MOCK_INVENTORY_HISTORY.update(inventory_history_snapshot)
 
 
 @pytest.fixture

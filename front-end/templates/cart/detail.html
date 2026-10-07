@@ -23,6 +23,7 @@
             </a>
             <div class="cart-item__info">
                 <a class="cart-item__name" href="{% url 'catalog:detail' item.product.id %}">{{ item.product.name }}</a>
+                {% if item.product.is_active is False %}<span class="status status--cancelled">Ya no disponible</span>{% endif %}
                 <span class="subtle">${{ item.unit_price|money }} por unidad</span>
             </div>
             <div class="cart-item__controls">

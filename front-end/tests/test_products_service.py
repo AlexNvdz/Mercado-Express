@@ -44,3 +44,32 @@ def test_get_product_found():
 
 def test_get_product_not_found():
     assert products.get_product("00000000-0000-0000-0000-000000000999") is None
+
+
+def test_list_products_hides_inactive_by_default():
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+    names = [p["name"] for p in products.list_products(page_size=100)["items"]]
+    assert mock_data.MOCK_PRODUCTS[0]["name"] not in names
+
+
+def test_list_products_include_inactive_returns_them():
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+    result = products.list_products(page_size=100, include_inactive=True, token="tok")
+    assert result["total"] == len(mock_data.MOCK_PRODUCTS)
+
+
+def test_include_inactive_is_sent_with_staff_token(api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 50, "pages": 0}
+    products.list_products(page=1, page_size=50, include_inactive=True, token="tok")
+    method, path, kwargs = api_calls[0]
+    assert (method, path) == ("GET", "/api/v1/products")
+    assert kwargs["params"] == {"page": 1, "page_size": 50, "include_inactive": "true"}
+    assert kwargs["token"] == "tok"
+
+
+def test_public_listing_sends_neither_flag_nor_token(api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 24, "pages": 0}
+    products.list_products()
+    _, _, kwargs = api_calls[0]
+    assert "include_inactive" not in kwargs["params"]
+    assert "token" not in kwargs

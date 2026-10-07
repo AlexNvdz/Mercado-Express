@@ -46,6 +46,25 @@ def test_admin_list_loads_for_staff(client):
 
 
 @pytest.mark.django_db
+def test_admin_list_keeps_hidden_products_visible_to_staff(client):
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+    _login_as_staff(client)
+    content = client.get(reverse("catalog:admin_list")).content.decode()
+    assert "Arroz blanco" in content
+    assert "Oculto" in content
+
+
+@pytest.mark.django_db
+def test_admin_list_asks_backend_for_inactive_products(client, api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 100, "pages": 0}
+    _login_as_staff(client)
+    client.get(reverse("catalog:admin_list"))
+    products_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/products")
+    assert products_call["params"]["include_inactive"] == "true"
+    assert products_call["token"] == "mock-access-token"
+
+
+@pytest.mark.django_db
 def test_staff_can_create_product(client):
     _login_as_staff(client)
     response = client.post(

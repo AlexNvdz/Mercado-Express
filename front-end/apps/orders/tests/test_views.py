@@ -210,3 +210,37 @@ def test_cancel_pending_order(client):
 
     detail = client.get(reverse("orders:detail", kwargs={"order_id": order["id"]}))
     assert b"cancelled" in detail.content
+
+
+@pytest.mark.django_db
+def test_inactive_product_cannot_be_added_to_cart(client):
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+    response = client.post(
+        reverse("cart:add", kwargs={"product_id": ARROZ_ID}), {"quantity": 1, "next": "/catalogo/"}, follow=True
+    )
+    assert "ya no está disponible" in response.content.decode()
+    session = client.session
+    assert ARROZ_ID not in session.get("cart", {})
+
+
+@pytest.mark.django_db
+def test_checkout_blocks_product_deactivated_after_adding_it(client):
+    _login(client)
+    client.post(reverse("cart:add", kwargs={"product_id": ARROZ_ID}), {"quantity": 1})
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+
+    response = client.get(reverse("orders:checkout"))
+    assert response.status_code == 302
+    assert response.url == reverse("cart:detail")
+
+    cart_page = client.get(reverse("cart:detail")).content.decode()
+    assert "Ya no están disponibles: Arroz blanco 1kg" in cart_page
+    assert "Ya no disponible" in cart_page
+
+
+@pytest.mark.django_db
+def test_product_detail_disables_buying_inactive_product(client):
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+    response = client.get(reverse("catalog:detail", kwargs={"product_id": ARROZ_ID}))
+    assert response.status_code == 200
+    assert "No disponible" in response.content.decode()

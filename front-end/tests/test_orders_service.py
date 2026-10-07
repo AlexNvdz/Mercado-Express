@@ -81,3 +81,46 @@ def test_update_status_rejects_transition_outside_table():
     with pytest.raises(ApiConflictError):
         orders.update_status("any", order["id"], "shipped")
     assert order["status"] == "pending"
+
+
+def test_list_orders_filters_by_status_in_mock_mode():
+    result = orders.list_orders("any", status="shipped")
+    assert [o["status"] for o in result["items"]] == ["shipped"]
+    assert result["total"] == 1
+
+
+def test_list_orders_sends_status_param(api_calls):
+    orders.list_orders("tok", page=2, page_size=20, status="paid")
+    method, path, kwargs = api_calls[0]
+    assert (method, path) == ("GET", "/api/v1/orders")
+    assert kwargs["params"] == {"page": 2, "page_size": 20, "status": "paid"}
+
+
+def test_list_orders_without_status_sends_no_status_param(api_calls):
+    orders.list_orders("tok")
+    assert "status" not in api_calls[0][2]["params"]
+
+
+def test_status_history_mock_is_oldest_first():
+    history = orders.get_status_history("any", mock_data.MOCK_ORDERS[0]["id"])
+    assert history[0]["source"] == "order_created"
+    assert history[0]["from_status"] is None
+    assert history[-1]["to_status"] == "delivered"
+
+
+def test_status_history_empty_for_order_without_entries():
+    assert orders.get_status_history("any", "00000000-0000-0000-0000-000000000999") == []
+
+
+def test_status_history_request(api_calls):
+    api_calls.response = []
+    orders.get_status_history("tok", "order-1")
+    method, path, kwargs = api_calls[0]
+    assert (method, path) == ("GET", "/api/v1/orders/order-1/history")
+    assert kwargs["token"] == "tok"
+
+
+def test_every_history_source_has_a_label():
+    sources = {e["source"] for entries in mock_data.MOCK_ORDER_HISTORY.values() for e in entries}
+    assert sources <= set(orders.ORDER_STATUS_SOURCE_LABELS)
+    assert len(orders.ORDER_STATUS_SOURCE_LABELS) == 7

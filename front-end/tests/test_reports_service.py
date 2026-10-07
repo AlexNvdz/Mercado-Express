@@ -37,3 +37,9 @@ def test_summary_request(api_calls):
     assert (method, path) == ("GET", "/api/v1/reports/summary")
     assert kwargs["params"] == {"top_products_limit": 6}
     assert kwargs["token"] == "tok"
+
+
+def test_low_stock_ignores_inactive_products():
+    mock_data.MOCK_PRODUCTS[-1]["is_active"] = False  # the low-stock detergent
+    stats = reports.get_dashboard_stats("any")
+    assert stats["low_stock_count"] == 0

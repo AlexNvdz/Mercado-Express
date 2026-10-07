@@ -26,7 +26,10 @@
     <tbody>
         {% for row in rows %}
         <tr>
-            <td><div class="cell-title">{{ row.product.name }}</div><div class="cell-sub">SKU {{ row.product.sku }}</div></td>
+            <td>
+                <div class="cell-title">{{ row.product.name }}{% if not row.product.is_active %} <span class="status status--cancelled">Inactivo</span>{% endif %}</div>
+                <div class="cell-sub">SKU {{ row.product.sku }} · <a href="{% url 'adminpanel:inventory_history' row.product.id %}">Historial</a></div>
+            </td>
             {% if row.availability %}
             <td class="num">{{ row.availability.quantity_on_hand }}</td>
             <td class="num">{{ row.availability.quantity_reserved }}</td>
@@ -43,6 +46,8 @@
                     <input type="hidden" name="page" value="{{ page }}">
                     <label class="visually-hidden" for="{{ row.adjust_form.delta.id_for_label }}">Cantidad a ajustar de {{ row.product.name }}</label>
                     {{ row.adjust_form.delta }}
+                    <label class="visually-hidden" for="{{ row.adjust_form.reason.id_for_label }}">Motivo del ajuste de {{ row.product.name }}</label>
+                    {{ row.adjust_form.reason }}
                     <button type="submit" class="btn btn--secondary btn--sm">Ajustar</button>
                 </form>
             </td>

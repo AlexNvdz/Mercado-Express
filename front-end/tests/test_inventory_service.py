@@ -81,3 +81,40 @@ def test_availability_by_product_with_no_inventory_rows(api_calls):
 def test_availability_by_product_without_products_makes_no_request(api_calls):
     assert inventory.availability_by_product("tok", []) == {}
     assert api_calls == []
+
+
+def test_list_inventory_skips_inactive_products_unless_asked():
+    mock_data.MOCK_PRODUCTS[-1]["is_active"] = False  # the low-stock detergent
+    assert inventory.list_inventory("any", low_stock=True)["total"] == 0
+    assert inventory.list_inventory("any", low_stock=True, include_inactive=True)["total"] == 1
+
+
+def test_availability_by_product_includes_inactive_rows(api_calls):
+    api_calls.response = _page([_row("a")], 1, 1)
+    inventory.availability_by_product("tok", ["a"])
+    assert api_calls[0][2]["params"]["include_inactive"] == "true"
+
+
+def test_set_levels_sends_reason(api_calls):
+    inventory.set_levels("tok", ARROZ_ID, 50, 10, reason="Inventario anual")
+    method, path, kwargs = api_calls[0]
+    assert (method, path) == ("PUT", f"/api/v1/inventory/{ARROZ_ID}")
+    assert kwargs["json"] == {"quantity_on_hand": 50, "reorder_level": 10, "reason": "Inventario anual"}
+
+
+def test_mock_adjust_records_history_newest_first():
+    inventory.adjust_stock("any", ARROZ_ID, 5, "Primero")
+    inventory.set_levels("any", ARROZ_ID, 100, 25, reason="Segundo")
+    entries = inventory.list_history("any", ARROZ_ID)["items"]
+    assert [e["reason"] for e in entries] == ["Segundo", "Primero"]
+    assert entries[1]["quantity_delta"] == 5
+    assert entries[0]["kind"] == "set_levels"
+    assert entries[0]["reorder_level_after"] == 25
+
+
+def test_list_history_request(api_calls):
+    inventory.list_history("tok", ARROZ_ID, page=3, page_size=20)
+    method, path, kwargs = api_calls[0]
+    assert (method, path) == ("GET", f"/api/v1/inventory/{ARROZ_ID}/history")
+    assert kwargs["params"] == {"page": 3, "page_size": 20}
+    assert kwargs["token"] == "tok"

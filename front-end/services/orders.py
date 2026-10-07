@@ -3,10 +3,11 @@ Order creation, listing, detail and cancellation. See
 ../API_CONTRACT.md#apiv1orders.
 
     POST /api/v1/orders                       {items, shipping_address_id, notes}
-    GET  /api/v1/orders?page=&page_size=      -> own orders (customer) / all (staff)
+    GET  /api/v1/orders?page=&page_size=&status=  -> own orders (customer) / all (staff)
     GET  /api/v1/orders/{order_id}
     POST  /api/v1/orders/{order_id}/cancel
     PATCH /api/v1/orders/{order_id}/status    staff, {"status": "<OrderStatus>"}
+    GET   /api/v1/orders/{order_id}/history   staff, status changes, oldest first
 
 No order/pricing/inventory business logic is duplicated here: this module
 only shapes requests/responses for the views. Totals, stock reservation and
@@ -70,6 +71,20 @@ ORDER_TRANSITIONS = {
 }
 
 
+# Mirrors backend-api's order status-history `source` values: what drove
+# each change. Spanish display labels (see
+# apps/core/templatetags/status_labels.py).
+ORDER_STATUS_SOURCE_LABELS = {
+    "order_created": "Pedido creado",
+    "payment": "Pago",
+    "manual": "Cambio manual",
+    "customer_cancel": "Cancelación del cliente",
+    "shipment_created": "Envío creado",
+    "shipment_dispatched": "Envío despachado",
+    "shipment_delivered": "Envío entregado",
+}
+
+
 def next_statuses(current_status: str) -> list[str]:
     """Valid next values for the manual status-override form, given the
     order's current status. Empty for shipped (only the shipment's deliver
@@ -78,11 +93,20 @@ def next_statuses(current_status: str) -> list[str]:
     return ORDER_TRANSITIONS.get(current_status, [])
 
 
-def list_orders(token: str, *, page: int = 1, page_size: int = 20) -> dict:
+def list_orders(token: str, *, page: int = 1, page_size: int = 20, status: str | None = None) -> dict:
+    """`status` filters server-side, so `total`/`pages` count only matching
+    orders and pagination keeps the filter.
+    """
     if settings.API_USE_MOCKS:
         items = mock_data.MOCK_ORDERS
-        return {"items": items, "total": len(items), "page": 1, "page_size": len(items), "pages": 1}
-    return api_client.get("/api/v1/orders", token=token, params={"page": page, "page_size": page_size})
+        if status:
+            items = [o for o in items if o["status"] == status]
+        return {"items": items, "total": len(items), "page": 1, "page_size": len(items) or 1, "pages": 1}
+
+    params: dict = {"page": page, "page_size": page_size}
+    if status:
+        params["status"] = status
+    return api_client.get("/api/v1/orders", token=token, params=params)
 
 
 def get_order(token: str, order_id: str) -> dict | None:
@@ -189,3 +213,15 @@ def update_status(token: str, order_id: str, status: str) -> dict:
             shipment["status"] = "cancelled"
         return order
     return api_client.patch(f"/api/v1/orders/{order_id}/status", token=token, json={"status": status})
+
+
+def get_status_history(token: str, order_id: str) -> list[dict]:
+    """Staff only: every status change of the order, oldest first (not
+    paginated). Each entry: {id, order_id, from_status (null only for
+    source "order_created"), to_status, source, actor: {id, email,
+    full_name, role} | null, created_at}. Orders created before the history
+    existed have none -- an empty list, not an error.
+    """
+    if settings.API_USE_MOCKS:
+        return mock_data.MOCK_ORDER_HISTORY.get(str(order_id), [])
+    return api_client.get(f"/api/v1/orders/{order_id}/history", token=token)
