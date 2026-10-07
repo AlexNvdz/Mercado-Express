@@ -1,0 +1,19 @@
+{# One shared confirmation dialog. A form opts in with data-confirm="..." and
+   app.js opens this instead of the browser's native confirmation popup. Optional
+   attributes on the form: data-confirm-title, data-confirm-ok (button
+   label), data-confirm-cancel, data-confirm-tone="danger". In the message,
+   {status} is replaced by the label of the form's selected status option. #}
+<dialog class="confirm" id="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
+    <form method="dialog" class="confirm__box">
+        <span class="confirm__icon" aria-hidden="true">
+            <svg class="confirm__icon-danger" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="confirm__icon-neutral" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16.2v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <h2 class="confirm__title" id="confirm-dialog-title">¿Confirmas esta acción?</h2>
+        <p class="confirm__message" id="confirm-dialog-message"></p>
+        <div class="confirm__actions">
+            <button type="submit" value="cancel" class="btn btn--secondary" data-confirm-cancel>Volver</button>
+            <button type="submit" value="ok" class="btn" data-confirm-ok>Confirmar</button>
+        </div>
+    </form>
+</dialog>

@@ -52,7 +52,7 @@
             {% for image in product.images %}
             <div class="image-grid__item">
                 <img src="{{ image.url }}" alt="Imagen {{ forloop.counter }} de {{ product.name }}">
-                <form method="post" action="{% url 'catalog:admin_delete_image' product.id image.id %}" onsubmit="return confirm('¿Quitar esta imagen del producto?');" class="image-grid__remove">
+                <form method="post" action="{% url 'catalog:admin_delete_image' product.id image.id %}" data-confirm="La imagen dejará de mostrarse en la tienda." data-confirm-title="¿Quitar esta imagen?" data-confirm-ok="Quitar imagen" data-confirm-tone="danger" class="image-grid__remove">
                     {% csrf_token %}
                     <button type="submit" class="icon-btn" aria-label="Quitar imagen {{ forloop.counter }}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>

@@ -27,7 +27,7 @@
                 <button type="submit" class="btn btn--secondary btn--sm">Usar como predeterminada</button>
             </form>
             {% endif %}
-            <form method="post" action="{% url 'dashboard:address_delete' address.id %}" onsubmit="return confirm('¿Eliminar esta dirección?');">
+            <form method="post" action="{% url 'dashboard:address_delete' address.id %}" data-confirm="{{ address.line1 }}, {{ address.city }}." data-confirm-title="¿Eliminar esta dirección?" data-confirm-ok="Eliminar dirección" data-confirm-tone="danger">
                 {% csrf_token %}
                 <button type="submit" class="btn btn--danger btn--sm">Eliminar</button>
             </form>
