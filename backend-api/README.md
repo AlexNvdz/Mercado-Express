@@ -49,10 +49,14 @@ uv run uvicorn app.main:app --reload
 
 Swagger UI: http://localhost:8000/docs · Health check: http://localhost:8000/health
 
-> **Windows note 1:** `.env.example` maps Postgres to host port `55432` (not
+> **Windows note 1:** `.env.example` maps Postgres to host port `5433` (not
 > the default 5432) because many dev machines already have a native
-> PostgreSQL service bound to 5432. Adjust `POSTGRES_PORT` if that's not
-> your situation.
+> PostgreSQL service bound to 5432. Don't move it into Windows' dynamic port
+> range (49152-65535): Hyper-V/WinNAT reserves blocks there that change on
+> every reboot, and `docker compose up` then fails with "ports are not
+> available ... forbidden by its access permissions" (check with
+> `netsh interface ipv4 show excludedportrange protocol=tcp`). Adjust
+> `POSTGRES_PORT` if that's not your situation.
 >
 > **Windows note 2:** always keep `--reload` when running uvicorn directly
 > on Windows (outside Docker). psycopg3's async mode cannot use the default
