@@ -28,9 +28,8 @@ def money(value):
     return f"{whole:,}".replace(",", ".")
 
 
-@register.filter(name="api_datetime")
-def api_datetime(value):
-    """ISO 8601 UTC timestamp from the API -> "07/10/2026 09:00" in the
+def _format_local(value, fmt):
+    """Parse an ISO 8601 UTC timestamp from the API and format it in the
     site's TIME_ZONE. Falls back to the raw value if it can't parse.
     """
     try:
@@ -41,4 +40,18 @@ def api_datetime(value):
         return value
     if timezone.is_naive(parsed):
         parsed = parsed.replace(tzinfo=UTC)
-    return timezone.localtime(parsed).strftime("%d/%m/%Y %H:%M")
+    return timezone.localtime(parsed).strftime(fmt)
+
+
+@register.filter(name="api_datetime")
+def api_datetime(value):
+    """ISO 8601 UTC timestamp -> "07/10/2026 09:00" in the site's TIME_ZONE."""
+    return _format_local(value, "%d/%m/%Y %H:%M")
+
+
+@register.filter(name="api_date")
+def api_date(value):
+    """ISO 8601 UTC timestamp -> "07/10/2026" in the site's TIME_ZONE, so a
+    late-evening order isn't shown with tomorrow's UTC date.
+    """
+    return _format_local(value, "%d/%m/%Y")

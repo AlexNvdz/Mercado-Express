@@ -14,7 +14,7 @@
 <div class="order-head">
     <div>
         <h1 class="section-title">Pedido {{ order.order_number }}</h1>
-        <p class="order-head__meta">Realizado el {{ order.created_at|slice:":10" }}</p>
+        <p class="order-head__meta">Realizado el {{ order.created_at|api_date }}</p>
     </div>
     <span class="status status--{{ order.status }}">{{ order.status|order_status_label }}</span>
 </div>

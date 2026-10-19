@@ -1270,6 +1270,10 @@ input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; 
 .dashboard-cols--wide { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
 .dashboard-cols--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 1000px) { .dashboard-cols, .dashboard-cols--wide, .dashboard-cols--three { grid-template-columns: minmax(0, 1fr); } }
+/* A half-width column is ~515px at 1366px, under .table's 560px floor, which
+   pushed the last column out of view. These short tables fit at their own width;
+   on phones the nowrap cells still make them scroll inside .table-card. */
+.dashboard-cols .table { min-width: 0; }
 
 /* Phones: collapsed grids must not grow to their widest child (a 1fr track
    has a min-content minimum, so a horizontally scrolling strip such as the
