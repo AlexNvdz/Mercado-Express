@@ -1,4 +1,4 @@
-from apps.core.templatetags.money import api_datetime
+from apps.core.templatetags.money import api_date, api_datetime
 
 
 def test_api_datetime_converts_utc_to_site_time_zone():
@@ -13,3 +13,13 @@ def test_api_datetime_handles_microseconds_and_offsets():
 def test_api_datetime_returns_unparseable_value_as_is():
     assert api_datetime("not a date") == "not a date"
     assert api_datetime(None) is None
+
+
+def test_api_date_uses_site_time_zone_not_utc_date():
+    # 01:43 UTC on the 19th is still 20:43 on the 18th in Bogota.
+    assert api_date("2026-10-19T01:43:00Z") == "18/10/2026"
+
+
+def test_api_date_returns_unparseable_value_as_is():
+    assert api_date("not a date") == "not a date"
+    assert api_date(None) is None
