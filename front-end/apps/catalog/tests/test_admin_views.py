@@ -64,6 +64,45 @@ def test_admin_list_asks_backend_for_inactive_products(client, api_calls):
     assert products_call["token"] == "mock-access-token"
 
 
+def _paged_products_api(api_calls, category_id):
+    def respond(method, path, kwargs):
+        if path == "/api/v1/categories":
+            return {"items": [{"id": category_id, "name": "Granos"}], "total": 1, "page": 1, "page_size": 100, "pages": 1}
+        product = {"id": "00000000-0000-0000-0000-000000000991", "name": "Café molido", "sku": "CAF-1", "price": "9000.00", "is_active": True, "images": []}
+        return {"items": [product], "total": 120, "page": 2, "page_size": 50, "pages": 3}
+
+    api_calls.response = respond
+
+
+@pytest.mark.django_db
+def test_admin_list_sends_search_category_and_page(client, api_calls):
+    category_id = "00000000-0000-0000-0000-000000000101"
+    _paged_products_api(api_calls, category_id)
+    _login_as_staff(client)
+
+    content = client.get(reverse("catalog:admin_list"), {"q": "café", "category": category_id, "page": 2}).content.decode()
+
+    products_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/products")
+    assert products_call["params"] == {
+        "page": 2, "page_size": 50, "category_id": category_id, "search": "café", "include_inactive": "true"
+    }
+    assert "120 productos con estos filtros" in content
+    assert "Página 2 de 3" in content
+    assert "page=3" in content and "q=caf%C3%A9" in content  # pagination links keep the filters
+
+
+@pytest.mark.django_db
+def test_admin_list_published_only_and_unknown_category(client, api_calls):
+    _paged_products_api(api_calls, "00000000-0000-0000-0000-000000000101")
+    _login_as_staff(client)
+
+    client.get(reverse("catalog:admin_list"), {"estado": "publicados", "category": "not-a-uuid"})
+
+    products_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/products")
+    assert "include_inactive" not in products_call["params"]
+    assert "category_id" not in products_call["params"]
+
+
 @pytest.mark.django_db
 def test_staff_can_create_product(client):
     _login_as_staff(client)

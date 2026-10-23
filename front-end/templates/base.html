@@ -3,36 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="{% block theme_color %}#ffffff{% endblock %}">
     <title>{% block title %}MercadoExpress{% endblock %}</title>
     <meta name="description" content="{% block meta_description %}MercadoExpress: tu mercado en línea. Catálogo con stock real, pago al instante y seguimiento de tu pedido.{% endblock %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% block fonts %}<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">{% endblock %}
+    {% comment %}
+    Stylesheets in cascade order: tokens and base first, then the storefront
+    sections interleaved with the shared components exactly as they sat in the
+    old single base.css. The staff panel replaces the `styles` block with the
+    components plus css/panel/ (templates/adminpanel/_layout.html).
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block styles %}
+    <link rel="stylesheet" href="{% static 'css/storefront/header.css' %}">
+    <link rel="stylesheet" href="{% static 'css/storefront/footer.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/toasts.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/buttons.css' %}">
+    <link rel="stylesheet" href="{% static 'css/storefront/sections.css' %}">
+    <link rel="stylesheet" href="{% static 'css/storefront/home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/storefront/catalog.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/lists.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/forms.css' %}">
+    <link rel="stylesheet" href="{% static 'css/storefront/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/tables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/storefront/cart-checkout.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/status.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/surfaces.css' %}">
+    <link rel="stylesheet" href="{% static 'css/storefront/account.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/dialog.css' %}">
+    {% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body{% block body_attrs %}{% endblock %}>
+    {% block shell %}
     {% include "partials/navbar.html" %}
-
-    {% if messages %}
-    <div class="toasts">
-        {% for message in messages %}
-        <div class="toast toast--{{ message.tags }}" role="status">
-            <span>{{ message }}</span>
-            <button type="button" class="toast__close" aria-label="Cerrar">&times;</button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+    {% include "partials/messages.html" %}
 
     <main class="{% block main_class %}page{% endblock %}">
         {% block content %}{% endblock %}
     </main>
 
     {% block footer %}{% include "partials/footer.html" %}{% endblock %}
+    {% endblock %}
     {% include "partials/confirm_dialog.html" %}
-    <script src="{% static 'js/app.js' %}"></script>
+    <script type="module" src="{% static 'js/app.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

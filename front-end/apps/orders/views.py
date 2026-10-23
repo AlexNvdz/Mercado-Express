@@ -70,6 +70,9 @@ def _enrich_items_with_product_names(items: list[dict]) -> list[dict]:
     cache: dict[str, dict | None] = {}
     enriched = []
     for item in items:
+        if item.get("product_name"):  # asked of backend-api: no per-line lookup then
+            enriched.append(item)
+            continue
         product_id = item["product_id"]
         if product_id not in cache:
             cache[product_id] = products_service.get_product(product_id)

@@ -6,6 +6,7 @@ app_name = "adminpanel"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("buscar/", views.search, name="search"),
     # Orders: status overrides + shipment lifecycle (product CRUD lives at
     # catalog:admin_* already -- linked from the sidebar, not duplicated).
     path("pedidos/", views.orders_list, name="orders_list"),

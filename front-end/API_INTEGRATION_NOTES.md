@@ -10,19 +10,59 @@ tomadas del lado del frontend.
 | Módulo | Endpoints |
 |---|---|
 | `services/auth.py` | `/auth/register`, `/auth/login` (form-encoded), `/auth/refresh`, `/auth/me` |
-| `services/customers.py` | `/customers/me` (GET/PATCH), `/customers/me/addresses` (CRUD) |
+| `services/customers.py` | `/customers/me` (GET/PATCH), `/customers/me/addresses` (CRUD), `/customers` (staff, `search=`), `/customers/{id}` |
 | `services/products.py` | `/categories`, `/products` (+ `/{id}` de cada uno, `search=`, `include_inactive=` solo staff) |
-| `services/inventory.py` | `/inventory` (staff, `low_stock=`, `include_inactive=`), `/inventory/{product_id}` (+ `adjust`, PUT, `history`) |
-| `services/orders.py` | `/orders` (POST/GET, `status=`), `/orders/checkout` (POST), `/orders/{id}`, `/orders/{id}/cancel`, `/orders/{id}/status`, `/orders/{id}/history` |
+| `services/inventory.py` | `/inventory` (staff, `low_stock=`, `include_inactive=`, `search=`, `product_id=` repetible), `/inventory/{product_id}` (+ `adjust`, PUT, `history`) |
+| `services/orders.py` | `/orders` (POST/GET, `status=`, `search=`, `created_from=`, `created_to=`), `/orders/checkout` (POST), `/orders/{id}`, `/orders/{id}/cancel`, `/orders/{id}/status`, `/orders/{id}/history` |
 | `services/payments.py` | `/payments` (POST), `/payments/order/{id}` |
 | `services/shipments.py` | `/shipments/order/{id}` (GET/POST), `/shipments/{id}` (PATCH), `/shipments/{id}/ship`, `/shipments/{id}/deliver` |
-| `services/reports.py` | `/reports/summary` (staff) + `/inventory?low_stock=true` + `/orders` para el resumen del panel |
+| `services/reports.py` | `/reports/summary` (staff) + `/inventory?low_stock=true` + `/orders?status=` por etapa para el resumen del panel |
 
 `services/mock_data.py` sigue existiendo solo para que la suite de pruebas de
 este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=True` en todos los tests). En desarrollo/staging/producción
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
+
+## Cambios 2026-10-23: el panel a escala real y su rediseño
+
+Rama `feat/panel-navigation-scale`, sobre los filtros que backend-api
+publicó en el PR #11 (`API_CONTRACT.md`). Medido con la base de desarrollo
+(98.483 pedidos, 96.104 clientes, 32.962 productos):
+
+- `/panel/inventario/` pasó de unos 6,5 s a unos 140 ms. Antes recorría las
+  ~330 páginas de `GET /inventory` para encontrar los 50 productos en
+  pantalla; ahora pide solo esos con `product_id` repetido (máx. 100).
+- `services/api_client.py` usa un `httpx.Client` por proceso: las varias
+  llamadas de una página reutilizan la conexión (keep-alive).
+- Paginación numerada con campo "Ir a la página" en todas las listas
+  (`{% pagination page pages %}`), que conserva los filtros de la URL.
+- Búsquedas en el servidor: pedidos (`search` por número, correo o nombre del
+  cliente; `created_from`/`created_to`, días UTC, así que un pedido hecho de
+  noche en Bogotá cuenta para el día siguiente), clientes (`search`),
+  productos e inventario (`search`, `category_id`, "solo publicados"),
+  inventario "solo stock bajo" (`GET /inventory?low_stock=true` con los
+  nombres que trae cada fila; ese endpoint no filtra por categoría).
+- `/panel/buscar/?q=` (buscador de la barra superior, atajo `/`) muestra
+  pedidos, clientes y productos a la vez, con enlace a cada lista filtrada.
+- `/catalogo/admin/` pagina de 50 en 50 (antes mostraba solo los primeros
+  100) y las categorías se leen completas página a página (antes se cortaban
+  en 100).
+- El detalle del pedido y el stock bajo del resumen usan `product_name` /
+  `product_sku` de la respuesta; solo si faltan vuelven a `GET /products/{id}`.
+- El resumen muestra los pedidos por atender agrupados por etapa (pagados,
+  en preparación, enviados) con `GET /orders?status=<etapa>&page_size=5`.
+- El riel del panel muestra los totales de pedidos, clientes y productos de
+  `GET /reports/summary` (caché de 10 s en el backend); si la llamada falla,
+  simplemente no aparecen.
+
+Rediseño del panel ("Boletín de precios", elegido por el usuario): riel verde
+bosque, hojas blancas regladas, bandas de grupo, columna de variación,
+tipografía Archivo y una escala de 11 verdes (`--g0`..`--g10`). Los estilos
+quedaron divididos en `static/css/` (`tokens.css`, `base.css`,
+`components/`, `storefront/`, `panel/`) y el JS en módulos ES
+(`static/js/app.js` + `static/js/modules/`, más `static/js/panel.js`). La
+tienda no cambió de aspecto: se comparó píxel a píxel antes y después.
 
 ## Cambios 2026-10-22: checkout en una sola transacción
 

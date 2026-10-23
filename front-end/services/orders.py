@@ -4,7 +4,8 @@ Order creation, listing, detail and cancellation. See
 
     POST /api/v1/orders                       {items, shipping_address_id, notes}
     POST /api/v1/orders/checkout              same body + method: order and payment in one transaction
-    GET  /api/v1/orders?page=&page_size=&status=  -> own orders (customer) / all (staff)
+    GET  /api/v1/orders?page=&page_size=&status=&search=&created_from=&created_to=
+                                              -> own orders (customer) / all (staff)
     GET  /api/v1/orders/{order_id}
     POST  /api/v1/orders/{order_id}/cancel
     PATCH /api/v1/orders/{order_id}/status    staff, {"status": "<OrderStatus>"}
@@ -94,19 +95,42 @@ def next_statuses(current_status: str) -> list[str]:
     return ORDER_TRANSITIONS.get(current_status, [])
 
 
-def list_orders(token: str, *, page: int = 1, page_size: int = 20, status: str | None = None) -> dict:
-    """`status` filters server-side, so `total`/`pages` count only matching
-    orders and pagination keeps the filter.
+def list_orders(
+    token: str,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    status: str | None = None,
+    search: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+) -> dict:
+    """Every filter is server-side, so `total`/`pages` count only matching
+    orders and pagination keeps them. `search` matches the order number or the
+    customer email or name; `created_from`/`created_to` are inclusive
+    YYYY-MM-DD days in UTC (the backend 422s any other format).
     """
     if settings.API_USE_MOCKS:
         items = mock_data.MOCK_ORDERS
         if status:
             items = [o for o in items if o["status"] == status]
+        if search:
+            items = [o for o in items if search.lower() in o["order_number"].lower()]
+        if created_from:
+            items = [o for o in items if o["created_at"][:10] >= created_from]
+        if created_to:
+            items = [o for o in items if o["created_at"][:10] <= created_to]
         return {"items": items, "total": len(items), "page": 1, "page_size": len(items) or 1, "pages": 1}
 
     params: dict = {"page": page, "page_size": page_size}
     if status:
         params["status"] = status
+    if search:
+        params["search"] = search
+    if created_from:
+        params["created_from"] = created_from
+    if created_to:
+        params["created_to"] = created_to
     return api_client.get("/api/v1/orders", token=token, params=params)
 
 

@@ -1,0 +1,10 @@
+{% if messages %}
+<div class="toasts">
+    {% for message in messages %}
+    <div class="toast toast--{{ message.tags }}" role="status">
+        <span>{{ message }}</span>
+        <button type="button" class="toast__close" aria-label="Cerrar">&times;</button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

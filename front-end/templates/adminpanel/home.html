@@ -1,144 +1,129 @@
 {% extends "adminpanel/_layout.html" %}
-{% load money %}
-{% load status_labels %}
+{% load money status_labels %}
 
 {% block title %}Resumen - Panel de administración{% endblock %}
 
 {% block panel_content %}
-<div class="section-head">
-    <div>
-        <h1 class="section-title">Resumen</h1>
-        <p class="section-sub">Estado de la tienda en este momento.</p>
-    </div>
-    <div class="actions">
+<div class="page-head">
+    <h1>Resumen</h1>
+    <p class="page-head__meta">{% if stats.generated_at %}Corte {{ stats.generated_at|api_datetime }} · {% endif %}cifras del libro de ventas y del inventario.</p>
+    <div class="page-head__actions">
         <a class="btn btn--secondary" href="{% url 'adminpanel:orders_list' %}">Ver pedidos</a>
         <a class="btn" href="{% url 'catalog:admin_create' %}">Nuevo producto</a>
     </div>
 </div>
 
-<div class="stat-grid">
-    <div class="stat-card stat-card--feature">
-        <div class="stat-card__label">Ingresos netos</div>
-        <div class="stat-card__value">${{ stats.net_revenue|money }}</div>
-        <div class="stat-card__hint">Brutos ${{ stats.gross_revenue|money }} · Reembolsos ${{ stats.refunded_amount|money }}</div>
-        <div class="stat-card__hint">{{ stats.sale_count }} venta{{ stats.sale_count|pluralize }} · {{ stats.reversal_count }} reembolsada{{ stats.reversal_count|pluralize }}</div>
+<section class="figures" aria-label="Cifras principales">
+    <div class="figure figure--lead">
+        <span class="figure__label caps">Ingresos netos</span>
+        <strong class="figure__value">${{ stats.net_revenue|money }}</strong>
+        <span class="figure__note">Brutos ${{ stats.gross_revenue|money }} · {% if stats.refunded_amount %}<span class="var var--down">Reembolsos ${{ stats.refunded_amount|money }}</span>{% else %}<span class="var var--flat">Reembolsos $0</span>{% endif %}</span>
     </div>
-    <div class="stat-card">
-        <div class="stat-card__label">Pedidos</div>
-        <div class="stat-card__value">{{ stats.total_orders }}</div>
-        <div class="stat-card__hint">{{ stats.orders_by_status.pending|default:0 }} pendientes de pago</div>
+    <div class="figure">
+        <span class="figure__label caps">Ventas</span>
+        <strong class="figure__value">{{ stats.sale_count|money }}</strong>
+        <span class="figure__note"><span class="var {% if stats.reversal_count %}var--down{% else %}var--flat{% endif %}">{{ stats.reversal_count|money }} reembolsada{{ stats.reversal_count|pluralize }}</span></span>
     </div>
-    <div class="stat-card">
-        <div class="stat-card__label">Productos</div>
-        <div class="stat-card__value">{{ stats.total_products }}</div>
-        <div class="stat-card__hint"><a href="{% url 'catalog:admin_list' %}">Administrar</a></div>
+    <div class="figure">
+        <span class="figure__label caps">Por preparar</span>
+        <strong class="figure__value">{{ stats.orders_by_status.paid|default:0|money }}</strong>
+        <span class="figure__note"><span class="var {% if stats.orders_by_status.pending %}var--warn{% else %}var--flat{% endif %}">{{ stats.orders_by_status.pending|default:0|money }} sin pagar detrás</span></span>
     </div>
-    <div class="stat-card">
-        <div class="stat-card__label">Clientes</div>
-        <div class="stat-card__value">{{ stats.total_customers }}</div>
-        <div class="stat-card__hint"><a href="{% url 'adminpanel:customers_list' %}">Ver todos</a></div>
+    <div class="figure">
+        <span class="figure__label caps">Stock bajo</span>
+        <strong class="figure__value">{{ stats.low_stock_count|money }}</strong>
+        <span class="figure__note">{% if stats.low_stock_count %}<a href="{% url 'adminpanel:inventory_list' %}?stock=bajo"><span class="var {% if stats.sold_out_count %}var--down{% else %}var--warn{% endif %}">{% if stats.sold_out_is_partial %}{{ stats.sold_out_count|money }}+ agotados{% else %}{{ stats.sold_out_count|money }} agotado{{ stats.sold_out_count|pluralize }}{% endif %}</span></a>{% else %}<span class="var var--flat">Todo sobre su reorden</span>{% endif %}</span>
     </div>
-    <div class="stat-card{% if stats.low_stock_count > 0 %} stat-card--warning{% endif %}">
-        <div class="stat-card__label">Productos con stock bajo</div>
-        <div class="stat-card__value">{{ stats.low_stock_count }}</div>
-        <div class="stat-card__hint"><a href="{% url 'adminpanel:inventory_list' %}">Revisar inventario</a></div>
-    </div>
-</div>
+</section>
 
-<div class="dashboard-cols dashboard-cols--wide">
-    <section class="panel-section">
-        <div class="panel-section__head">
-            <h2>Pedidos recientes</h2>
-            <a class="section-link" href="{% url 'adminpanel:orders_list' %}">Ver todos</a>
+<div class="sheets">
+    <section class="sheet" aria-labelledby="attend-title">
+        <div class="sheet__head">
+            <h2 class="sheet__title" id="attend-title">Pedidos por atender</h2>
+            <a class="sheet__link" href="{% url 'adminpanel:orders_list' %}">Ver los {{ stats.total_orders|money }}</a>
         </div>
-        {% if stats.recent_orders %}
-        <div class="table-card">
-        <table class="table">
-            <thead><tr><th>Pedido</th><th>Estado</th><th class="num">Total</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+        <table class="ledger">
+            <thead><tr><th>Pedido</th><th>Ciudad</th><th class="num">Productos</th><th class="num">Total</th><th class="vcol" title="Tiempo desde el último cambio de estado">Espera</th></tr></thead>
             <tbody>
-                {% for order in stats.recent_orders %}
+                {% for stage in stats.to_attend %}
+                <tr class="band"><td colspan="5">{{ stage.label }}<b>{{ stage.count|money }}</b>{% if stage.count > stage.orders|length %}<a href="{% url 'adminpanel:orders_list' %}?status={{ stage.status }}">Ver todos</a>{% endif %}</td></tr>
+                {% for order in stage.orders %}
                 <tr>
-                    <td><div class="cell-title">{{ order.order_number }}</div><div class="cell-sub">{{ order.created_at|api_date }}</div></td>
-                    <td><span class="status status--{{ order.status }}">{{ order.status|order_status_label }}</span></td>
-                    <td class="num"><strong>${{ order.total_amount|money }}</strong></td>
-                    <td class="cell-actions"><a class="btn btn--secondary btn--sm" href="{% url 'adminpanel:order_detail' order.id %}">Gestionar</a></td>
+                    <td class="lead"><a class="code" href="{% url 'adminpanel:order_detail' order.id %}">{{ order.order_number }}</a></td>
+                    <td data-label="Ciudad">{{ order.shipping_address.city|default:"Sin dirección" }}</td>
+                    <td class="num" data-label="Productos">{{ order.items|length }}</td>
+                    <td class="num" data-label="Total">${{ order.total_amount|money }}</td>
+                    <td class="vcol" data-label="Espera"><span class="var {% if order.updated_at|hours_since >= 24 %}var--warn{% else %}var--flat{% endif %}">{{ order.updated_at|since }}</span></td>
                 </tr>
+                {% empty %}
+                <tr class="is-empty"><td colspan="5">Nada en esta etapa.</td></tr>
+                {% endfor %}
                 {% endfor %}
             </tbody>
         </table>
-        </div>
-        {% else %}
-        <div class="empty-state"><h2>Todavía no hay pedidos</h2><p>Aparecerán aquí en cuanto un cliente confirme una compra.</p></div>
-        {% endif %}
     </section>
 
-    <section class="panel-section">
-        <div class="panel-section__head"><h2>Pedidos por estado</h2></div>
-        <div class="card">
-            {% if stats.orders_by_status %}
-            <div class="status-bars">
-                {% for status, count in stats.orders_by_status.items %}
-                <div>
-                    <div class="status-bar__row">
-                        <span class="status status--{{ status }}">{{ status|order_status_label }}</span>
-                        <span class="status-bar__count">{{ count }}</span>
-                    </div>
-                    <div class="status-bar__track"><div class="status-bar__fill" style="width: {% widthratio count stats.total_orders 100 %}%;"></div></div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="muted">Sin datos todavía.</p>
-            {% endif %}
-        </div>
-    </section>
-</div>
-
-<div class="dashboard-cols">
-    <section class="panel-section">
-        <div class="panel-section__head"><h2>Más vendidos</h2></div>
-        {% if stats.top_products %}
-        <div class="table-card">
-        <table class="table">
-            <thead><tr><th>Producto</th><th class="num">Unidades vendidas</th><th class="num">Ingresos</th></tr></thead>
-            <tbody>
-                {% for row in stats.top_products %}
-                <tr><td class="cell-title">{{ row.name }}</td><td class="num">{{ row.units_sold }}</td><td class="num">${{ row.revenue|money }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-        {% else %}
-        <div class="empty-state"><h2>Todavía no hay ventas</h2><p>El ranking se arma con los pedidos pagados.</p></div>
-        {% endif %}
-    </section>
-
-    <section class="panel-section">
-        <div class="panel-section__head">
-            <h2>Stock bajo</h2>
-            <a class="section-link" href="{% url 'adminpanel:inventory_list' %}">Gestionar inventario</a>
+    <div class="stack-sheets">
+    <section class="sheet" aria-labelledby="low-title">
+        <div class="sheet__head">
+            <h2 class="sheet__title" id="low-title">Stock bajo</h2>
+            <a class="sheet__link" href="{% url 'adminpanel:inventory_list' %}?stock=bajo">Ver todo el stock bajo</a>
         </div>
         {% if stats.low_stock %}
-        <div class="table-card">
-        <table class="table">
-            <thead><tr><th>Producto</th><th class="num">Disponible</th><th class="num">Nivel de reorden</th></tr></thead>
+        <table class="ledger">
+            <thead><tr><th>Producto</th><th class="num">Disp.</th><th class="num">Reorden</th><th class="vcol">Variación</th></tr></thead>
             <tbody>
                 {% for row in stats.low_stock %}
                 <tr>
-                    <td class="cell-title">{{ row.name }}</td>
-                    <td class="num"><span class="stock-badge stock-badge--{% if row.availability.quantity_available <= 0 %}out{% else %}low{% endif %}">{{ row.availability.quantity_available }}</span></td>
-                    <td class="num">{{ row.availability.reorder_level }}</td>
+                    <td class="lead"><span class="code">{{ row.sku|default:"Sin SKU" }}</span>{% if row.availability.quantity_available <= 0 %} <span class="chip chip--off">Agotado</span>{% endif %}<span class="sub">{{ row.name }}</span></td>
+                    <td class="num" data-label="Disponible">{{ row.availability.quantity_available }}</td>
+                    <td class="num" data-label="Reorden">{{ row.availability.reorder_level }}</td>
+                    <td class="vcol" data-label="Variación"><span class="var {{ row.availability.quantity_available|stock_gap_tone:row.availability.reorder_level }}">{{ row.availability.quantity_available|stock_gap:row.availability.reorder_level }}</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        </div>
-        {% if stats.low_stock_count > stats.low_stock|length %}
-        <p class="muted mt-md">Se muestran los {{ stats.low_stock|length }} con menos stock de {{ stats.low_stock_count }}.</p>
-        {% endif %}
+        {% if stats.low_stock_count > stats.low_stock|length %}<p class="sheet__foot">Se muestran los {{ stats.low_stock|length }} con menos stock de {{ stats.low_stock_count|money }}.</p>{% endif %}
         {% else %}
-        <div class="empty-state"><h2>Todo el stock está en orden</h2><p>Ningún producto está por debajo de su nivel de reorden.</p></div>
+        <div class="sheet-empty"><h2>Todo el stock está en orden</h2><p>Ningún producto está por debajo de su nivel de reorden.</p></div>
         {% endif %}
     </section>
+    <section class="sheet" aria-labelledby="status-title">
+        <div class="sheet__head"><h2 class="sheet__title" id="status-title">Pedidos por estado</h2></div>
+        {% if stats.orders_by_status %}
+        <table class="ledger">
+            <thead><tr><th>Estado</th><th class="num">Pedidos</th><th>Participación</th></tr></thead>
+            <tbody>
+                {% for status, count in stats.orders_by_status.items %}
+                <tr>
+                    <td class="lead"><a href="{% url 'adminpanel:orders_list' %}?status={{ status }}"><span class="status status--{{ status }}">{{ status|order_status_label }}</span></a></td>
+                    <td class="num" data-label="Pedidos">{{ count|money }}</td>
+                    <td data-label="Participación"><div class="share"><span class="share__bar"><span class="share__fill" style="width: {% widthratio count stats.total_orders 100 %}%"></span></span><span class="num">{% widthratio count stats.total_orders 100 %} %</span></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="sheet-empty"><h2>Todavía no hay pedidos</h2><p>Aparecerán aquí en cuanto un cliente confirme una compra.</p></div>
+        {% endif %}
+    </section>
+
+    </div>
 </div>
+
+<section class="sheet" aria-labelledby="top-title">
+        <div class="sheet__head"><h2 class="sheet__title" id="top-title">Más vendidos</h2></div>
+        {% if stats.top_products %}
+        <table class="ledger">
+            <thead><tr><th>Producto</th><th class="num">Unidades</th><th class="num">Ingresos</th></tr></thead>
+            <tbody>
+                {% for row in stats.top_products %}
+                <tr><td class="lead">{{ row.name }}</td><td class="num" data-label="Unidades">{{ row.units_sold|money }}</td><td class="num" data-label="Ingresos">${{ row.revenue|money }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="sheet-empty"><h2>Todavía no hay ventas</h2><p>El ranking se arma con los pedidos pagados.</p></div>
+        {% endif %}
+    </section>
 {% endblock %}

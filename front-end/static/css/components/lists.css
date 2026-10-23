@@ -1,0 +1,20 @@
+/* Numbered pagination (templates/partials/pagination.html) and the filter bar of staff lists */
+.pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 32px; }
+.pagination__info { font-size: 0.88rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.pagination__pages { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.pagination__page, .pagination__step, .pagination__gap {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 10px;
+    border-radius: var(--r-sm); font-size: 0.9rem; font-variant-numeric: tabular-nums; color: var(--text); text-decoration: none;
+}
+.pagination__page, .pagination__step { border: 1px solid var(--line-2); background: var(--paper); }
+.pagination__page:hover, .pagination__step:hover { border-color: var(--volt); color: var(--volt-deep); }
+.pagination__page[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: var(--paper); font-weight: 600; }
+.pagination__gap { min-width: 20px; padding: 0; color: var(--text-3); }
+.pagination__jump { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-2); }
+.pagination__jump input { width: 80px; height: 36px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: var(--r-sm); font-variant-numeric: tabular-nums; }
+
+.list-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 20px; }
+.list-filters input, .list-filters select { height: 40px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--paper); }
+.list-filters__search { flex: 1 1 260px; }
+.list-filters__search input { width: 100%; }
+@media (max-width: 640px) { .list-filters > label { flex: 1 1 100%; } .list-filters select { width: 100%; } }

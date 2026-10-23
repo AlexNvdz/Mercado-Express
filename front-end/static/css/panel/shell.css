@@ -1,0 +1,135 @@
+/* ==========================================================================
+   Staff panel shell -- "Boletín de precios"
+   Read like the daily wholesale price bulletin: a solid forest rail, white
+   sheets ruled in 1px hairlines, condensed caps for band and column heads,
+   tabular figures everywhere. Flat colour only: no shadows, no gradients.
+   Neutrals come from the --g0..--g10 ramp (css/tokens.css).
+   ========================================================================== */
+.panel-app {
+    --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --rail-w: 232px;
+    --topbar-h: 60px;
+    --hair: 1px solid var(--g3);
+    --hair-soft: 1px solid var(--g2);
+    --cond: "wdth" 72;
+    font-size: 14px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    background: var(--g1);
+    display: grid;
+    grid-template-columns: var(--rail-w) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+.panel-app h1, .panel-app h2, .panel-app h3 { letter-spacing: -0.01em; }
+/* The rail's forest runs the full height even when the page outgrows the
+   viewport (the rail itself is sticky at 100vh). */
+@media (min-width: 1025px) {
+    .panel-app::before { content: ""; position: fixed; inset: 0 auto 0 0; width: var(--rail-w); background: var(--g10); z-index: -1; }
+}
+.panel-app ::selection { background: var(--signal); color: var(--g10); }
+.panel-app :focus-visible { outline: 2px solid var(--volt); outline-offset: 2px; }
+.panel-app { caret-color: var(--volt); }
+.panel-app * { scrollbar-color: var(--g4) transparent; scrollbar-width: thin; }
+
+/* Condensed caps: band heads, column heads, figure labels. */
+.caps { font-variation-settings: var(--cond); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+
+/* --- Rail ---------------------------------------------------------------- */
+.rail {
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 0 0;
+    background: var(--g10);
+    color: var(--g3);
+    overflow-y: auto;
+}
+.rail__brand { display: flex; align-items: center; gap: 10px; padding: 0 20px 18px; color: #fff; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+.rail__brand:hover { text-decoration: none; }
+.rail__mark { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; background: var(--signal); color: var(--g10); }
+.rail__group { margin: 14px 20px 6px; font-size: 11px; color: var(--g5); }
+.rail__nav { display: flex; flex-direction: column; }
+.rail__link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 20px;
+    color: var(--g3);
+    font-weight: 500;
+}
+.rail__link:hover { background: var(--g9); color: #fff; text-decoration: none; }
+.rail__link[aria-current="page"] { background: var(--g9); color: #fff; font-weight: 650; }
+.rail__link[aria-current="page"] .rail__label::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 2px; background: var(--signal); vertical-align: 1px; }
+.rail__count { font-size: 12px; color: var(--g5); font-variant-numeric: tabular-nums; }
+.rail__link[aria-current="page"] .rail__count { color: var(--g3); }
+.rail__count--alert { color: #f2b8c0; }
+.rail__foot { margin-top: auto; padding: 14px 20px; border-top: 1px solid var(--g8); font-size: 13px; }
+.rail__foot a { display: block; padding: 3px 0; color: var(--g4); }
+.rail__foot a:hover { color: #fff; }
+.rail__foot button { padding: 3px 0; border: 0; background: none; color: var(--g4); font: inherit; cursor: pointer; }
+.rail__foot button:hover { color: #fff; text-decoration: underline; }
+
+/* --- Top bar ------------------------------------------------------------- */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: var(--topbar-h);
+    padding: 0 28px;
+    background: var(--paper);
+    border-bottom: var(--hair);
+}
+.topbar__search { flex: 1; max-width: 620px; display: flex; align-items: center; height: 38px; border: 1px solid var(--g4); border-radius: 6px; background: var(--paper); }
+.topbar__search:focus-within { border-color: var(--volt); outline: 2px solid var(--volt-soft); }
+.topbar__search svg { flex-shrink: 0; margin-left: 12px; color: var(--g7); }
+.topbar__search input { flex: 1; min-width: 0; height: 100%; padding: 0 10px; border: 0; background: transparent; font: inherit; color: var(--g10); outline: none; }
+.topbar__search input::placeholder { color: var(--g7); }
+.topbar__search kbd { margin-right: 10px; padding: 1px 6px; border: 1px solid var(--g4); border-radius: 4px; font: 600 11px var(--font-body); color: var(--g7); }
+.topbar__meta { margin-left: auto; color: var(--g7); font-size: 13px; white-space: nowrap; }
+
+.workspace { min-width: 0; padding: 22px 28px 64px; }
+
+/* --- Page head ----------------------------------------------------------- */
+.crumbs { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; color: var(--g7); }
+.crumbs a { color: var(--g7); }
+.crumbs a:hover { color: var(--volt-deep); }
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 18px; margin-bottom: 18px; }
+.page-head h1 { font-size: 1.75rem; font-weight: 750; }
+.page-head__meta { margin: 0; color: var(--g7); }
+.page-head__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+
+/* --- Phones and tablets: the rail becomes a forest band over the content,
+   every section visible at once (no hidden menu, no sideways scroll). --- */
+@media (max-width: 1024px) {
+    .panel-app { grid-template-columns: minmax(0, 1fr); }
+    .rail { grid-row: auto; position: static; height: auto; padding: 12px 0 0; overflow: visible; }
+    .rail__brand { padding: 0 16px 10px; }
+    .rail__group { display: none; }
+    .rail__nav { display: contents; }
+    .rail__navs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--g8); }
+    .rail__link { padding: 10px 16px; border-bottom: 1px solid var(--g8); }
+    .rail__count { display: none; }
+    .rail__foot { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 16px; border-top: 0; }
+    .topbar { position: static; padding: 10px 16px; flex-wrap: wrap; }
+    .topbar__search { max-width: none; }
+    .topbar__meta { display: none; }
+    .workspace { padding: 18px 16px 48px; }
+}
+@media (min-width: 1025px) { .rail__navs { display: contents; } }
+@media (max-width: 480px) {
+    .rail__navs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .topbar__search kbd { display: none; }
+    .page-head h1 { font-size: 1.45rem; }
+    .page-head__actions { margin-left: 0; width: 100%; }
+}

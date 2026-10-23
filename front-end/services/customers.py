@@ -45,12 +45,20 @@ def update_profile(token: str, *, full_name: str | None = None, phone: str | Non
     return api_client.patch("/api/v1/customers/me", token=token, json=payload)
 
 
-def list_customers(token: str, *, page: int = 1, page_size: int = 20) -> dict:
-    """Staff only: paginated list of every customer account."""
+def list_customers(token: str, *, page: int = 1, page_size: int = 20, search: str | None = None) -> dict:
+    """Staff only: paginated list of every customer account. `search` matches
+    full name, email or phone, case-insensitively.
+    """
     if settings.API_USE_MOCKS:
         items = mock_data.MOCK_CUSTOMERS
+        if search:
+            needle = search.lower()
+            items = [c for c in items if any(needle in (c.get(k) or "").lower() for k in ("full_name", "email", "phone"))]
         return {"items": items, "total": len(items), "page": 1, "page_size": len(items) or 1, "pages": 1}
-    return api_client.get("/api/v1/customers", token=token, params={"page": page, "page_size": page_size})
+    params: dict = {"page": page, "page_size": page_size}
+    if search:
+        params["search"] = search
+    return api_client.get("/api/v1/customers", token=token, params=params)
 
 
 def get_customer(token: str, customer_id: str) -> dict | None:

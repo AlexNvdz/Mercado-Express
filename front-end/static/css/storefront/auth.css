@@ -1,0 +1,51 @@
+/* ==========================================================================
+   Auth -- ink brand panel beside a clean form
+   ========================================================================== */
+.auth-shell {
+    max-width: 960px;
+    margin: clamp(8px, 3vw, 28px) auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+.auth-shell__brand {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 40px;
+    background: var(--volt-soft);
+    border-right: 1px solid var(--line);
+    color: var(--ink);
+}
+.auth-shell__brand::after {
+    content: "";
+    position: absolute;
+    right: -110px;
+    bottom: -150px;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: var(--signal-soft);
+    box-shadow: 0 0 0 34px rgba(200, 228, 110, 0.2);
+    pointer-events: none;
+}
+.auth-shell__brand > * { position: relative; z-index: 1; }
+.auth-shell__wordmark { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -0.035em; color: var(--ink); }
+.auth-shell__pitch h2 { color: var(--ink); font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem); font-weight: 800; line-height: 1.08; letter-spacing: -0.04em; max-width: 14ch; margin-bottom: 14px; }
+.auth-shell__pitch p { color: var(--text-2); max-width: 34ch; }
+.auth-shell__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 0.9rem; color: var(--ink-2); }
+.auth-shell__list li { display: flex; gap: 10px; align-items: center; }
+.auth-shell__list svg { flex-shrink: 0; color: var(--volt); }
+.auth-shell__form { padding: clamp(24px, 5vw, 48px); display: flex; flex-direction: column; justify-content: center; }
+.auth-shell__form h1 { font-size: 1.6rem; margin-bottom: 6px; }
+.auth-shell__form .section-sub { margin-bottom: 24px; }
+@media (max-width: 780px) {
+    .auth-shell { grid-template-columns: minmax(0, 1fr); }
+    .auth-shell__brand { display: none; }
+}

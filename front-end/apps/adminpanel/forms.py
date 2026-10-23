@@ -40,7 +40,7 @@ class InventoryAdjustForm(forms.Form):
         label="Motivo",
         required=False,
         max_length=255,
-        widget=forms.TextInput(attrs={"placeholder": "Motivo (opcional)"}),
+        widget=forms.TextInput(attrs={"placeholder": "Motivo"}),
     )
 
 

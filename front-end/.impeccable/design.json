@@ -1,0 +1,730 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-23T05:18:09+00:00",
+  "title": "Design System: MercadoExpress",
+  "extensions": {
+    "colorMeta": {
+      "g0": {
+        "role": "neutral",
+        "displayName": "Row Hover Mist",
+        "canonical": "#f7faf6",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g1": {
+        "role": "neutral",
+        "displayName": "Mint Canvas",
+        "canonical": "#f3f8f2",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g2": {
+        "role": "neutral",
+        "displayName": "Inner Rule Mint",
+        "canonical": "#e6efe6",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g3": {
+        "role": "neutral",
+        "displayName": "Hairline Sage",
+        "canonical": "#d3e2d5",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g4": {
+        "role": "neutral",
+        "displayName": "Control Border Sage",
+        "canonical": "#b5cbb9",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g5": {
+        "role": "neutral",
+        "displayName": "Lichen",
+        "canonical": "#8ea996",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g6": {
+        "role": "neutral",
+        "displayName": "Sage Grey",
+        "canonical": "#6c8677",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g7": {
+        "role": "neutral",
+        "displayName": "Moss Grey",
+        "canonical": "#4b6858",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g8": {
+        "role": "neutral",
+        "displayName": "Field Label Green",
+        "canonical": "#2f4f3f",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g9": {
+        "role": "neutral",
+        "displayName": "Rail Hover Forest",
+        "canonical": "#21503b",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "g10": {
+        "role": "neutral",
+        "displayName": "Forest Ink",
+        "canonical": "#17382a",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Sheet White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "volt": {
+        "role": "primary",
+        "displayName": "Garden Action Green",
+        "canonical": "#2e7d50",
+        "tonalRamp": [
+          "#001005",
+          "#012d16",
+          "#01502b",
+          "#207145",
+          "#489667",
+          "#6bb888",
+          "#91dfad",
+          "#c6ffd8"
+        ]
+      },
+      "volt-deep": {
+        "role": "primary",
+        "displayName": "Deep Garden Green",
+        "canonical": "#22623e",
+        "tonalRamp": [
+          "#001005",
+          "#012d16",
+          "#01502b",
+          "#207145",
+          "#489667",
+          "#6bb888",
+          "#91dfad",
+          "#c6ffd8"
+        ]
+      },
+      "volt-soft": {
+        "role": "primary",
+        "displayName": "Mint Wash",
+        "canonical": "#e2f1e5",
+        "tonalRamp": [
+          "#001005",
+          "#012d16",
+          "#01502b",
+          "#207145",
+          "#489667",
+          "#6bb888",
+          "#91dfad",
+          "#c6ffd8"
+        ]
+      },
+      "signal": {
+        "role": "secondary",
+        "displayName": "Market Lime",
+        "canonical": "#c8e46e",
+        "tonalRamp": [
+          "#090d00",
+          "#202801",
+          "#3c4900",
+          "#586903",
+          "#788f09",
+          "#98b238",
+          "#bdd963",
+          "#e1fe87"
+        ]
+      },
+      "signal-deep": {
+        "role": "secondary",
+        "displayName": "Ripe Lime",
+        "canonical": "#b2d04c",
+        "tonalRamp": [
+          "#090d00",
+          "#202801",
+          "#3c4900",
+          "#586903",
+          "#788f09",
+          "#98b238",
+          "#bdd963",
+          "#e1fe87"
+        ]
+      },
+      "signal-soft": {
+        "role": "secondary",
+        "displayName": "Lime Wash",
+        "canonical": "#f2f9dc",
+        "tonalRamp": [
+          "#090d00",
+          "#202801",
+          "#3c4900",
+          "#586903",
+          "#788f09",
+          "#98b238",
+          "#bdd963",
+          "#e1fe87"
+        ]
+      },
+      "rose": {
+        "role": "state",
+        "displayName": "Alert Rose",
+        "canonical": "#c8364a",
+        "tonalRamp": [
+          "#1f0003",
+          "#4a0110",
+          "#800122",
+          "#b01937",
+          "#da4858",
+          "#fd717b",
+          "#ffb4b5",
+          "#ffe8e8"
+        ]
+      },
+      "rose-soft": {
+        "role": "state",
+        "displayName": "Alert Rose Wash",
+        "canonical": "#fbe9ec",
+        "tonalRamp": [
+          "#1f0003",
+          "#4a0110",
+          "#800122",
+          "#b01937",
+          "#da4858",
+          "#fd717b",
+          "#ffb4b5",
+          "#ffe8e8"
+        ]
+      },
+      "amber": {
+        "role": "state",
+        "displayName": "Wait Amber",
+        "canonical": "#9a6200",
+        "tonalRamp": [
+          "#140800",
+          "#351e00",
+          "#5d3a01",
+          "#855404",
+          "#af7524",
+          "#d3974b",
+          "#fbbd71",
+          "#ffebd4"
+        ]
+      },
+      "amber-soft": {
+        "role": "state",
+        "displayName": "Wait Amber Wash",
+        "canonical": "#fdf1d6",
+        "tonalRamp": [
+          "#140800",
+          "#351e00",
+          "#5d3a01",
+          "#855404",
+          "#af7524",
+          "#d3974b",
+          "#fbbd71",
+          "#ffebd4"
+        ]
+      },
+      "sky": {
+        "role": "state",
+        "displayName": "Paid Sky",
+        "canonical": "#2a6a8f",
+        "tonalRamp": [
+          "#000d18",
+          "#00273c",
+          "#034869",
+          "#27678c",
+          "#4c8bb1",
+          "#6eadd5",
+          "#93d3fd",
+          "#dff2ff"
+        ]
+      },
+      "sky-soft": {
+        "role": "state",
+        "displayName": "Paid Sky Wash",
+        "canonical": "#e3f0f6",
+        "tonalRamp": [
+          "#000d18",
+          "#00273c",
+          "#034869",
+          "#27678c",
+          "#4c8bb1",
+          "#6eadd5",
+          "#93d3fd",
+          "#dff2ff"
+        ]
+      },
+      "violet": {
+        "role": "state",
+        "displayName": "Transit Violet",
+        "canonical": "#5d559c",
+        "tonalRamp": [
+          "#0c002d",
+          "#231456",
+          "#40367a",
+          "#5d559c",
+          "#7f78c2",
+          "#9f9ae7",
+          "#c6c3fe",
+          "#edecff"
+        ]
+      },
+      "violet-soft": {
+        "role": "state",
+        "displayName": "Transit Violet Wash",
+        "canonical": "#ecebf7",
+        "tonalRamp": [
+          "#0c002d",
+          "#231456",
+          "#40367a",
+          "#5d559c",
+          "#7f78c2",
+          "#9f9ae7",
+          "#c6c3fe",
+          "#edecff"
+        ]
+      },
+      "leaf": {
+        "role": "state",
+        "displayName": "Delivered Leaf",
+        "canonical": "#2f9a5a",
+        "tonalRamp": [
+          "#001004",
+          "#012d14",
+          "#015128",
+          "#05743c",
+          "#2f9a5a",
+          "#57bd7b",
+          "#7fe49f",
+          "#c7ffd6"
+        ]
+      },
+      "leaf-soft": {
+        "role": "state",
+        "displayName": "Delivered Leaf Wash",
+        "canonical": "#e1f3e6",
+        "tonalRamp": [
+          "#001004",
+          "#012d14",
+          "#015128",
+          "#05743c",
+          "#2f9a5a",
+          "#57bd7b",
+          "#7fe49f",
+          "#c7ffd6"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Storefront Line",
+        "canonical": "#dae8dc",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Storefront Line Strong",
+        "canonical": "#c2d7c6",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      },
+      "paper-2": {
+        "role": "neutral",
+        "displayName": "Storefront Paper Tint",
+        "canonical": "#f6faf5",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles in the page head, including a record's code on its own page."
+      },
+      "headline": {
+        "displayName": "Figure",
+        "purpose": "Figure values in the figure strip only."
+      },
+      "title": {
+        "displayName": "Sheet Title",
+        "purpose": "Sheet titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Every cell, field, list and paragraph; row codes at 650."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Button labels; 13px on small buttons."
+      },
+      "label": {
+        "displayName": "Condensed Caps",
+        "purpose": "Uppercase. Column heads, group bands (0.12em), figure labels, rail group names."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Page-head meta, sheet notes and footers, crumbs, filter labels."
+      },
+      "variation": {
+        "displayName": "Variation",
+        "purpose": "The signed figure of a variation marker."
+      }
+    },
+    "shadows": [
+      {
+        "name": "panel",
+        "value": "none",
+        "purpose": "Panel surfaces are flat; depth is 1px g3/g2 hairlines and solid fills."
+      },
+      {
+        "name": "lift",
+        "value": "0 12px 28px -16px rgba(23, 56, 42, 0.28)",
+        "purpose": "Storefront only: product cards on hover."
+      },
+      {
+        "name": "lift-lg",
+        "value": "0 26px 50px -24px rgba(23, 56, 42, 0.38)",
+        "purpose": "Storefront menus and hero ticket. Also reaches the shared confirm dialog and toasts in the panel, which are not yet restyled; not a panel precedent."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px var(--volt-soft)",
+        "purpose": "Focused text fields, with a volt border."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-transition",
+        "value": "0.15s ease",
+        "purpose": "Colour, border and background changes on buttons and fields."
+      },
+      {
+        "name": "dialog-in",
+        "value": "0.18s ease-out",
+        "purpose": "Confirmation dialog enters from 8px below at 0.98 scale."
+      },
+      {
+        "name": "toast-in",
+        "value": "0.22s ease",
+        "purpose": "Toast drops 8px into place; it leaves sideways in 0.18s."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.001ms",
+        "purpose": "prefers-reduced-motion collapses every animation and transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-narrow",
+        "value": "480px"
+      },
+      {
+        "name": "phone",
+        "value": "700px"
+      },
+      {
+        "name": "tablet",
+        "value": "1024px"
+      },
+      {
+        "name": "sheets-stack",
+        "value": "1100px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The action green button: create, save, dispatch. Flat, 6px corners, no lift.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Nuevo producto</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 16px; border: 1px solid transparent; border-radius: 6px; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; } .ds-btn:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-btn-primary { background: var(--volt, #2e7d50); color: #fff; } .ds-btn-primary:hover { background: var(--volt-deep, #22623e); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "White button with a sage border for filters and in-row corrections; the border turns green on hover.",
+      "html": "<button class=\"ds-btn ds-btn-secondary\">Ajustar</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 16px; border: 1px solid transparent; border-radius: 6px; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; } .ds-btn:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-btn-secondary { background: #fff; border-color: var(--g4, #b5cbb9); color: var(--g10, #17382a); } .ds-btn-secondary:hover { border-color: var(--volt, #2e7d50); color: var(--volt-deep, #22623e); }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action, always behind the danger confirmation dialog; fills rose on hover.",
+      "html": "<button class=\"ds-btn ds-btn-danger ds-btn-sm\">Eliminar</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 16px; border: 1px solid transparent; border-radius: 6px; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; } .ds-btn:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-btn-sm { min-height: 32px; padding: 5px 12px; font-size: 13px; } .ds-btn-danger { background: #fff; color: var(--rose, #c8364a); border-color: #efc0c7; } .ds-btn-danger:hover { background: var(--rose, #c8364a); color: #fff; border-color: var(--rose, #c8364a); }"
+    },
+    {
+      "name": "Global Search",
+      "kind": "input",
+      "refersTo": "global-search",
+      "description": "The single search in the top bar for any order, customer or SKU, with the / shortcut hint.",
+      "html": "<form class=\"ds-search\" role=\"search\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"m16 16 4.5 4.5\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg><input type=\"search\" placeholder=\"Buscar pedido, cliente o SKU\" aria-label=\"Buscar pedido, cliente o SKU\"><kbd>/</kbd></form>",
+      "css": ".ds-search { display: flex; align-items: center; max-width: 620px; height: 38px; border: 1px solid var(--g4, #b5cbb9); border-radius: 6px; background: #fff; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; } .ds-search:focus-within { border-color: var(--volt, #2e7d50); outline: 2px solid var(--volt-soft, #e2f1e5); } .ds-search svg { flex-shrink: 0; margin-left: 12px; color: var(--g7, #4b6858); } .ds-search input { flex: 1; min-width: 0; height: 100%; padding: 0 10px; border: 0; background: transparent; font: inherit; color: var(--g10, #17382a); outline: none; } .ds-search input::placeholder { color: var(--g7, #4b6858); } .ds-search kbd { margin-right: 10px; padding: 1px 6px; border: 1px solid var(--g4, #b5cbb9); border-radius: 4px; font-family: inherit; font-size: 11px; font-weight: 600; color: var(--g7, #4b6858); }"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "The solid forest rail: condensed-caps group names, links with live counts, lime square on the current link.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Operación\"><div class=\"ds-rail-group\">Operación</div><a class=\"ds-rail-link\" href=\"#\" aria-current=\"page\"><span class=\"ds-rail-label\">Pedidos</span><span class=\"ds-rail-count\">98.483</span></a><a class=\"ds-rail-link\" href=\"#\"><span class=\"ds-rail-label\">Clientes</span><span class=\"ds-rail-count\">96.104</span></a><a class=\"ds-rail-link\" href=\"#\"><span class=\"ds-rail-label\">Inventario</span><span class=\"ds-rail-count ds-rail-count-alert\">1 bajo</span></a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; width: 232px; padding: 8px 0; background: var(--g10, #17382a); color: var(--g3, #d3e2d5); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; font-variant-numeric: tabular-nums; } .ds-rail-group { margin: 8px 20px 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; color: var(--g5, #8ea996); } .ds-rail-link { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 20px; color: var(--g3, #d3e2d5); font-weight: 500; text-decoration: none; } .ds-rail-link:hover { background: var(--g9, #21503b); color: #fff; } .ds-rail-link:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-rail-link[aria-current='page'] { background: var(--g9, #21503b); color: #fff; font-weight: 650; } .ds-rail-link[aria-current='page'] .ds-rail-label::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 2px; background: var(--signal, #c8e46e); vertical-align: 1px; } .ds-rail-count { font-size: 12px; color: var(--g5, #8ea996); } .ds-rail-link[aria-current='page'] .ds-rail-count { color: var(--g3, #d3e2d5); } .ds-rail-count-alert { color: #f2b8c0; }"
+    },
+    {
+      "name": "Status and Plain Chips",
+      "kind": "chip",
+      "refersTo": "status-pending",
+      "description": "Squared status chips, one hue family per stage, plus the plain and off chips for publish state.",
+      "html": "<span class=\"ds-status ds-status-pending\">Pendiente</span> <span class=\"ds-status ds-status-paid\">Pagado</span> <span class=\"ds-status ds-status-shipped\">Enviado</span> <span class=\"ds-status ds-status-delivered\">Entregado</span> <span class=\"ds-status ds-status-cancelled\">Cancelado</span> <span class=\"ds-chip\">Publicado</span> <span class=\"ds-chip ds-chip-off\">Oculto</span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px 2px 7px; border-radius: 3px; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 600; white-space: nowrap; } .ds-status::before { content: ''; width: 6px; height: 6px; border-radius: 1px; background: currentColor; } .ds-status-pending { background: var(--amber-soft, #fdf1d6); color: var(--amber, #9a6200); } .ds-status-paid { background: var(--sky-soft, #e3f0f6); color: var(--sky, #2a6a8f); } .ds-status-shipped { background: var(--violet-soft, #ecebf7); color: var(--violet, #5d559c); } .ds-status-delivered { background: var(--leaf-soft, #e1f3e6); color: #1f6b3e; } .ds-status-cancelled { background: var(--rose-soft, #fbe9ec); color: var(--rose, #c8364a); } .ds-chip { display: inline-block; padding: 1px 7px; border-radius: 3px; background: var(--g2, #e6efe6); color: var(--g8, #2f4f3f); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 600; } .ds-chip-off { background: var(--rose-soft, #fbe9ec); color: var(--rose, #c8364a); }"
+    },
+    {
+      "name": "Figure Strip",
+      "kind": "card",
+      "refersTo": "figure",
+      "description": "Key figures joined by hairlines in one white strip, each with its variation against a reference.",
+      "html": "<section class=\"ds-figures\" aria-label=\"Cifras principales\"><div class=\"ds-figure\"><span class=\"ds-figure-label\">Ingresos netos</span><strong class=\"ds-figure-value\">$16.093.585</strong><span class=\"ds-figure-note\">Brutos $16.287.179 · <span class=\"ds-var ds-var-down\">Reembolsos $193.594</span></span></div><div class=\"ds-figure\"><span class=\"ds-figure-label\">Por preparar</span><strong class=\"ds-figure-value\">317</strong><span class=\"ds-figure-note\"><span class=\"ds-var ds-var-warn\">12 sin pagar detrás</span></span></div><div class=\"ds-figure\"><span class=\"ds-figure-label\">Disponible</span><strong class=\"ds-figure-value\">46</strong><span class=\"ds-figure-note\"><span class=\"ds-var ds-var-up\">+41 sobre reorden</span></span></div></section>",
+      "css": ".ds-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); background: #fff; border: 1px solid var(--g3, #d3e2d5); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--g10, #17382a); } .ds-figure { min-width: 0; padding: 14px 18px; border-left: 1px solid var(--g3, #d3e2d5); } .ds-figure:first-child { border-left: 0; } .ds-figure-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; color: var(--g7, #4b6858); } .ds-figure-value { display: block; margin: 6px 0 4px; font-size: 1.85rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; } .ds-figure-note { display: block; font-size: 12.5px; color: var(--g7, #4b6858); } .ds-var { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 650; white-space: nowrap; } .ds-var::before { content: ''; width: 8px; height: 7px; background: currentColor; } .ds-var-up { color: var(--volt, #2e7d50); } .ds-var-up::before, .ds-var-warn::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); } .ds-var-down { color: var(--rose, #c8364a); } .ds-var-down::before { clip-path: polygon(0 0, 100% 0, 50% 100%); } .ds-var-warn { color: var(--amber, #9a6200); }"
+    },
+    {
+      "name": "Ledger with Band and Variation Column",
+      "kind": "custom",
+      "refersTo": "ledger-band",
+      "description": "The signature bulletin table: caps column heads, a forest group band with lime count, code-first rows and a right-aligned variation column.",
+      "html": "<section class=\"ds-sheet\"><div class=\"ds-sheet-head\"><h2>Pedidos por atender</h2><a href=\"#\">Ver los 98.483</a></div><table class=\"ds-ledger\"><thead><tr><th>Pedido</th><th>Ciudad</th><th class=\"ds-num\">Total</th><th class=\"ds-vcol\">Espera</th></tr></thead><tbody><tr class=\"ds-band\"><td colspan=\"4\">Pagados, por preparar<b>317</b><a href=\"#\">Ver todos</a></td></tr><tr><td><a class=\"ds-code\" href=\"#\">ORD-4468555271</a></td><td>Medellín</td><td class=\"ds-num\">$129.900</td><td class=\"ds-vcol\"><span class=\"ds-var\">23 h</span></td></tr><tr><td><a class=\"ds-code\" href=\"#\">ORD-B85FAD1D49</a></td><td>Bogotá</td><td class=\"ds-num\">$19.490</td><td class=\"ds-vcol\"><span class=\"ds-var ds-var-warn\">4 d</span></td></tr></tbody></table></section>",
+      "css": ".ds-sheet { background: #fff; border: 1px solid var(--g3, #d3e2d5); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.45; font-variant-numeric: tabular-nums; color: var(--g10, #17382a); } .ds-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 16px; border-bottom: 1px solid var(--g3, #d3e2d5); } .ds-sheet-head h2 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; } .ds-sheet-head a { font-size: 13px; font-weight: 600; color: var(--volt-deep, #22623e); text-decoration: none; } .ds-ledger { width: 100%; border-collapse: collapse; } .ds-ledger th { padding: 8px 12px; border-bottom: 1px solid var(--g3, #d3e2d5); text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; color: var(--g7, #4b6858); } .ds-ledger td { padding: 8px 12px; border-bottom: 1px solid var(--g2, #e6efe6); } .ds-ledger tbody tr:hover td { background: var(--g0, #f7faf6); } .ds-ledger .ds-num { text-align: right; } .ds-ledger .ds-vcol { width: 1%; text-align: right; white-space: nowrap; border-left: 1px solid var(--g2, #e6efe6); } .ds-code { font-weight: 650; color: var(--g10, #17382a); text-decoration: none; } .ds-code:hover { color: var(--volt-deep, #22623e); } .ds-code:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-ledger tr.ds-band td, .ds-ledger tr.ds-band:hover td { padding: 6px 12px; background: var(--g10, #17382a); color: #fff; border: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; letter-spacing: 0.12em; } .ds-band b { margin-left: 8px; color: var(--signal, #c8e46e); } .ds-band a { float: right; color: var(--signal, #c8e46e); text-transform: none; letter-spacing: 0; font-variation-settings: normal; text-decoration: none; } .ds-var { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 650; color: var(--g7, #4b6858); } .ds-var-warn { color: var(--amber, #9a6200); } .ds-var-warn::before { content: ''; width: 8px; height: 7px; background: currentColor; clip-path: polygon(50% 0, 100% 100%, 0 100%); }"
+    },
+    {
+      "name": "Status Filter Tabs",
+      "kind": "nav",
+      "refersTo": "filter-tab-current",
+      "description": "A joined, square strip of status filters; the current one fills forest.",
+      "html": "<nav class=\"ds-tabs\" aria-label=\"Filtrar por estado\"><a href=\"#\" aria-current=\"true\">Todos</a><a href=\"#\">Pendiente</a><a href=\"#\">Pagado</a><a href=\"#\">Enviado</a></nav>",
+      "css": ".ds-tabs { display: flex; flex-wrap: wrap; background: #fff; border: 1px solid var(--g3, #d3e2d5); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; } .ds-tabs a { padding: 9px 14px; border-right: 1px solid var(--g2, #e6efe6); color: var(--g7, #4b6858); font-weight: 500; text-decoration: none; } .ds-tabs a:hover { color: var(--g10, #17382a); background: var(--g0, #f7faf6); } .ds-tabs a:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: -2px; } .ds-tabs a[aria-current='true'] { background: var(--g10, #17382a); color: #fff; font-weight: 650; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Panel text field and label: sage border, 6px corners, green border and mint ring on focus.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-carrier\">Transportadora</label><input id=\"ds-carrier\" type=\"text\" placeholder=\"Servientrega\"></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 5px; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; } .ds-field label { font-size: 13px; font-weight: 600; color: var(--g8, #2f4f3f); } .ds-field input { min-height: 38px; padding: 6px 10px; border: 1px solid var(--g4, #b5cbb9); border-radius: 6px; background: #fff; color: var(--g10, #17382a); font: inherit; font-size: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease; } .ds-field input:focus { outline: none; border-color: var(--volt, #2e7d50); box-shadow: 0 0 0 3px var(--volt-soft, #e2f1e5); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Price Bulletin (Boletín de precios)",
+    "overview": "The staff panel (`/panel/` and `/catalogo/admin/`) reads like the daily wholesale price bulletin printed for a Colombian food market: white sheets ruled in 1px hairlines, rows grouped under solid forest bands, tabular figures in every column, and each key figure printed beside its variation against a reference. The density is deliberate. Staff work through tens of thousands of orders, customers and SKUs, so rows sit on 8px of padding, structural labels are small condensed caps, and nothing on the page is ornament. A forest rail on the left and a white bar holding one global search frame every page.\n\nThe colour is flat and committed. An eleven-step green ramp supplies every neutral, the action green marks what can be clicked, lime marks what is current, and rose, amber, sky, violet and leaf speak only for state. Depth comes from hairlines and solid fills, never from shadows or gradients. Sheets are square; controls take small 3-6px corners. The panel refuses the usual admin template of floating metric cards above one generic table.\n\nThe storefront keeps its earlier \"fresh market\" look on the same token file (`static/css/tokens.css`): Bricolage Grotesque for display type and prices, Figtree for 15px body text, rounder corners (`r-sm`, `r-md`, `r-lg`, `r-pill`), the soft `--lift` shadows on hover cards and menus, and the striped awning under the header as its one decorative flourish. The panel scopes its own world under the `panel-app` body class and restyles the shared components (`static/css/components/`) in `static/css/panel/`. The user rejected the \"mercado campesino\" storefront trial (slate green, kraft-paper tags, scalable section index, animated hero) on 2026-10-22; it stays out of both worlds.",
+    "keyCharacteristics": [
+      "Ruled sheets, not cards: a 1px g3 hairline around and between modules, g2 inside them, square corners.",
+      "One green ramp (g0-g10) for every neutral; volt for actions, lime for the current item.",
+      "Archivo throughout: normal width for reading, condensed caps for structure, tabular figures everywhere.",
+      "Every key figure carries a signed variation against a stated reference.",
+      "The same task works on a phone: ledgers fold into label/value rows and no page scrolls sideways."
+    ],
+    "rules": [
+      {
+        "name": "The Ramp-Only Rule",
+        "body": "Every neutral in the panel comes from g0-g10: text, hairlines, row hover, chip fills, the rail. A new tone is taken from the ramp, not mixed. g6 and lighter fail 4.5:1 on white, so they never carry text; body copy is g10 and secondary copy g7.",
+        "section": "colors"
+      },
+      {
+        "name": "The Lime Marks Now Rule",
+        "body": "Lime marks the current or selected thing: the brand mark, the square beside the active rail link, the count inside a group band, selected text. In the panel it never fills a button or a surface.",
+        "section": "colors"
+      },
+      {
+        "name": "The State-Only Rule",
+        "body": "Rose, amber, sky, violet and leaf appear only as state: status chips, variation markers, the low-stock count, errors. They never decorate a section, a heading or a figure that is not reporting a state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Condensed Caps Rule",
+        "body": "Condensed caps label structure: column heads, group bands, figure labels, rail group names. They never set a heading, a sentence or a button, and never sit above a page title.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "The whole panel sets `tabular-nums`. Numeric columns are right-aligned so digits stack, and signed variations use a real minus sign (−), not a hyphen.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Sideways Page Rule",
+        "body": "No panel page scrolls horizontally on a phone. Ledgers fold into label/value rows instead of scrolling, so every ledger cell except the lead one carries a `data-label`.",
+        "section": "layout"
+      },
+      {
+        "name": "The Joined Module Rule",
+        "body": "Related figures and controls share one container divided by hairlines: the figure strip, the status tabs, the pagination bar under its ledger. Modules are never separated by air and floated as cards.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "Panel surfaces are flat at rest and on hover. A module separates from its neighbour by a hairline, never by a shadow or a gradient.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Drawn Marker Rule",
+        "body": "Triangles and chevrons are drawn with CSS `clip-path` in `currentColor`, never typed as glyphs (▲ ▼ →) or pulled from an icon font.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do take every new neutral from `--g0`..`--g10`; text on white is g7 or darker.",
+      "Do print each key figure beside its variation against a named reference, in a right-aligned variation column or a figure note.",
+      "Do join related figures, tabs and pagination into one hairline-divided container.",
+      "Do lead every ledger row with the record's code, linked, and give every other cell a `data-label`.",
+      "Do keep sheets square with a 1px g3 border, and controls at 6px (4px for small pieces, 3px for chips).",
+      "Do grow every panel control to 44px under 700px.",
+      "Do scope panel styling under `.panel-app` in `static/css/panel/`, loaded after the shared components."
+    ],
+    "donts": [
+      "Don't float metric cards separated by air above one generic table.",
+      "Don't add shadows or gradients to panel surfaces, or a press offset to panel buttons.",
+      "Don't fill a button or a surface with lime in the panel.",
+      "Don't use rose, amber, sky, violet or leaf except to report a state.",
+      "Don't set headings, sentences or buttons in condensed caps, or put a caps line above a page title.",
+      "Don't type arrows or triangles as glyphs; draw them with `clip-path`.",
+      "Don't let a ledger scroll the page sideways on a phone.",
+      "Don't bring the storefront's Bricolage Grotesque, Figtree, 14px and 22px corners or lift shadows into the panel.",
+      "Don't reuse the rejected \"mercado campesino\" trial (slate green, kraft-paper tags, scalable section index, animated hero)."
+    ]
+  }
+}

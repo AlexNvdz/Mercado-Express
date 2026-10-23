@@ -1,0 +1,120 @@
+/* ==========================================================================
+   Panel sheets: figure strip, ruled ledgers, group bands and the variation
+   column (the bulletin's signature: each key figure beside its change
+   against a reference).
+   ========================================================================== */
+
+/* --- Figure strip: modules joined by one hairline, never floating cards -- */
+.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 20px; background: var(--paper); border: var(--hair); }
+.figure { min-width: 0; padding: 14px 18px; border-left: var(--hair); }
+.figure:first-child { border-left: 0; }
+.figure--lead { grid-column: span 2; }
+.figure__label { display: block; font-size: 11px; color: var(--g7); }
+.figure__value { display: block; margin: 6px 0 4px; font-size: 1.85rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: var(--g10); }
+.figure__note { display: block; font-size: 12.5px; color: var(--g7); }
+.figure__note a { font-weight: 600; }
+@media (max-width: 1100px) { .figure--lead { grid-column: auto; } }
+@media (max-width: 700px) {
+    .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .figure { border-left: 0; border-top: var(--hair); }
+    .figure:nth-child(even) { border-left: var(--hair); }
+    .figure:nth-child(-n + 2) { border-top: 0; }
+    .figure--lead { grid-column: 1 / -1; border-left: 0; }
+    .figure--lead ~ .figure:nth-child(even) { border-left: 0; }
+    .figure--lead ~ .figure:nth-child(odd) { border-left: var(--hair); }
+    .figure--lead ~ .figure:nth-child(2) { border-top: var(--hair); }
+    .figure__value { font-size: 1.5rem; }
+}
+
+/* --- Variation marker: a drawn triangle plus a signed figure ------------- */
+.var { display: inline-flex; align-items: center; gap: 5px; font-weight: 650; font-size: 12.5px; white-space: nowrap; color: var(--g7); }
+.var::before { content: ""; width: 8px; height: 7px; background: currentColor; }
+.var--up { color: var(--volt); }
+.var--up::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.var--down { color: var(--rose); }
+.var--down::before { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.var--warn { color: var(--amber); }
+.var--warn::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.var--flat::before { content: none; }
+/* "from -> to": a drawn chevron, not an arrow glyph. */
+.to { display: inline-block; width: 7px; height: 9px; margin: 0 7px; background: var(--g6); clip-path: polygon(0 0, 100% 50%, 0 100%); vertical-align: 0; }
+
+/* --- Sheets ---------------------------------------------------------------- */
+.sheets { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; align-items: start; margin-bottom: 20px; }
+.sheets--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sheets--aside { grid-template-columns: minmax(0, 1fr) 340px; }
+@media (max-width: 1100px) { .sheets, .sheets--even, .sheets--aside { grid-template-columns: minmax(0, 1fr); } }
+.stack-sheets { display: grid; gap: 20px; align-content: start; min-width: 0; }
+
+.sheet { min-width: 0; background: var(--paper); border: var(--hair); }
+.sheet + .sheet { margin-top: 20px; }
+.stack-sheets > .sheet + .sheet, .sheets > .sheet + .sheet { margin-top: 0; }
+.sheet__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 16px; border-bottom: var(--hair); }
+.sheet__title { font-size: 1rem; font-weight: 700; }
+.sheet__note { margin: 0; color: var(--g7); font-size: 13px; }
+.sheet__link { font-weight: 600; font-size: 13px; color: var(--volt-deep); }
+.sheet__body { padding: 14px 16px; }
+.sheet__body > p:only-child { margin: 0; color: var(--g7); }
+.sheet__foot { padding: 10px 16px; border-top: var(--hair-soft); color: var(--g7); font-size: 13px; }
+.sheet__scroll { overflow-x: auto; }
+
+/* --- Ledger tables ------------------------------------------------------- */
+.ledger { width: 100%; border-collapse: collapse; }
+.ledger th { padding: 8px 12px; border-bottom: var(--hair); text-align: left; font-size: 11px; color: var(--g7); font-variation-settings: var(--cond); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; white-space: nowrap; }
+.ledger td { padding: 8px 12px; border-bottom: var(--hair-soft); vertical-align: middle; }
+.ledger tbody tr:last-child td { border-bottom: 0; }
+.ledger tbody tr:hover td { background: var(--g0); }
+.ledger .num { text-align: right; white-space: nowrap; }
+.ledger .code { font-weight: 650; color: var(--g10); white-space: nowrap; }
+.ledger a.code:hover { color: var(--volt-deep); }
+.ledger .sub { display: block; font-size: 12.5px; color: var(--g7); }
+.ledger td.name { min-width: 22ch; }
+.ledger .vcol { width: 1%; text-align: right; white-space: nowrap; border-left: var(--hair-soft); }
+.ledger .act { width: 1%; text-align: right; white-space: nowrap; }
+.ledger tr.band td { padding: 6px 12px; background: var(--g10); color: #fff; border: 0; font-size: 11px; font-variation-settings: var(--cond); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+.ledger tr.band:hover td { background: var(--g10); }
+.ledger tr.band td b { margin-left: 8px; color: var(--signal); font-weight: 700; }
+.ledger tr.band td a { float: right; color: var(--signal); text-transform: none; letter-spacing: 0; font-variation-settings: normal; font-weight: 600; }
+.ledger tr.is-empty td { color: var(--g7); }
+.ledger .thumb { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; background: var(--g2); vertical-align: middle; margin-right: 10px; }
+.ledger .with-thumb { display: flex; align-items: center; }
+
+/* Phones: each row becomes a block, cells labelled from data-label, so no
+   table ever scrolls the page sideways. */
+@media (max-width: 700px) {
+    .ledger thead { display: none; }
+    .ledger, .ledger tbody, .ledger tr, .ledger td { display: block; width: auto; }
+    .ledger tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; padding: 10px 12px; border-bottom: var(--hair-soft); }
+    /* Short figures pair up two per line; text cells take the full width. */
+    .ledger td:not(.num):not(.vcol) { grid-column: 1 / -1; }
+    .ledger tr.band { display: block; padding: 0; border: 0; }
+    .ledger td { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border: 0; text-align: right; }
+    .ledger td::before { content: attr(data-label); flex: none; color: var(--g7); font-size: 12px; text-align: left; white-space: nowrap; }
+    .ledger td:not([data-label])::before { content: none; }
+    .ledger td { flex-wrap: wrap; min-width: 0; overflow-wrap: anywhere; }
+    .ledger td.name { min-width: 0; }
+    .ledger td .sub { flex-basis: 100%; text-align: right; overflow-wrap: normal; }
+    .ledger td.lead .sub { text-align: left; }
+    .ledger td.lead { display: block; text-align: left; font-size: 15px; }
+    .ledger .vcol, .ledger .act { width: auto; border: 0; }
+    .ledger .act { justify-content: flex-end; padding-top: 8px; }
+    .ledger tr.band td { display: block; padding: 7px 12px; text-align: left; }
+}
+
+/* --- Chips and states (squared to the bulletin's ruled boxes) ------------- */
+.panel-app .status { border-radius: 3px; padding: 2px 8px 2px 7px; font-size: 12px; }
+.panel-app .status::before { border-radius: 1px; }
+.chip { display: inline-block; padding: 1px 7px; border-radius: 3px; background: var(--g2); color: var(--g8); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.chip--off { background: var(--rose-soft); color: var(--rose); }
+.chip--warn { background: var(--amber-soft); color: var(--amber); }
+
+/* --- Status distribution: a ruled share bar per row ----------------------- */
+.share { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: center; gap: 10px; }
+.share__bar { height: 6px; background: var(--g2); }
+.share__fill { display: block; height: 100%; background: var(--volt); }
+
+/* --- Empty state inside a sheet ------------------------------------------- */
+.sheet-empty { padding: 28px 16px; text-align: center; }
+.sheet-empty h2 { font-size: 1.05rem; margin-bottom: 4px; }
+.sheet-empty p { color: var(--g7); }
+.sheet-empty .btn { margin-top: 12px; }

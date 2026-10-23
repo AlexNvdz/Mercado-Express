@@ -1,0 +1,105 @@
+/* ==========================================================================
+   MercadoExpress design system -- "fresh market"
+   White surfaces on a pale-mint canvas, one deep forest green for text,
+   a garden green for every interactive action, and lime used sparingly as
+   the market highlight (brand mark, badges, the striped awning under the
+   header). Analogous greens keep the palette calm; status colours are
+   tuned to sit beside them. Bricolage Grotesque carries display type and
+   numbers (prices, KPIs); Figtree carries body and UI text.
+   Radius hierarchy: 8px controls, 14px cards, 22px large panels.
+
+   Token names are kept from the previous system so templates and inline
+   styles keep working: --ink is now forest (text / the few dark fills),
+   --volt is the action green, --signal is lime.
+   ========================================================================== */
+:root {
+    --ink: #17382a;
+    --ink-2: #21503b;
+    --ink-3: #3a6b54;
+    --ink-line: rgba(23, 56, 42, 0.12);
+
+    --signal: #c8e46e;
+    --signal-deep: #b2d04c;
+    --signal-soft: #f2f9dc;
+
+    --volt: #2e7d50;
+    --volt-deep: #22623e;
+    --volt-soft: #e2f1e5;
+
+    --canvas: #f3f8f2;
+    --paper: #ffffff;
+    --paper-2: #f6faf5;
+
+    --text: #17382a;
+    --text-2: #4b6858;
+    --text-3: #6c8677;
+    --line: #dae8dc;
+    --line-2: #c2d7c6;
+
+    --leaf: #2f9a5a;
+    --leaf-soft: #e1f3e6;
+    --amber: #9a6200;
+    --amber-soft: #fdf1d6;
+    --rose: #c8364a;
+    --rose-soft: #fbe9ec;
+    --sky: #2a6a8f;
+    --sky-soft: #e3f0f6;
+    --violet: #5d559c;
+    --violet-soft: #ecebf7;
+
+    /* Eleven-step green ramp, canvas to ink: the panel's only neutrals and
+       the place to take new tones from (g1 = --canvas, g6 = --text-3,
+       g7 = --text-2, g9 = --ink-2, g10 = --ink). g6 and lighter fail 4.5:1
+       on white, so they never carry body text. */
+    --g0: #f7faf6;
+    --g1: #f3f8f2;
+    --g2: #e6efe6;
+    --g3: #d3e2d5;
+    --g4: #b5cbb9;
+    --g5: #8ea996;
+    --g6: #6c8677;
+    --g7: #4b6858;
+    --g8: #2f4f3f;
+    --g9: #21503b;
+    --g10: #17382a;
+
+    --r-xs: 5px;
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 22px;
+    --r-pill: 999px;
+
+    --lift: 0 12px 28px -16px rgba(23, 56, 42, 0.28);
+    --lift-lg: 0 26px 50px -24px rgba(23, 56, 42, 0.38);
+
+    --max-width: 1240px;
+    --gutter: clamp(16px, 4vw, 28px);
+    --header-h: 118px;
+
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+    /* Legacy aliases -- a few templates still reference these in inline
+       styles; they map onto the tokens above. */
+    --color-primary: var(--volt);
+    --color-primary-dark: var(--volt-deep);
+    --color-primary-light: var(--volt-soft);
+    --color-bg: var(--canvas);
+    --color-surface: var(--paper);
+    --color-surface-alt: var(--paper-2);
+    --color-text: var(--text);
+    --color-text-muted: var(--text-2);
+    --color-border: var(--line);
+    --color-danger: var(--rose);
+    --color-danger-bg: var(--rose-soft);
+    --color-success: var(--leaf);
+    --color-success-bg: var(--leaf-soft);
+    --color-warning: var(--amber);
+    --color-warning-bg: var(--amber-soft);
+    --color-info: var(--sky);
+    --color-info-bg: var(--sky-soft);
+    --radius-sm: var(--r-sm);
+    --radius-md: var(--r-md);
+    --radius-lg: var(--r-lg);
+    --radius-pill: var(--r-pill);
+}

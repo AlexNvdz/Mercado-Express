@@ -1,0 +1,18 @@
+{% if pages > 1 %}
+<nav class="pagination" aria-label="Paginación">
+    {% if page > 1 %}<a class="pagination__step" href="{% querystring page=page|add:'-1' %}" rel="prev">Anterior</a>{% endif %}
+    <ol class="pagination__pages">
+        {% for number in window %}
+        {% if number is None %}<li class="pagination__gap" aria-hidden="true">…</li>
+        {% elif number == page %}<li><span class="pagination__page" aria-current="page">{{ number }}</span></li>
+        {% else %}<li><a class="pagination__page" href="{% querystring page=number %}">{{ number }}</a></li>{% endif %}
+        {% endfor %}
+    </ol>
+    {% if page < pages %}<a class="pagination__step" href="{% querystring page=page|add:'1' %}" rel="next">Siguiente</a>{% endif %}
+    <form class="pagination__jump" method="get">
+        {% for key, values in request.GET.lists %}{% if key != "page" %}{% for value in values %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endif %}{% endfor %}
+        <label><span class="pagination__info">Página {{ page }} de {{ pages }}</span> · Ir a <input type="number" name="page" min="1" max="{{ pages }}" value="{{ page }}" inputmode="numeric" aria-label="Número de página"></label>
+        <button type="submit" class="btn btn--secondary btn--sm">Ir</button>
+    </form>
+</nav>
+{% endif %}

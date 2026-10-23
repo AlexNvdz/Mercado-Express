@@ -73,3 +73,16 @@ def test_public_listing_sends_neither_flag_nor_token(api_calls):
     _, _, kwargs = api_calls[0]
     assert "include_inactive" not in kwargs["params"]
     assert "token" not in kwargs
+
+
+def test_list_all_categories_reads_every_page(api_calls):
+    pages = {
+        1: {"items": [{"id": "a"}], "total": 2, "page": 1, "page_size": 100, "pages": 2},
+        2: {"items": [{"id": "b"}], "total": 2, "page": 2, "page_size": 100, "pages": 2},
+    }
+    api_calls.response = lambda method, path, kwargs: pages[kwargs["params"]["page"]]
+    assert [c["id"] for c in products.list_all_categories()] == ["a", "b"]
+    assert [kwargs["params"] for _, _, kwargs in api_calls] == [
+        {"page": 1, "page_size": 100},
+        {"page": 2, "page_size": 100},
+    ]

@@ -79,7 +79,7 @@ def test_home_shows_net_gross_and_refunded_revenue(client, monkeypatch):
     assert "$25.000" in content
     assert "Brutos $30.600" in content
     assert "Reembolsos $5.600" in content
-    assert "3 ventas · 1 reembolsada" in content
+    assert "1 reembolsada" in content
 
 
 @pytest.mark.django_db
@@ -208,7 +208,7 @@ def test_inventory_list_batches_stock_reads_and_paginates(client, api_calls):
     assert "Café molido" in content and "Panela" in content
     assert "Sin registro de inventario." in content
     assert "Página 2 de 3" in content
-    assert 'name="page" value="2"' in content
+    assert 'name="return_query" value="page=2"' in content
     paths = [path for _, path, _ in api_calls]
     assert not [path for path in paths if path.startswith("/api/v1/inventory/")]
     products_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/products")
@@ -223,9 +223,9 @@ def test_inventory_adjust_returns_to_same_page(client):
     _login_as_staff(client)
     response = client.post(
         reverse("adminpanel:inventory_adjust", kwargs={"product_id": PRODUCT_ID}),
-        {f"{PRODUCT_ID}-delta": 1, f"{PRODUCT_ID}-reason": "", "page": "2"},
+        {f"{PRODUCT_ID}-delta": 1, f"{PRODUCT_ID}-reason": "", "return_query": "page=2&q=caf%C3%A9"},
     )
-    assert response.url == reverse("adminpanel:inventory_list") + "?page=2"
+    assert response.url == reverse("adminpanel:inventory_list") + "?page=2&q=caf%C3%A9"
 
 
 @pytest.mark.django_db
@@ -459,7 +459,7 @@ def test_orders_list_status_filter_is_server_side_and_kept_across_pages(client, 
 
     orders_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/orders")
     assert orders_call["params"] == {"page": 1, "page_size": 20, "status": "paid"}
-    assert "?status=paid&page=2" in content
+    assert "?status=paid&amp;page=2" in content
 
 
 @pytest.mark.django_db
@@ -528,7 +528,7 @@ def test_inventory_history_page_shows_entries_in_spanish(client):
 
     assert "Detergente en polvo 1kg" in content
     assert "Lote dañado por humedad" in content
-    assert "12 → 0" in content and "(-12)" in content
+    assert '12<span class="to" aria-hidden="true"></span><span class="visually-hidden"> a </span>0' in content and "(-12)" in content
     assert "Admin MercadoExpress" in content and "Administrador" in content
     assert "30/09/2026 12:45" in content  # 17:45 UTC in America/Bogota
 
@@ -684,3 +684,143 @@ def test_order_detail_shows_order_payments(client):
     assert "Pagos" in content
     assert "Tarjeta" in content
     assert "Completado" in content
+
+
+@pytest.mark.django_db
+def test_inventory_list_filters_by_search(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:inventory_list"), {"q": "arroz"}).content.decode()
+    assert "Arroz blanco" in content
+    assert "Aceite vegetal" not in content
+    assert 'value="arroz"' in content
+
+
+@pytest.mark.django_db
+def test_orders_list_sends_search_and_valid_dates(client, api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 20, "pages": 0}
+    _login_as_staff(client)
+
+    content = client.get(
+        reverse("adminpanel:orders_list"),
+        {"q": "ana@correo.com", "desde": "2026-10-01", "hasta": "22/10/2026", "status": "paid"},
+    ).content.decode()
+
+    orders_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/orders")
+    assert orders_call["params"] == {
+        "page": 1, "page_size": 20, "status": "paid", "search": "ana@correo.com", "created_from": "2026-10-01"
+    }  # the malformed "hasta" is dropped, not sent (the backend would 422)
+    assert "Ningún pedido coincide" in content
+
+
+@pytest.mark.django_db
+def test_customers_list_sends_search(client, api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 20, "pages": 0}
+    _login_as_staff(client)
+
+    content = client.get(reverse("adminpanel:customers_list"), {"q": "torres"}).content.decode()
+
+    customers_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/customers")
+    assert customers_call["params"] == {"page": 1, "page_size": 20, "search": "torres"}
+    assert "Ningún cliente coincide" in content
+
+
+@pytest.mark.django_db
+def test_customers_list_search_in_mock_mode(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:customers_list"), {"q": "torres"}).content.decode()
+    assert "Ana Torres" in content
+    assert "cliente.demo@mercadoexpress.test" not in content
+
+
+@pytest.mark.django_db
+def test_inventory_low_stock_reads_names_from_inventory_rows(client, api_calls):
+    row = {
+        "product_id": PRODUCT_ID, "quantity_on_hand": 1, "quantity_reserved": 0, "quantity_available": 1,
+        "reorder_level": 5, "product_name": "Arroz blanco 1kg", "product_sku": "ARR-001", "product_is_active": True,
+    }
+
+    def respond(method, path, kwargs):
+        if path == "/api/v1/inventory":
+            return {"items": [row], "total": 1, "page": 1, "page_size": 50, "pages": 1}
+        return {"items": [], "total": 0, "page": 1, "page_size": 100, "pages": 0}
+
+    api_calls.response = respond
+    _login_as_staff(client)
+
+    content = client.get(reverse("adminpanel:inventory_list"), {"stock": "bajo", "q": "arroz"}).content.decode()
+
+    inventory_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/inventory")
+    assert inventory_call["params"] == {"page": 1, "page_size": 50, "low_stock": "true", "search": "arroz"}
+    assert not [path for _, path, _ in api_calls if path.startswith("/api/v1/products")]
+    assert "Arroz blanco 1kg" in content and "ARR-001" in content
+
+
+@pytest.mark.django_db
+def test_order_detail_uses_item_product_name_without_product_lookups(client, api_calls):
+    order = {
+        **mock_data.MOCK_ORDERS[0],
+        "items": [{**item, "product_name": f"Nombre {i}", "product_sku": f"SKU-{i}"} for i, item in enumerate(mock_data.MOCK_ORDERS[0]["items"])],
+        "payments": [],
+    }
+
+    def respond(method, path, kwargs):
+        if path == f"/api/v1/orders/{ORDER_ID}":
+            return order
+        if path == f"/api/v1/orders/{ORDER_ID}/history":
+            return []
+        if path.startswith("/api/v1/customers/"):
+            return mock_data.MOCK_CUSTOMERS[0]
+        if path.startswith("/api/v1/shipments/"):
+            return None
+        return {"items": [], "total": 0, "page": 1, "page_size": 8, "pages": 0}
+
+    api_calls.response = respond
+    _login_as_staff(client)
+
+    content = client.get(reverse("adminpanel:order_detail", kwargs={"order_id": ORDER_ID})).content.decode()
+
+    assert "Nombre 0" in content and "Nombre 1" in content
+    assert not [path for _, path, _ in api_calls if path.startswith("/api/v1/products/")]
+
+
+@pytest.mark.django_db
+def test_inventory_list_published_only_leaves_out_inactive(client, api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 50, "pages": 0}
+    _login_as_staff(client)
+
+    content = client.get(reverse("adminpanel:inventory_list"), {"estado": "publicados"}).content.decode()
+
+    products_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/products")
+    assert "include_inactive" not in products_call["params"]
+    assert "Ningún producto coincide" in content
+
+
+@pytest.mark.django_db
+def test_search_queries_orders_customers_and_products(client, api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 6, "pages": 0}
+    _login_as_staff(client)
+
+    content = client.get(reverse("adminpanel:search"), {"q": "torres"}).content.decode()
+
+    params = {path: kwargs["params"] for _, path, kwargs in api_calls}
+    assert params["/api/v1/orders"] == {"page": 1, "page_size": 6, "search": "torres"}
+    assert params["/api/v1/customers"] == {"page": 1, "page_size": 6, "search": "torres"}
+    assert params["/api/v1/products"] == {"page": 1, "page_size": 6, "search": "torres", "include_inactive": "true"}
+    assert "Nada coincide con «torres»" in content
+
+
+@pytest.mark.django_db
+def test_search_without_query_calls_nothing(client, api_calls):
+    api_calls.response = {"items": [], "total": 0, "page": 1, "page_size": 8, "pages": 0}
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:search")).content.decode()
+    assert not [path for _, path, _ in api_calls if path in ("/api/v1/orders", "/api/v1/customers", "/api/v1/products")]
+    assert "Escribe qué buscas" in content
+
+
+@pytest.mark.django_db
+def test_search_groups_results_in_mock_mode(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:search"), {"q": "arroz"}).content.decode()
+    assert "Arroz blanco" in content
+    assert "Sin coincidencias en pedidos." in content

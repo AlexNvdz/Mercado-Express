@@ -1,90 +1,76 @@
 {% extends "adminpanel/_layout.html" %}
+{% load pagination money %}
 
 {% block title %}Inventario - Panel de administración{% endblock %}
 
 {% block panel_content %}
-<div class="section-head">
-    <div>
-        <h1 class="section-title">Inventario</h1>
-        <p class="section-sub">Ajusta con cantidades positivas para reponer o negativas para descontar.{% if total %} {{ total }} producto{{ total|pluralize }}.{% endif %}</p>
-    </div>
+<div class="page-head">
+    <h1>Inventario</h1>
+    <p class="page-head__meta">{{ total|money }} producto{{ total|pluralize }}{% if low_stock_only %} en o bajo su nivel de reorden{% endif %}. Ajusta con cantidades positivas para reponer o negativas para descontar.</p>
 </div>
+
+{% include "partials/product_filters.html" with show_stock=True show_estado=True %}
 
 {% if rows %}
-<div class="table-card">
-<table class="table">
-    <thead>
-        <tr>
-            <th>Producto</th>
-            <th class="num">En bodega</th>
-            <th class="num">Reservado</th>
-            <th class="num">Disponible</th>
-            <th>Ajustar stock</th>
-            <th>Nivel de reorden</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in rows %}
-        <tr>
-            <td>
-                <div class="cell-title">{{ row.product.name }}{% if not row.product.is_active %} <span class="status status--cancelled">Inactivo</span>{% endif %}</div>
-                <div class="cell-sub">SKU {{ row.product.sku }} · <a href="{% url 'adminpanel:inventory_history' row.product.id %}">Historial</a></div>
-            </td>
-            {% if row.availability %}
-            <td class="num">{{ row.availability.quantity_on_hand }}</td>
-            <td class="num">{{ row.availability.quantity_reserved }}</td>
-            <td class="num">
-                {% if row.availability.quantity_available <= row.availability.reorder_level %}
-                <span class="stock-badge stock-badge--{% if row.availability.quantity_available <= 0 %}out{% else %}low{% endif %}">{{ row.availability.quantity_available }}</span>
+<section class="sheet">
+    <table class="ledger">
+        <thead>
+            <tr><th>SKU</th><th>Producto</th><th class="num">En bodega</th><th class="num">Reservado</th><th class="num">Disponible</th><th class="vcol" title="Disponible menos el nivel de reorden">Variación</th><th>Ajustar stock</th><th>Nivel de reorden</th></tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td class="lead"><a class="code" href="{% url 'adminpanel:inventory_history' row.product.id %}" title="Historial de stock">{{ row.product.sku }}</a></td>
+                <td class="name" data-label="Producto">{{ row.product.name }}{% if not row.product.is_active %} <span class="chip chip--off">Inactivo</span>{% endif %}{% if row.availability and row.availability.quantity_available <= 0 %} <span class="chip chip--off">Agotado</span>{% endif %}<span class="sub"><a href="{% url 'adminpanel:inventory_history' row.product.id %}">Historial</a></span></td>
+                {% if row.availability %}
+                <td class="num" data-label="En bodega">{{ row.availability.quantity_on_hand }}</td>
+                <td class="num" data-label="Reservado">{{ row.availability.quantity_reserved }}</td>
+                <td class="num" data-label="Disponible"><strong>{{ row.availability.quantity_available }}</strong></td>
+                <td class="vcol" data-label="Variación"><span class="var {{ row.availability.quantity_available|stock_gap_tone:row.availability.reorder_level }}">{{ row.availability.quantity_available|stock_gap:row.availability.reorder_level }}</span></td>
+                <td data-label="Ajustar">
+                    <form class="cell-form" method="post" action="{% url 'adminpanel:inventory_adjust' row.product.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="return_query" value="{{ request.GET.urlencode }}">
+                        <label class="visually-hidden" for="{{ row.adjust_form.delta.id_for_label }}">Cantidad a ajustar de {{ row.product.name }}</label>
+                        {{ row.adjust_form.delta }}
+                        <label class="visually-hidden" for="{{ row.adjust_form.reason.id_for_label }}">Motivo del ajuste de {{ row.product.name }}</label>
+                        {{ row.adjust_form.reason }}
+                        <button type="submit" class="btn btn--secondary btn--sm">Ajustar</button>
+                    </form>
+                </td>
+                <td data-label="Reorden">
+                    <form class="cell-form" method="post" action="{% url 'adminpanel:inventory_set_reorder' row.product.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="return_query" value="{{ request.GET.urlencode }}">
+                        <label class="visually-hidden" for="{{ row.reorder_form.reorder_level.id_for_label }}">Nivel de reorden de {{ row.product.name }}</label>
+                        {{ row.reorder_form.reorder_level }}
+                        <button type="submit" class="btn btn--secondary btn--sm">Guardar</button>
+                    </form>
+                </td>
                 {% else %}
-                <span class="stock-badge stock-badge--in">{{ row.availability.quantity_available }}</span>
+                <td colspan="6" data-label="Stock">Sin registro de inventario.</td>
                 {% endif %}
-            </td>
-            <td>
-                <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_adjust' row.product.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="page" value="{{ page }}">
-                    <label class="visually-hidden" for="{{ row.adjust_form.delta.id_for_label }}">Cantidad a ajustar de {{ row.product.name }}</label>
-                    {{ row.adjust_form.delta }}
-                    <label class="visually-hidden" for="{{ row.adjust_form.reason.id_for_label }}">Motivo del ajuste de {{ row.product.name }}</label>
-                    {{ row.adjust_form.reason }}
-                    <button type="submit" class="btn btn--secondary btn--sm">Ajustar</button>
-                </form>
-            </td>
-            <td>
-                <form class="inline-form" method="post" action="{% url 'adminpanel:inventory_set_reorder' row.product.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="page" value="{{ page }}">
-                    <label class="visually-hidden" for="{{ row.reorder_form.reorder_level.id_for_label }}">Nivel de reorden de {{ row.product.name }}</label>
-                    {{ row.reorder_form.reorder_level }}
-                    <button type="submit" class="btn btn--secondary btn--sm">Guardar</button>
-                </form>
-            </td>
-            {% else %}
-            <td colspan="5" class="muted">Sin registro de inventario.</td>
-            {% endif %}
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
-
-{% if pages > 1 %}
-<nav class="pagination" aria-label="Paginación">
-    {% if has_previous %}
-    <a class="btn btn--secondary btn--sm" href="?page={{ page|add:"-1" }}">Anterior</a>
-    {% endif %}
-    <span class="pagination__info">Página {{ page }} de {{ pages }}</span>
-    {% if has_next %}
-    <a class="btn btn--secondary btn--sm" href="?page={{ page|add:"1" }}">Siguiente</a>
-    {% endif %}
-</nav>
-{% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% pagination page pages %}
+{% elif search or category_id or low_stock_only or only_published %}
+<section class="sheet">
+    <div class="sheet-empty">
+        <h2>Ningún producto coincide</h2>
+        <p>Prueba con otra búsqueda o quita los filtros.</p>
+        <a class="btn btn--secondary" href="{% url 'adminpanel:inventory_list' %}">Quitar filtros</a>
+    </div>
+</section>
 {% else %}
-<div class="empty-state">
-    <h2>Todavía no hay productos</h2>
-    <p>Crea productos para empezar a controlar su stock.</p>
-    <a class="btn" href="{% url 'catalog:admin_create' %}">Nuevo producto</a>
-</div>
+<section class="sheet">
+    <div class="sheet-empty">
+        <h2>Todavía no hay productos</h2>
+        <p>Crea productos para empezar a controlar su stock.</p>
+        <a class="btn" href="{% url 'catalog:admin_create' %}">Nuevo producto</a>
+    </div>
+</section>
 {% endif %}
 {% endblock %}

@@ -4,7 +4,7 @@ Admin dashboard statistics (apps/adminpanel). See
 
     GET /api/v1/reports/summary?top_products_limit=   staff
     GET /api/v1/inventory?low_stock=true              staff, paginated
-    GET /api/v1/orders?page=1&page_size=8             staff sees every order
+    GET /api/v1/orders?status=<stage>&page_size=5     staff, one call per stage
 
 Every number comes from the backend: revenue is summed server-side from the
 `Sale` ledger (not `Order.total_amount`), order counts and top products are
@@ -29,7 +29,14 @@ from . import products as products_service
 from .api_client import api_client
 from .orders import ORDER_STATUSES
 
-RECENT_ORDERS_LIMIT = 8
+# Orders waiting on staff, one band per stage (newest first, as the backend
+# lists them); the band header shows the stage's full count from the summary.
+ATTEND_STAGES = [
+    ("paid", "Pagados, por preparar"),
+    ("preparing", "En preparación"),
+    ("shipped", "Enviados, en tránsito"),
+]
+ATTEND_PER_STAGE = 5
 TOP_PRODUCTS_LIMIT = 6
 # One page of low-stock rows is enough for the dashboard alert; the card
 # shows the backend's `total`, the table only the LOW_STOCK_SHOWN lowest.
@@ -54,16 +61,23 @@ def get_summary(token: str, *, top_products_limit: int = TOP_PRODUCTS_LIMIT) -> 
     )
 
 
-def _low_stock_rows(token: str) -> tuple[list[dict], int]:
+def _low_stock_rows(token: str) -> tuple[list[dict], int, int]:
+    """The lowest LOW_STOCK_SHOWN rows, the low-stock total, and how many of
+    the fetched rows are sold out (exact while the total fits in one page).
+    """
     page = inventory_service.list_inventory(token, low_stock=True, page_size=LOW_STOCK_PAGE_SIZE)
+    sold_out = sum(1 for row in page["items"] if row["quantity_available"] <= 0)
     rows = sorted(page["items"], key=lambda row: row["quantity_available"])[:LOW_STOCK_SHOWN]
     enriched = []
     for availability in rows:
         product_id = availability["product_id"]
-        product = products_service.get_product(product_id)
-        name = product["name"] if product else f"Producto no disponible ({product_id[:8]})"
-        enriched.append({"product_id": product_id, "name": name, "availability": availability})
-    return enriched, page["total"]
+        sku = availability.get("product_sku", "")
+        name = availability.get("product_name")
+        if not name:
+            product = products_service.get_product(product_id)
+            name = product["name"] if product else f"Producto no disponible ({product_id[:8]})"
+        enriched.append({"product_id": product_id, "name": name, "sku": sku, "availability": availability})
+    return enriched, page["total"], sold_out
 
 
 def get_dashboard_stats(token: str) -> dict:
@@ -74,8 +88,18 @@ def get_dashboard_stats(token: str) -> dict:
     # top-to-bottom like a funnel; zero rows are hidden.
     orders_by_status = {status: counts[status] for status in ORDER_STATUSES if counts.get(status)}
 
-    low_stock, low_stock_count = _low_stock_rows(token)
-    recent_orders = orders_service.list_orders(token, page=1, page_size=RECENT_ORDERS_LIMIT)["items"]
+    low_stock, low_stock_count, sold_out_count = _low_stock_rows(token)
+    to_attend = [
+        {
+            "status": status,
+            "label": label,
+            "count": counts.get(status, 0),
+            "orders": orders_service.list_orders(token, page=1, page_size=ATTEND_PER_STAGE, status=status)["items"][
+                :ATTEND_PER_STAGE
+            ],
+        }
+        for status, label in ATTEND_STAGES
+    ]
 
     return {
         "net_revenue": _to_decimal(summary["net_revenue"]),
@@ -87,8 +111,11 @@ def get_dashboard_stats(token: str) -> dict:
         "total_customers": summary["customer_count"],
         "total_orders": sum(counts.values()),
         "orders_by_status": orders_by_status,
-        "recent_orders": recent_orders[:RECENT_ORDERS_LIMIT],
+        "to_attend": to_attend,
         "top_products": summary["top_products"],
         "low_stock": low_stock,
         "low_stock_count": low_stock_count,
+        "sold_out_count": sold_out_count,
+        "sold_out_is_partial": low_stock_count > LOW_STOCK_PAGE_SIZE,
+        "generated_at": summary.get("generated_at"),
     }

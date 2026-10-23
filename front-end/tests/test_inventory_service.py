@@ -60,6 +60,7 @@ def test_availability_by_product_stops_once_all_found(api_calls):
     assert set(result) == {"a", "b"}
     assert [kwargs["params"]["page"] for _, _, kwargs in api_calls] == [1, 2]
     assert all(kwargs["params"]["page_size"] == inventory.MAX_PAGE_SIZE for _, _, kwargs in api_calls)
+    assert all(kwargs["params"]["product_id"] == ["a", "b"] for _, _, kwargs in api_calls)
 
 
 def test_availability_by_product_reads_every_page_when_a_row_is_missing(api_calls):
@@ -118,3 +119,9 @@ def test_list_history_request(api_calls):
     assert (method, path) == ("GET", f"/api/v1/inventory/{ARROZ_ID}/history")
     assert kwargs["params"] == {"page": 3, "page_size": 20}
     assert kwargs["token"] == "tok"
+
+
+def test_list_inventory_mock_rows_carry_product_fields_and_search():
+    result = inventory.list_inventory("any", include_inactive=True, search="arroz")
+    assert [row["product_name"] for row in result["items"]] == ["Arroz blanco 1kg"]
+    assert {"product_sku", "product_is_active"} <= result["items"][0].keys()
