@@ -70,8 +70,20 @@ guía, e historial de cambios; categorías; inventario con ajustes (con
 motivo), historial por producto y productos inactivos; clientes. Los
 productos se administran en `/catalogo/admin/`.
 
-Diseño: una sola hoja de estilos (`static/css/base.css`) con paleta clara
-de verdes y blanco; el footer queda siempre abajo aunque la página sea
+Búsqueda y navegación a escala: todas las listas del panel paginan con
+números y "Ir a la página", y filtran en el servidor (pedidos por número,
+cliente y fechas; clientes por nombre, correo o teléfono; productos e
+inventario por nombre o SKU, categoría, publicados y stock bajo). El
+buscador de la barra superior (atajo `/`) busca pedidos, clientes y
+productos a la vez.
+
+Diseño: paleta clara de verdes y blanco. Los estilos están divididos en
+`static/css/`: `tokens.css` (colores, escala de verdes `--g0`..`--g10`,
+tipografía), `base.css`, `components/` (botones, formularios, tablas,
+estados, diálogo...), `storefront/` (tienda) y `panel/` (panel del personal,
+estilo "Boletín de precios"). El JS son módulos ES sin paso de compilación:
+`static/js/app.js` importa `static/js/modules/*.js`, y `static/js/panel.js`
+solo carga en el panel. El footer queda siempre abajo aunque la página sea
 corta.
 
 ## Requisitos

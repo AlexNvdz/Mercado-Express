@@ -14,6 +14,13 @@ wheels/
 .env.*
 !.env.example
 
+# Impeccable design tool: decision mocks, review captures and build state
+# (PRODUCT.md, DESIGN.md and .impeccable/surfaces/ are kept)
+front-end/.impeccable/mocks/
+front-end/.impeccable/review/
+front-end/.impeccable/build/
+front-end/.impeccable/decision-payload.json
+
 # Testing / coverage
 .pytest_cache/
 .coverage
