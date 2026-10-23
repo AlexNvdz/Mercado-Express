@@ -65,3 +65,23 @@ def test_product_price_is_formatted_with_thousands_separator(client):
     url = reverse("catalog:detail", kwargs={"product_id": ARROZ_ID})
     response = client.get(url)
     assert b"6.500" in response.content
+
+
+@pytest.mark.django_db
+def test_category_index_lists_only_categories_with_products_and_filters(client):
+    content = client.get(reverse("catalog:categories")).content.decode()
+    assert "Todas las categorías" in content
+    with_products = {p["category_id"] for p in mock_data.MOCK_PRODUCTS if p.get("is_active", True)}
+    for category in mock_data.MOCK_CATEGORIES:
+        assert (category["name"] in content) == (category["id"] in with_products)
+
+    first = next(c for c in mock_data.MOCK_CATEGORIES if c["id"] in with_products)
+    filtered = client.get(reverse("catalog:categories"), {"q": first["name"][:4]}).content.decode()
+    assert first["name"] in filtered
+
+
+@pytest.mark.django_db
+def test_navbar_menu_links_to_every_category(client):
+    content = client.get(reverse("catalog:list")).content.decode()
+    assert reverse("catalog:categories") in content
+    assert "Ver todas las categorías" in content

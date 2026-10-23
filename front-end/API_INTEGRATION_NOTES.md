@@ -24,6 +24,27 @@ este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
 
+## Cambios 2026-10-23: la tienda solo muestra categorías con productos
+
+Rama `feat/storefront-redesign`. backend-api agregó a `GET /categories`
+el campo `active_product_count` y los parámetros `with_products=true` y
+`sort=products` (rama `feat/categories-product-count`).
+
+- `services/products.py::list_categories_with_products` es la única fuente
+  de categorías para el visitante: inicio, menú «Categorías», catálogo y la
+  página nueva `/catalogo/categorias/`. Con los datos de desarrollo pasan de
+  80 a 6 (las 74 de Olist no tienen productos activos).
+- Si el backend todavía no trae `active_product_count`, el frontend cuenta
+  los productos activos con `GET /products` y filtra él mismo; sirve mientras
+  la rama del backend no esté en `main`.
+- Inicio nuevo (prototipo aprobado en Claude Design): buscador, tarjeta
+  animada «Así va un pedido» con los cinco estados reales (marcada como
+  ejemplo), y las 3 categorías con más productos con hasta 4 productos cada
+  una. El stock de esas tarjetas se lee con `GET /inventory/{product_id}`, uno
+  por producto mostrado (como mucho 12): el endpoint público no tiene versión
+  por lotes.
+- «Mis pedidos» (`/pedidos/`) filtra por estado en el servidor y pagina.
+
 ## Cambios 2026-10-23: el panel a escala real y su rediseño
 
 Rama `feat/panel-navigation-scale`, sobre los filtros que backend-api

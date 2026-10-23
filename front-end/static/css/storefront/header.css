@@ -212,6 +212,8 @@
 }
 .navdrop__item:hover { background: var(--volt-soft); color: var(--volt-deep); text-decoration: none; }
 .navdrop__item.is-active { background: var(--volt-soft); color: var(--volt-deep); font-weight: 600; }
+.navdrop__count { float: right; margin-left: 12px; padding: 0 7px; border-radius: var(--r-pill); background: var(--signal); color: var(--ink); font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.navdrop__item--more { font-weight: 600; color: var(--volt-deep); border-top: 1px solid var(--line); border-radius: 0 0 var(--r-sm) var(--r-sm); margin-top: 4px; }
 .navdrop__item--all { font-weight: 600; border-bottom: 1px solid var(--line); border-radius: var(--r-sm) var(--r-sm) 0 0; margin-bottom: 4px; }
 
 .badge {

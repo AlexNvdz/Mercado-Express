@@ -23,8 +23,10 @@ def product_list(request, category_id=None):
         search=search or None,
         page=page,
     )
-    categories = products.list_categories()["items"]
+    categories = products.list_categories_with_products()
     active_category = next((c for c in categories if c["id"] == str(category_id)), None)
+    if category_id and active_category is None:
+        active_category = products.get_category(str(category_id))
 
     context = {
         "products": result["items"],
@@ -36,6 +38,17 @@ def product_list(request, category_id=None):
         "search": search,
     }
     return render(request, "catalog/list.html", context)
+
+
+def category_index(request):
+    """Every category that has products, most products first, with a name
+    filter. The home, the navbar menu and the catalog show only a few.
+    """
+    search = request.GET.get("q", "").strip()
+    categories = products.list_categories_with_products()
+    if search:
+        categories = [c for c in categories if search.lower() in c["name"].lower()]
+    return render(request, "catalog/categories.html", {"categories": categories, "search": search})
 
 
 def product_detail(request, product_id):

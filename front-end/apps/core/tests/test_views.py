@@ -51,3 +51,13 @@ def test_template_comments_do_not_leak_into_pages(client):
     html = client.get(reverse("core:home")).content.decode()
     assert "{#" not in html
     assert "#}" not in html
+
+
+@pytest.mark.django_db
+def test_home_shows_example_order_and_categories_with_products(client):
+    content = client.get(reverse("core:home")).content.decode()
+    assert "Así va un pedido" in content and "Ejemplo" in content
+    assert "en la tienda." in content
+    assert "Por categoría" in content
+    assert "Ver las" in content and "categorías" in content
+    assert "Lo más vendido" not in content and "Lo que más se lleva" not in content

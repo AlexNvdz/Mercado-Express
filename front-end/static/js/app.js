@@ -6,3 +6,4 @@ import "./modules/navbar.js";
 import "./modules/toasts.js";
 import "./modules/qty-stepper.js";
 import "./modules/confirm-dialog.js";
+import "./modules/catalog-filter.js";

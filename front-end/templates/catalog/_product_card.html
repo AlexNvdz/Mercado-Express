@@ -19,6 +19,9 @@
         <div class="product-card__name">
             <a href="{% url 'catalog:detail' product.id %}">{{ product.name }}</a>
         </div>
+        {% if product.availability %}
+        <div class="product-card__stock{% if product.availability.quantity_available <= 0 %} is-out{% endif %}">{% if product.availability.quantity_available > 0 %}{{ product.availability.quantity_available }} en bodega{% else %}Agotado{% endif %}</div>
+        {% endif %}
         <div class="product-card__spacer"></div>
         <form method="post" action="{% url 'cart:add' product.id %}" class="product-card__cta">
             {% csrf_token %}
@@ -26,6 +29,8 @@
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             {% if product.is_active is False %}
             <button type="submit" class="btn btn--soft btn--sm btn--full" disabled>No disponible</button>
+            {% elif product.availability and product.availability.quantity_available <= 0 %}
+            <button type="submit" class="btn btn--soft btn--sm btn--full" disabled>Agotado</button>
             {% else %}
             <button type="submit" class="btn btn--soft btn--sm btn--full">Añadir al carrito</button>
             {% endif %}

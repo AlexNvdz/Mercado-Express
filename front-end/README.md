@@ -70,6 +70,11 @@ guía, e historial de cambios; categorías; inventario con ajustes (con
 motivo), historial por producto y productos inactivos; clientes. Los
 productos se administran en `/catalogo/admin/`.
 
+Tienda: el inicio muestra el buscador, un ejemplo animado de cómo avanza un
+pedido y las categorías con más productos. Solo aparecen las categorías que
+tienen productos a la venta; la lista completa está en
+`/catalogo/categorias/`.
+
 Búsqueda y navegación a escala: todas las listas del panel paginan con
 números y "Ir a la página", y filtran en el servidor (pedidos por número,
 cliente y fechas; clientes por nombre, correo o teléfono; productos e

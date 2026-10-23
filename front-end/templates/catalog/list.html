@@ -17,15 +17,16 @@
 </nav>
 
 <div class="catalog-layout">
-    <aside class="catalog-filter" aria-label="Filtrar por categoría">
-        <div class="catalog-filter__title">Categorías</div>
+    <details class="catalog-filter" data-open-wide>
+        <summary class="catalog-filter__title">Categorías{% if active_category %}: <span>{{ active_category.name }}</span>{% endif %}</summary>
         <ul class="catalog-filter__list">
             <li><a class="catalog-filter__link{% if not active_category %} is-active{% endif %}" href="{% url 'catalog:list' %}">Todas</a></li>
-            {% for category in categories %}
-            <li><a class="catalog-filter__link{% if active_category.id == category.id %} is-active{% endif %}" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a></li>
+            {% for category in categories|slice:":12" %}
+            <li><a class="catalog-filter__link{% if active_category.id == category.id %} is-active{% endif %}" href="{% url 'catalog:category' category.id %}">{{ category.name }} <span class="catalog-filter__count">{{ category.active_product_count }}</span></a></li>
             {% endfor %}
+            {% if categories|length > 12 %}<li><a class="catalog-filter__link catalog-filter__link--more" href="{% url 'catalog:categories' %}">Ver las {{ categories|length }} categorías</a></li>{% endif %}
         </ul>
-    </aside>
+    </details>
 
     <div>
         <div class="catalog-toolbar">
@@ -33,13 +34,6 @@
                 {% if active_category %}{{ active_category.name }}{% elif search %}Resultados para "{{ search }}"{% else %}Todos los productos{% endif %}
             </h1>
             {% if total %}<span class="muted">{{ total }} producto{{ total|pluralize }}</span>{% endif %}
-        </div>
-
-        <div class="category-pills">
-            <a class="category-pill{% if not active_category %} is-active{% endif %}" href="{% url 'catalog:list' %}">Todas</a>
-            {% for category in categories %}
-            <a class="category-pill{% if active_category.id == category.id %} is-active{% endif %}" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
-            {% endfor %}
         </div>
 
         <div class="product-grid">

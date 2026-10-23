@@ -16,15 +16,22 @@ from services.exceptions import ApiConflictError, ApiError, ApiValidationError
 @api_login_required
 def order_list(request):
     token = auth_service.get_access_token(request)
-    result = orders_service.list_orders(token)
-    orders = result["items"]
-
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except ValueError:
+        page = 1
     status_filter = request.GET.get("status") or ""
-    statuses = sorted({o["status"] for o in orders})
-    if status_filter:
-        orders = [o for o in orders if o["status"] == status_filter]
+    if status_filter not in orders_service.ORDER_STATUSES:
+        status_filter = ""
+    result = orders_service.list_orders(token, page=page, page_size=10, status=status_filter or None)
 
-    context = {"orders": orders, "statuses": statuses, "status_filter": status_filter}
+    context = {
+        "orders": result["items"],
+        "statuses": orders_service.ORDER_STATUSES,
+        "status_filter": status_filter,
+        "page": result["page"],
+        "pages": result["pages"],
+    }
     return render(request, "orders/list.html", context)
 
 
