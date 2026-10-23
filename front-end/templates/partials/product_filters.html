@@ -1,0 +1,43 @@
+{% comment %}
+Search + category filter for staff product lists (GET, so the filters stay in
+the URL and in the pagination links). `show_estado` adds the published-only
+toggle (products and inventory), `show_stock` the low-stock toggle of the
+inventory (which hides the category: GET /inventory cannot filter by it).
+{% endcomment %}
+<form class="list-filters" method="get" role="search">
+    <label class="list-filters__search">
+        <span class="visually-hidden">Buscar por nombre o SKU</span>
+        <input type="search" name="q" value="{{ search }}" placeholder="Buscar por nombre o SKU" autocomplete="off">
+    </label>
+    {% if show_stock %}
+    <label>
+        <span class="visually-hidden">Stock</span>
+        <select name="stock">
+            <option value="">Todo el stock</option>
+            <option value="bajo"{% if low_stock_only %} selected{% endif %}>Solo stock bajo</option>
+        </select>
+    </label>
+    {% endif %}
+    {% if not low_stock_only %}
+    <label>
+        <span class="visually-hidden">Categoría</span>
+        <select name="category">
+            <option value="">Todas las categorías</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}"{% if category.id == category_id %} selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    {% endif %}
+    {% if show_estado and not low_stock_only %}
+    <label>
+        <span class="visually-hidden">Estado</span>
+        <select name="estado">
+            <option value="">Publicados y ocultos</option>
+            <option value="publicados"{% if only_published %} selected{% endif %}>Solo publicados</option>
+        </select>
+    </label>
+    {% endif %}
+    <button type="submit" class="btn btn--secondary btn--sm">Filtrar</button>
+    {% if search or category_id or only_published or low_stock_only %}<a class="btn btn--ghost btn--sm" href="{{ request.path }}">Limpiar</a>{% endif %}
+</form>

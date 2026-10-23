@@ -88,6 +88,7 @@ TEMPLATES = [
                 "apps.catalog.context_processors.wishlist",
                 "apps.catalog.context_processors.nav_categories",
                 "apps.accounts.context_processors.auth",
+                "apps.adminpanel.context_processors.panel",
             ],
         },
     },

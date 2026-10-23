@@ -1,195 +1,184 @@
 {% extends "adminpanel/_layout.html" %}
-{% load money %}
-{% load status_labels %}
+{% load money status_labels %}
 
 {% block title %}Pedido {{ order.order_number }} - Panel de administración{% endblock %}
 
 {% block panel_content %}
-<nav class="breadcrumbs" aria-label="Ruta">
-    <a href="{% url 'adminpanel:orders_list' %}">Pedidos</a>
-    <span class="sep">/</span>
-    <span class="current">{{ order.order_number }}</span>
-</nav>
-
-<div class="order-head">
-    <div>
-        <h1 class="section-title">Pedido {{ order.order_number }}</h1>
-        <p class="order-head__meta">Creado el {{ order.created_at|api_date }}</p>
-    </div>
+<nav class="crumbs" aria-label="Ruta"><a href="{% url 'adminpanel:orders_list' %}">Pedidos</a><span aria-hidden="true">/</span><span>{{ order.order_number }}</span></nav>
+<div class="page-head">
+    <h1>{{ order.order_number }}</h1>
     <span class="status status--{{ order.status }}">{{ order.status|order_status_label }}</span>
+    <p class="page-head__meta">Creado el {{ order.created_at|api_datetime }} · último cambio hace {{ order.updated_at|since }}</p>
 </div>
 
-<div class="dashboard-cols dashboard-cols--three">
-    <div class="card">
-        <h2 class="card__title">Cliente</h2>
-        {% if customer %}
-        <dl class="kv">
-            <dt>Nombre</dt><dd>{{ customer.full_name }}</dd>
-            <dt>Correo</dt><dd>{{ customer.email }}</dd>
-            <dt>Teléfono</dt><dd>{{ customer.phone|default:"No registrado" }}</dd>
-        </dl>
-        <a class="btn btn--secondary btn--sm mt-md" href="{% url 'adminpanel:customer_detail' customer.id %}">Ver ficha del cliente</a>
-        {% else %}
-        <p class="muted">Cliente no disponible.</p>
-        {% endif %}
-    </div>
+<div class="sheets sheets--aside">
+    <div class="stack-sheets">
+        <section class="sheet" aria-labelledby="items-title">
+            <div class="sheet__head"><h2 class="sheet__title" id="items-title">Productos</h2><p class="sheet__note">{{ order.items|length }} línea{{ order.items|length|pluralize }}</p></div>
+            <table class="ledger">
+                <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Subtotal</th></tr></thead>
+                <tbody>
+                    {% for item in order.items %}
+                    <tr>
+                        <td class="lead">{{ item.product_name }}{% if item.product_sku %}<span class="sub">{{ item.product_sku }}</span>{% endif %}</td>
+                        <td class="num" data-label="Cantidad">{{ item.quantity }}</td>
+                        <td class="num" data-label="Precio unitario">${{ item.unit_price|money }}</td>
+                        <td class="num" data-label="Subtotal"><strong>${{ item.line_total|money }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
 
-    <div class="card">
-        <h2 class="card__title">Dirección de envío</h2>
-        {% if order.shipping_address %}
-        <address class="address-block">
-            <strong>{{ order.shipping_address.line1 }}{% if order.shipping_address.line2 %}, {{ order.shipping_address.line2 }}{% endif %}</strong>
-            <span class="muted">{{ order.shipping_address.city }}, {{ order.shipping_address.state }}</span><br>
-            <span class="muted">{{ order.shipping_address.postal_code }}, {{ order.shipping_address.country }}</span>
-        </address>
-        {% else %}
-        <p class="muted">Este pedido no tiene una dirección de envío asociada.</p>
-        {% endif %}
-        {% if order.notes %}
-        <div class="notice mt-md"><div><strong>Indicaciones:</strong> {{ order.notes }}</div></div>
-        {% endif %}
-    </div>
-
-    <div class="card">
-        <h2 class="card__title">Envío</h2>
-        {% if shipment %}
-        <dl class="kv">
-            <dt>Estado</dt><dd><span class="status status--{{ shipment.status }}">{{ shipment.status|shipment_status_label }}</span></dd>
-            <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
-            <dt>Guía</dt><dd>{% if shipment.tracking_number %}{{ shipment.tracking_number }}{% elif can_edit_shipment %}Sin asignar (se genera al despachar si la dejas vacía){% else %}Sin asignar{% endif %}</dd>
-        </dl>
-        {% if can_edit_shipment %}
-        <form method="post" action="{% url 'adminpanel:shipment_update' order.id %}" class="mt-md">
-            {% csrf_token %}
-            {% for field in shipment_update_form %}
-            <div class="form-field">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-            </div>
-            {% endfor %}
-            <button type="submit" class="btn btn--secondary btn--sm">Guardar datos del envío</button>
-        </form>
-        {% endif %}
-        {% elif can_create_shipment %}
-        <p class="muted">Todavía no tiene un envío creado. La transportadora y la guía se pueden corregir hasta que se despache.</p>
-        <form method="post" action="{% url 'adminpanel:shipment_create' order.id %}" class="mt-md">
-            {% csrf_token %}
-            {% for field in shipment_form %}
-            <div class="form-field">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-            </div>
-            {% endfor %}
-            <button type="submit" class="btn btn--sm">Crear envío</button>
-        </form>
-        {% else %}
-        <p class="muted">Todavía no tiene un envío creado. Se puede crear cuando el pedido está pagado o en preparación.</p>
-        {% endif %}
-
-        {% if can_ship or can_deliver %}
-        <div class="actions mt-md">
-            {% if can_ship %}
-            <form method="post" action="{% url 'adminpanel:shipment_ship' order.id %}" data-confirm="Se descuenta el stock y el pedido pasa a «Enviado». Después ya no se puede editar la guía." data-confirm-title="¿Marcar el envío como despachado?" data-confirm-ok="Marcar despachado">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--sm">Marcar despachado</button>
-            </form>
+        <section class="sheet" aria-labelledby="history-title">
+            <div class="sheet__head"><h2 class="sheet__title" id="history-title">Historial de estados</h2><p class="sheet__note">Con el tiempo real entre cada cambio.</p></div>
+            {% if status_history is None %}
+            <div class="sheet__body"><p>No fue posible cargar el historial de este pedido.</p></div>
+            {% elif status_history %}
+            <table class="ledger">
+                <thead><tr><th>Fecha</th><th>Cambio</th><th>Origen</th><th>Quién</th><th class="vcol">Tras</th></tr></thead>
+                <tbody>
+                    {% for entry in status_history %}
+                    <tr>
+                        <td class="lead">{{ entry.created_at|api_datetime }}</td>
+                        <td data-label="Cambio">{% if entry.from_status %}<span class="status status--{{ entry.from_status }}">{{ entry.from_status|order_status_label }}</span><span class="to" aria-hidden="true"></span><span class="visually-hidden"> a </span>{% endif %}<span class="status status--{{ entry.to_status }}">{{ entry.to_status|order_status_label }}</span></td>
+                        <td data-label="Origen">{{ entry.source|order_status_source_label }}</td>
+                        <td data-label="Quién">{% if entry.actor %}{{ entry.actor.full_name }}<span class="sub">{{ entry.actor.email }} · {{ entry.actor.role|user_role_label }}</span>{% else %}Usuario eliminado{% endif %}</td>
+                        <td class="vcol" data-label="Tras">{% if entry.elapsed %}<span class="var var--flat">{{ entry.elapsed }}</span>{% else %}Inicio{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="sheet__body"><p>Sin cambios registrados: el historial solo cubre los cambios hechos desde que se activó.</p></div>
             {% endif %}
-            {% if can_deliver %}
-            <form method="post" action="{% url 'adminpanel:shipment_deliver' order.id %}" data-confirm="El pedido pasa a «Entregado» y ya no admite más cambios." data-confirm-title="¿Marcar el pedido como entregado?" data-confirm-ok="Marcar entregado">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--accent btn--sm">Marcar entregado</button>
-            </form>
-            {% endif %}
-        </div>
-        {% endif %}
+        </section>
+
+        <section class="sheet" aria-labelledby="override-title">
+            <div class="sheet__head"><h2 class="sheet__title" id="override-title">Cambiar estado manualmente</h2></div>
+            <div class="sheet__body">
+                {% if next_statuses %}
+                <p class="sheet__note">Solo para correcciones; muestra únicamente los estados a los que este pedido puede pasar ahora. Despachar y entregar se hacen desde el envío.</p>
+                <form method="post" action="{% url 'adminpanel:order_status_update' order.id %}" class="field-row gap-top" data-confirm="Queda registrado en el historial a tu nombre. Cancelar o reembolsar libera el stock y no se puede deshacer." data-confirm-title="¿Pasar el pedido a «{status}»?" data-confirm-ok="Cambiar estado">
+                    {% csrf_token %}
+                    <label class="visually-hidden" for="{{ status_form.status.id_for_label }}">Nuevo estado</label>
+                    {{ status_form.status }}
+                    <button type="submit" class="btn btn--secondary">Actualizar estado</button>
+                </form>
+                {% elif order.status == "shipped" %}
+                <p>El pedido ya fue despachado. Márcalo como entregado desde el envío.</p>
+                {% else %}
+                <p>Este pedido está en un estado final ({{ order.status|order_status_label }}) y ya no admite cambios.</p>
+                {% endif %}
+            </div>
+        </section>
     </div>
-</div>
 
-<div class="dashboard-cols dashboard-cols--wide">
-    <div class="stack">
-        <div class="table-card">
-        <table class="table">
-            <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Subtotal</th></tr></thead>
-            <tbody>
-                {% for item in order.items %}
-                <tr>
-                    <td class="cell-title">{{ item.product_name }}</td>
-                    <td class="num">{{ item.quantity }}</td>
-                    <td class="num">${{ item.unit_price|money }}</td>
-                    <td class="num"><strong>${{ item.line_total|money }}</strong></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
+    <div class="stack-sheets">
+        <section class="sheet" aria-labelledby="totals-title">
+            <div class="sheet__head"><h2 class="sheet__title" id="totals-title">Totales</h2></div>
+            <div class="sheet__body">
+                <dl class="totals">
+                    <div><dt>Subtotal</dt><dd>${{ order.subtotal|money }}</dd></div>
+                    <div><dt>Envío</dt><dd>${{ order.shipping_amount|money }}</dd></div>
+                    <div><dt>Impuestos</dt><dd>${{ order.tax_amount|money }}</dd></div>
+                    <div class="totals__grand"><dt>Total</dt><dd>${{ order.total_amount|money }}</dd></div>
+                </dl>
+            </div>
+        </section>
 
-        <div class="card">
-            <h2 class="card__title">Pagos</h2>
-            {% if order.payments %}
-            <div class="stack">
-                {% for payment in order.payments %}
-                <div class="flex-between">
-                    <span>{% if payment.method == "card" %}Tarjeta{% else %}{{ payment.method|default:"Sin método" }}{% endif %}</span>
-                    <span class="status status--{{ payment.status }}">{{ payment.status|payment_status_label }}</span>
-                    <strong class="num">${{ payment.amount|money }}</strong>
+        <section class="sheet" aria-labelledby="payments-title">
+            <div class="sheet__head"><h2 class="sheet__title" id="payments-title">Pagos</h2></div>
+            <div class="sheet__body">
+                {% if order.payments %}
+                <ul class="line-items">
+                    {% for payment in order.payments %}
+                    <li>
+                        <span>{% if payment.method == "card" %}Tarjeta{% else %}{{ payment.method|default:"Sin método" }}{% endif %}</span>
+                        <span class="status status--{{ payment.status }}">{{ payment.status|payment_status_label }}</span>
+                        <strong>${{ payment.amount|money }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Sin pagos registrados.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="sheet" aria-labelledby="shipment-title">
+            <div class="sheet__head"><h2 class="sheet__title" id="shipment-title">Envío</h2>{% if shipment %}<span class="status status--{{ shipment.status }}">{{ shipment.status|shipment_status_label }}</span>{% endif %}</div>
+            <div class="sheet__body">
+                {% if shipment %}
+                <dl class="facts">
+                    <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
+                    <dt>Guía</dt><dd>{% if shipment.tracking_number %}{{ shipment.tracking_number }}{% elif can_edit_shipment %}Sin asignar (se genera al despachar si la dejas vacía){% else %}Sin asignar{% endif %}</dd>
+                    {% if shipment.shipped_at %}<dt>Despachado</dt><dd>{{ shipment.shipped_at|api_datetime }}</dd>{% endif %}
+                    {% if shipment.delivered_at %}<dt>Entregado</dt><dd>{{ shipment.delivered_at|api_datetime }}</dd>{% endif %}
+                </dl>
+                {% if can_edit_shipment %}
+                <form method="post" action="{% url 'adminpanel:shipment_update' order.id %}" class="gap-top">
+                    {% csrf_token %}
+                    {% for field in shipment_update_form %}
+                    <div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn--secondary btn--sm">Guardar datos del envío</button>
+                </form>
+                {% endif %}
+                {% elif can_create_shipment %}
+                <p>Todavía no tiene un envío. La transportadora y la guía se pueden corregir hasta que se despache.</p>
+                <form method="post" action="{% url 'adminpanel:shipment_create' order.id %}" class="gap-top">
+                    {% csrf_token %}
+                    {% for field in shipment_form %}
+                    <div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn--sm">Crear envío</button>
+                </form>
+                {% else %}
+                <p>Todavía no tiene un envío. Se puede crear cuando el pedido está pagado o en preparación.</p>
+                {% endif %}
+
+                {% if can_ship or can_deliver %}
+                <div class="sheet__actions">
+                    {% if can_ship %}
+                    <form method="post" action="{% url 'adminpanel:shipment_ship' order.id %}" data-confirm="Se descuenta el stock y el pedido pasa a «Enviado». Después ya no se puede editar la guía." data-confirm-title="¿Marcar el envío como despachado?" data-confirm-ok="Marcar despachado">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--sm">Marcar despachado</button>
+                    </form>
+                    {% endif %}
+                    {% if can_deliver %}
+                    <form method="post" action="{% url 'adminpanel:shipment_deliver' order.id %}" data-confirm="El pedido pasa a «Entregado» y ya no admite más cambios." data-confirm-title="¿Marcar el pedido como entregado?" data-confirm-ok="Marcar entregado">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--sm">Marcar entregado</button>
+                    </form>
+                    {% endif %}
                 </div>
-                {% endfor %}
+                {% endif %}
             </div>
-            {% else %}
-            <p class="muted">Sin pagos registrados.</p>
-            {% endif %}
-        </div>
+        </section>
 
-        <div class="card">
-            <h2 class="card__title">Cambiar estado manualmente</h2>
-            {% if next_statuses %}
-            <p class="muted" style="margin-bottom:14px;">Esto es para correcciones y solo muestra los estados a los que este pedido puede pasar ahora. Despachar y entregar se hacen desde el envío.</p>
-            <form method="post" action="{% url 'adminpanel:order_status_update' order.id %}" class="admin-inline" data-confirm="Queda registrado en el historial a tu nombre. Cancelar o reembolsar libera el stock y no se puede deshacer." data-confirm-title="¿Pasar el pedido a «{status}»?" data-confirm-ok="Cambiar estado">
-                {% csrf_token %}
-                <label class="visually-hidden" for="{{ status_form.status.id_for_label }}">Nuevo estado</label>
-                {{ status_form.status }}
-                <button type="submit" class="btn btn--secondary">Actualizar estado</button>
-            </form>
-            {% elif order.status == "shipped" %}
-            <p class="muted">El pedido ya fue despachado. Márcalo como entregado desde el envío.</p>
-            {% else %}
-            <p class="muted">Este pedido está en un estado final ({{ order.status|order_status_label }}) y ya no admite cambios.</p>
-            {% endif %}
-        </div>
+        <section class="sheet" aria-labelledby="customer-title">
+            <div class="sheet__head"><h2 class="sheet__title" id="customer-title">Cliente y dirección</h2>{% if customer %}<a class="sheet__link" href="{% url 'adminpanel:customer_detail' customer.id %}">Ver ficha</a>{% endif %}</div>
+            <div class="sheet__body">
+                <dl class="facts">
+                    {% if customer %}
+                    <dt>Nombre</dt><dd>{{ customer.full_name }}</dd>
+                    <dt>Correo</dt><dd>{{ customer.email }}</dd>
+                    <dt>Teléfono</dt><dd>{{ customer.phone|default:"No registrado" }}</dd>
+                    {% else %}
+                    <dt>Cliente</dt><dd>No disponible</dd>
+                    {% endif %}
+                    {% if order.shipping_address %}
+                    <dt>Dirección</dt><dd>{{ order.shipping_address.line1 }}{% if order.shipping_address.line2 %}, {{ order.shipping_address.line2 }}{% endif %}</dd>
+                    <dt>Ciudad</dt><dd>{{ order.shipping_address.city }}, {{ order.shipping_address.state }}</dd>
+                    <dt>Código postal</dt><dd>{{ order.shipping_address.postal_code }} · {{ order.shipping_address.country }}</dd>
+                    {% else %}
+                    <dt>Dirección</dt><dd>Sin dirección de envío</dd>
+                    {% endif %}
+                </dl>
+                {% if order.notes %}<p class="gap-top"><strong>Indicaciones:</strong> {{ order.notes }}</p>{% endif %}
+            </div>
+        </section>
     </div>
-
-    <aside class="cart-summary">
-        <h2 class="cart-summary__title">Totales</h2>
-        <div class="cart-summary__row"><span>Subtotal</span><span>${{ order.subtotal|money }}</span></div>
-        <div class="cart-summary__row"><span>Envío</span><span>${{ order.shipping_amount|money }}</span></div>
-        <div class="cart-summary__row"><span>Impuestos</span><span>${{ order.tax_amount|money }}</span></div>
-        <div class="cart-summary__total"><span>Total</span><span>${{ order.total_amount|money }}</span></div>
-        <a class="btn btn--ghost btn--full" href="{% url 'adminpanel:orders_list' %}">Volver a pedidos</a>
-    </aside>
 </div>
-
-<section class="panel-section">
-    <div class="panel-section__head"><h2>Historial de estados</h2></div>
-    {% if status_history is None %}
-    <p class="muted">No fue posible cargar el historial de este pedido.</p>
-    {% elif status_history %}
-    <div class="table-card">
-    <table class="table">
-        <thead><tr><th>Fecha</th><th>Cambio</th><th>Origen</th><th>Quién</th></tr></thead>
-        <tbody>
-            {% for entry in status_history %}
-            <tr>
-                <td class="muted">{{ entry.created_at|api_datetime }}</td>
-                <td>{% if entry.from_status %}<span class="status status--{{ entry.from_status }}">{{ entry.from_status|order_status_label }}</span> → {% endif %}<span class="status status--{{ entry.to_status }}">{{ entry.to_status|order_status_label }}</span></td>
-                <td>{{ entry.source|order_status_source_label }}</td>
-                <td>{% if entry.actor %}<div class="cell-title">{{ entry.actor.full_name }}</div><div class="cell-sub">{{ entry.actor.email }} · {{ entry.actor.role|user_role_label }}</div>{% else %}<span class="muted">Usuario eliminado</span>{% endif %}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-    {% else %}
-    <p class="muted">Sin cambios registrados: el historial solo cubre los cambios hechos desde que se activó.</p>
-    {% endif %}
-</section>
 {% endblock %}

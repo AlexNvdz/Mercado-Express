@@ -1,0 +1,49 @@
+{% extends "adminpanel/_layout.html" %}
+{% load money status_labels %}
+
+{% block title %}{% if global_query %}«{{ global_query }}» - {% endif %}Buscar - Panel de administración{% endblock %}
+
+{% block panel_content %}
+<div class="page-head">
+    <h1>{% if global_query %}Resultados para «{{ global_query }}»{% else %}Buscar{% endif %}</h1>
+    {% if global_query %}<p class="page-head__meta">{{ found|money }} coincidencia{{ found|pluralize }} entre pedidos, clientes y productos.</p>{% endif %}
+</div>
+
+{% if not global_query %}
+<section class="sheet"><div class="sheet-empty"><h2>Escribe qué buscas</h2><p>Un número de pedido, el nombre, correo o teléfono de un cliente, o el nombre o SKU de un producto. Pulsa <kbd>/</kbd> en cualquier página del panel para ir al buscador.</p></div></section>
+{% elif not found %}
+<section class="sheet"><div class="sheet-empty"><h2>Nada coincide con «{{ global_query }}»</h2><p>Revisa la ortografía o busca por otro dato: número de pedido, correo, teléfono o SKU.</p></div></section>
+{% else %}
+<section class="sheet">
+    <table class="ledger">
+        <tbody>
+            {% for group in groups %}
+            <tr class="band"><td colspan="4">{{ group.label }}<b>{{ group.total|money }}</b>{% if group.total > group.items|length %}<a href="{{ group.url }}?q={{ global_query|urlencode }}">Ver los {{ group.total|money }}</a>{% endif %}</td></tr>
+            {% for item in group.items %}
+            <tr>
+            {% if group.kind == "orders" %}
+                <td class="lead"><a class="code" href="{% url 'adminpanel:order_detail' item.id %}">{{ item.order_number }}</a></td>
+                <td data-label="Fecha">{{ item.created_at|api_date }}</td>
+                <td data-label="Estado"><span class="status status--{{ item.status }}">{{ item.status|order_status_label }}</span></td>
+                <td class="num" data-label="Total">${{ item.total_amount|money }}</td>
+            {% elif group.kind == "customers" %}
+                <td class="lead"><a class="code" href="{% url 'adminpanel:customer_detail' item.id %}">{{ item.full_name }}</a></td>
+                <td data-label="Correo">{{ item.email }}</td>
+                <td data-label="Teléfono">{{ item.phone|default:"Sin teléfono" }}</td>
+                <td class="num" data-label="Rol">{{ item.role|user_role_label }}</td>
+            {% else %}
+                <td class="lead"><a class="code" href="{% url 'catalog:admin_edit' item.id %}">{{ item.sku }}</a></td>
+                <td data-label="Producto">{{ item.name }}</td>
+                <td data-label="Estado">{% if item.is_active %}<span class="chip">Publicado</span>{% else %}<span class="chip chip--off">Oculto</span>{% endif %}</td>
+                <td class="num" data-label="Precio">${{ item.price|money }}</td>
+            {% endif %}
+            </tr>
+            {% empty %}
+            <tr class="is-empty"><td colspan="4">Sin coincidencias en {{ group.label|lower }}.</td></tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+{% endblock %}

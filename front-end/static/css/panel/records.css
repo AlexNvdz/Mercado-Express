@@ -1,0 +1,97 @@
+/* ==========================================================================
+   Panel records: buttons, filter bar, forms, fact lists, totals, history,
+   images. Standard web controls in the bulletin's squared, ruled language.
+   ========================================================================== */
+
+/* --- Buttons: 6px corners, flat fills ------------------------------------- */
+.panel-app .btn { min-height: 38px; padding: 8px 16px; border-radius: 6px; font-family: var(--font-body); font-size: 14px; font-weight: 600; box-shadow: none; transform: none; }
+.panel-app .btn--sm { min-height: 32px; padding: 5px 12px; font-size: 13px; }
+.panel-app .btn--secondary { background: var(--paper); border-color: var(--g4); color: var(--g10); }
+.panel-app .btn--secondary:hover { border-color: var(--volt); color: var(--volt-deep); background: var(--paper); }
+.panel-app .btn:active { transform: none; }
+
+/* --- Filter bar ------------------------------------------------------------ */
+.panel-app .list-filters { gap: 8px; margin-bottom: 16px; padding: 12px; background: var(--paper); border: var(--hair); }
+.panel-app .list-filters input, .panel-app .list-filters select { height: 36px; border-color: var(--g4); border-radius: 6px; font: inherit; color: var(--g10); }
+.panel-app .list-filters label { display: inline-flex; align-items: center; gap: 6px; color: var(--g7); font-size: 13px; }
+.panel-app .list-filters__search { flex: 1 1 280px; }
+.panel-app .list-filters__search input { flex: 1; }
+.filter-tabs { display: flex; flex-wrap: wrap; margin: 0 0 16px; background: var(--paper); border: var(--hair); }
+.filter-tabs a { padding: 9px 14px; border-right: var(--hair-soft); color: var(--g7); font-weight: 500; }
+.filter-tabs a:hover { color: var(--g10); background: var(--g0); text-decoration: none; }
+.filter-tabs a[aria-current="true"] { background: var(--g10); color: #fff; font-weight: 650; }
+.filter-tabs b { margin-left: 6px; font-weight: 600; color: var(--g6); }
+.filter-tabs a[aria-current="true"] b { color: var(--signal); }
+
+/* --- Pagination (partials/pagination.html) --------------------------------- */
+.panel-app .pagination { justify-content: space-between; margin-top: 0; padding: 10px 12px; background: var(--paper); border: var(--hair); border-top: 0; }
+.panel-app .pagination__page, .panel-app .pagination__step { height: 32px; min-width: 32px; border-radius: 4px; border-color: var(--g3); }
+.panel-app .pagination__page[aria-current="page"] { background: var(--g10); border-color: var(--g10); }
+.panel-app .pagination__jump input { height: 32px; border-radius: 4px; border-color: var(--g4); }
+@media (max-width: 700px) { .panel-app .pagination { justify-content: center; } }
+
+/* --- Forms ------------------------------------------------------------------ */
+.panel-app .form-field { margin-bottom: 14px; }
+.panel-app .form-field label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: var(--g8); }
+.panel-app input[type="text"], .panel-app input[type="number"], .panel-app input[type="email"], .panel-app input[type="search"],
+.panel-app input[type="date"], .panel-app select, .panel-app textarea { border-radius: 6px; border-color: var(--g4); font-family: var(--font-body); }
+.panel-app select { min-height: 38px; padding: 6px 32px 6px 10px; border: 1px solid var(--g4); background-color: var(--paper); color: var(--g10); font: inherit; }
+.panel-app .form-errors { color: var(--rose); font-size: 13px; }
+.gap-top { margin-top: 12px; }
+.field-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.field-row > * { margin: 0; }
+.cell-form { display: flex; align-items: center; gap: 6px; }
+.cell-form input { width: 112px; height: 32px; padding: 4px 8px; border: 1px solid var(--g4); border-radius: 4px; font: inherit; text-align: right; }
+.cell-form input[type="text"] { width: 124px; text-align: left; }
+.cell-form input[name$="reorder_level"] { width: 76px; }
+@media (max-width: 700px) {
+    .cell-form { flex-wrap: wrap; justify-content: flex-end; }
+    /* Touch targets: 44px on phones (PRODUCT.md, accessibility). */
+    .panel-app .btn--sm, .panel-app .btn, .cell-form input, .panel-app .pagination__page,
+    .panel-app .pagination__step, .panel-app .pagination__jump input, .panel-app select,
+    .panel-app .list-filters input, .filter-tabs a { min-height: 44px; }
+    .filter-tabs a { display: inline-flex; align-items: center; }
+}
+
+/* --- Fact lists (label / value rows, ruled) ------------------------------ */
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 0; }
+.facts dt, .facts dd { margin: 0; padding: 7px 0; border-bottom: var(--hair-soft); }
+.facts dt { padding-right: 18px; color: var(--g7); }
+.facts dd { font-weight: 550; text-align: right; overflow-wrap: anywhere; }
+.facts > :nth-last-child(-n + 2) { border-bottom: 0; }
+
+/* --- Totals: the ledger's closing rows ------------------------------------- */
+.totals { margin: 0; }
+.totals div { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: var(--hair-soft); }
+.totals dt { color: var(--g7); }
+.totals dd { margin: 0; font-weight: 600; }
+.totals .totals__grand { border-top: 2px solid var(--g10); border-bottom: 0; padding-top: 10px; }
+.totals .totals__grand dt { color: var(--g10); font-weight: 700; }
+.totals .totals__grand dd { font-size: 1.35rem; font-weight: 750; }
+
+/* --- Payments / shipment rows -------------------------------------------- */
+.line-items { list-style: none; margin: 0; padding: 0; }
+.line-items li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 0; border-bottom: var(--hair-soft); }
+.line-items li:last-child { border-bottom: 0; }
+.sheet__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* --- Images (product form) ----------------------------------------------- */
+.panel-app .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.panel-app .image-grid__item { position: relative; aspect-ratio: 1; border: var(--hair); border-radius: 4px; overflow: hidden; background: var(--g1); }
+.panel-app .image-grid__item img { width: 100%; height: 100%; object-fit: cover; }
+.panel-app .image-grid__remove { position: absolute; top: 4px; right: 4px; }
+.panel-app .icon-btn { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 4px; background: rgba(23, 56, 42, 0.86); color: #fff; cursor: pointer; }
+.panel-app .icon-btn:hover { background: var(--rose); }
+.upload-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+.upload-row p { flex-basis: 100%; margin: 0; color: var(--g7); font-size: 12.5px; }
+
+/* Shared form fields, dialog and toasts in the panel's language: 6px
+   corners, hairline borders, no lift shadows (selectors match the
+   components' specificity so they win by cascade order). */
+.panel-app .form-field input:not([type=radio]):not([type=checkbox]):not([type=file]),
+.panel-app .form-field select, .panel-app .form-field textarea { border-radius: 6px; border-color: var(--g4); }
+.panel-app .confirm { border: 1px solid var(--g3); border-radius: 6px; box-shadow: none; }
+.panel-app .toast { border: 1px solid var(--g3); border-radius: 6px; box-shadow: none; }
+
+/* --- Toasts sit below the top bar ----------------------------------------- */
+.panel-app .toasts { top: calc(var(--topbar-h) + 12px); }

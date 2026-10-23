@@ -52,6 +52,9 @@ class ApiClient:
     def __init__(self, base_url: str | None = None, timeout: float | None = None):
         self.base_url = (base_url or settings.API_BASE_URL).rstrip("/")
         self.timeout = timeout if timeout is not None else settings.API_TIMEOUT_SECONDS
+        # One pooled client per process: keep-alive reuses the TCP connection
+        # across the several backend calls a single page makes.
+        self._client = httpx.Client()
 
     def _headers(self, token: str | None) -> dict[str, str]:
         headers = {"Accept": "application/json"}
@@ -81,7 +84,7 @@ class ApiClient:
         """
         url = f"{self.base_url}/{path.lstrip('/')}"
         try:
-            response = httpx.request(
+            response = self._client.request(
                 method,
                 url,
                 params=params,

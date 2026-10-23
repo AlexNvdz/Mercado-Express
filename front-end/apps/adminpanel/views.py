@@ -9,13 +9,18 @@ Every view is @api_staff_required (see apps/accounts/decorators.py) and
 talks to backend-api only through services/*.py, per CLAUDE.md.
 """
 
+from datetime import date
+
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, QueryDict
+from django.utils.dateparse import parse_datetime
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.accounts.decorators import api_staff_required
+from apps.core.templatetags.money import duration_label
+from apps.catalog.views import product_filters
 from services import auth as auth_service
 from services import customers as customers_service
 from services import inventory as inventory_service
@@ -43,6 +48,9 @@ def _enrich_items_with_product_names(items: list[dict]) -> list[dict]:
     cache: dict[str, dict | None] = {}
     enriched = []
     for item in items:
+        if item.get("product_name"):  # asked of backend-api: no per-line lookup then
+            enriched.append(item)
+            continue
         product_id = item["product_id"]
         if product_id not in cache:
             cache[product_id] = products_service.get_product(product_id)
@@ -65,6 +73,16 @@ def home(request):
 # --- Orders (status overrides + shipment lifecycle) ---------------------
 
 
+def _iso_day(value: str | None) -> str | None:
+    """A YYYY-MM-DD day from the querystring, or None if missing or malformed
+    (sent as-is the backend would 422).
+    """
+    try:
+        return date.fromisoformat(value).isoformat() if value else None
+    except ValueError:
+        return None
+
+
 @api_staff_required
 def orders_list(request):
     token = auth_service.get_access_token(request)
@@ -78,19 +96,80 @@ def orders_list(request):
     if status_filter not in orders_service.ORDER_STATUSES:
         status_filter = ""
 
-    result = orders_service.list_orders(token, page=page, page_size=20, status=status_filter or None)
+    search = request.GET.get("q", "").strip()[:100]
+    created_from = _iso_day(request.GET.get("desde"))
+    created_to = _iso_day(request.GET.get("hasta"))
+    result = orders_service.list_orders(
+        token,
+        page=page,
+        page_size=20,
+        status=status_filter or None,
+        search=search or None,
+        created_from=created_from,
+        created_to=created_to,
+    )
 
     context = {
         "orders": result["items"],
+        "total": result["total"],
         "statuses": orders_service.ORDER_STATUSES,
         "status_filter": status_filter,
+        "search": search,
+        "created_from": created_from or "",
+        "created_to": created_to or "",
         "page": result["page"],
         "pages": result["pages"],
-        "has_previous": result["page"] > 1,
-        "has_next": result["page"] < result["pages"],
         "active_nav": "orders",
     }
     return render(request, "adminpanel/orders_list.html", context)
+
+
+SEARCH_PER_GROUP = 6
+
+
+def _with_elapsed(history: list[dict]) -> list[dict]:
+    """Adds `elapsed` to each status change: the real time since the previous
+    one ("2 h 15 min"), so slow steps stand out in the history.
+    """
+    previous = None
+    annotated = []
+    for entry in history:
+        current = parse_datetime(entry["created_at"])
+        elapsed = duration_label((current - previous).total_seconds()) if previous and current else ""
+        annotated.append({**entry, "elapsed": elapsed})
+        previous = current or previous
+    return annotated
+
+
+@api_staff_required
+def search(request):
+    """The top bar's search: orders, customers and products matching `q`, a
+    few of each, with links to the full filtered lists.
+    """
+    token = auth_service.get_access_token(request)
+    query = request.GET.get("q", "").strip()[:100]
+    groups = []
+    if query:
+        orders = orders_service.list_orders(token, page=1, page_size=SEARCH_PER_GROUP, search=query)
+        customers = customers_service.list_customers(token, page=1, page_size=SEARCH_PER_GROUP, search=query)
+        products = products_service.list_products(
+            search=query, page=1, page_size=SEARCH_PER_GROUP, include_inactive=True, token=token
+        )
+        groups = [
+            {"kind": "orders", "label": "Pedidos", "items": orders["items"][:SEARCH_PER_GROUP], "total": orders["total"],
+             "url": reverse("adminpanel:orders_list")},
+            {"kind": "customers", "label": "Clientes", "items": customers["items"][:SEARCH_PER_GROUP], "total": customers["total"],
+             "url": reverse("adminpanel:customers_list")},
+            {"kind": "products", "label": "Productos", "items": products["items"][:SEARCH_PER_GROUP], "total": products["total"],
+             "url": reverse("catalog:admin_list")},
+        ]
+    context = {
+        "global_query": query,
+        "groups": groups,
+        "found": sum(group["total"] for group in groups),
+        "active_nav": "",
+    }
+    return render(request, "adminpanel/search.html", context)
 
 
 @api_staff_required
@@ -105,7 +184,7 @@ def order_detail(request, order_id):
     shipment = shipments_service.get_shipment_for_order(token, str(order_id))
     can_edit_shipment = shipment is not None and shipments_service.is_editable(shipment)
     try:
-        status_history = orders_service.get_status_history(token, str(order_id))
+        status_history = _with_elapsed(orders_service.get_status_history(token, str(order_id)))
     except ApiError:
         status_history = None  # the template says it couldn't be loaded
     shipment_update_form = None
@@ -251,7 +330,7 @@ def shipment_deliver(request, order_id):
 
 @api_staff_required
 def categories_list(request):
-    categories = products_service.list_categories(page_size=100)["items"]
+    categories = products_service.list_all_categories()
     return render(
         request, "adminpanel/categories_list.html", {"categories": categories, "active_nav": "categories"}
     )
@@ -260,7 +339,7 @@ def categories_list(request):
 @api_staff_required
 def category_create(request):
     token = auth_service.get_access_token(request)
-    categories = products_service.list_categories(page_size=100)["items"]
+    categories = products_service.list_all_categories()
     form = CategoryForm(request.POST or None, categories=categories)
 
     if request.method == "POST" and form.is_valid():
@@ -288,7 +367,7 @@ def category_edit(request, category_id):
         raise Http404("Categoría no encontrada")
 
     token = auth_service.get_access_token(request)
-    categories = products_service.list_categories(page_size=100)["items"]
+    categories = products_service.list_all_categories()
 
     if request.method == "POST":
         form = CategoryForm(request.POST, categories=categories, exclude_id=str(category_id))
@@ -350,32 +429,55 @@ def _page_number(value) -> int:
 
 
 def _redirect_to_inventory_page(request):
-    """Back to the inventory page the form was posted from (hidden `page`
-    field), not always page 1.
+    """Back to the inventory page and filters the form was posted from
+    (hidden `return_query` field), not always the unfiltered page 1.
     """
-    page = _page_number(request.POST.get("page"))
+    query = QueryDict(request.POST.get("return_query", "")).urlencode()
     url = reverse("adminpanel:inventory_list")
-    return redirect(f"{url}?page={page}" if page > 1 else url)
+    return redirect(f"{url}?{query}" if query else url)
 
 
 @api_staff_required
 def inventory_list(request):
     """One page of products (GET /products, by name, inactive ones included)
-    joined to their stock rows from the batched GET /inventory -- no
-    per-product request. Products with no inventory row still get a row
-    ("Sin registro de inventario").
+    joined to their stock rows from one GET /inventory filtered by those ids.
+    Products with no inventory row still get a row ("Sin registro de
+    inventario"). `stock=bajo` lists active products at or under their reorder
+    level straight from GET /inventory instead; that endpoint has no category
+    filter, so the category is dropped there.
     """
     token = auth_service.get_access_token(request)
     page = _page_number(request.GET.get("page"))
-    result = products_service.list_products(
-        page=page, page_size=INVENTORY_PAGE_SIZE, include_inactive=True, token=token
-    )
-    products = result["items"]
-    availability_by_id = inventory_service.availability_by_product(token, [p["id"] for p in products])
+    categories = products_service.list_all_categories()
+    search, category_id = product_filters(request, categories)
+    low_stock_only = request.GET.get("stock") == "bajo"
+    only_published = request.GET.get("estado") == "publicados"
+    if low_stock_only:
+        category_id = ""
+        result = inventory_service.list_inventory(
+            token, low_stock=True, search=search or None, page=page, page_size=INVENTORY_PAGE_SIZE
+        )
+        pairs = [
+            (
+                {"id": r["product_id"], "name": r["product_name"], "sku": r["product_sku"], "is_active": r["product_is_active"]},
+                r,
+            )
+            for r in result["items"]
+        ]
+    else:
+        result = products_service.list_products(
+            category_id=category_id or None,
+            search=search or None,
+            page=page,
+            page_size=INVENTORY_PAGE_SIZE,
+            include_inactive=not only_published,
+            token=token,
+        )
+        availability_by_id = inventory_service.availability_by_product(token, [p["id"] for p in result["items"]])
+        pairs = [(product, availability_by_id.get(product["id"])) for product in result["items"]]
 
     rows = []
-    for product in products:
-        availability = availability_by_id.get(product["id"])
+    for product, availability in pairs:
         rows.append(
             {
                 "product": product,
@@ -389,11 +491,14 @@ def inventory_list(request):
         )
     context = {
         "rows": rows,
+        "categories": categories,
+        "search": search,
+        "category_id": category_id,
+        "low_stock_only": low_stock_only,
+        "only_published": only_published,
         "total": result["total"],
         "page": result["page"],
         "pages": result["pages"],
-        "has_previous": result["page"] > 1,
-        "has_next": result["page"] < result["pages"],
         "active_nav": "inventory",
     }
     return render(request, "adminpanel/inventory_list.html", context)
@@ -463,8 +568,6 @@ def inventory_history(request, product_id):
         "entries": result["items"],
         "page": result["page"],
         "pages": result["pages"],
-        "has_previous": result["page"] > 1,
-        "has_next": result["page"] < result["pages"],
         "active_nav": "inventory",
     }
     return render(request, "adminpanel/inventory_history.html", context)
@@ -481,14 +584,14 @@ def customers_list(request):
     except ValueError:
         page = 1
 
-    result = customers_service.list_customers(token, page=page, page_size=20)
+    search = request.GET.get("q", "").strip()[:100]
+    result = customers_service.list_customers(token, page=page, page_size=20, search=search or None)
     context = {
         "customers": result["items"],
+        "search": search,
         "total": result["total"],
         "page": result["page"],
         "pages": result["pages"],
-        "has_previous": result["page"] > 1,
-        "has_next": result["page"] < result["pages"],
         "active_nav": "customers",
     }
     return render(request, "adminpanel/customers_list.html", context)

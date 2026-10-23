@@ -62,11 +62,19 @@ def get_availability(product_id: str) -> dict | None:
 
 
 def list_inventory(
-    token: str, *, low_stock: bool = False, include_inactive: bool = False, page: int = 1, page_size: int = 20
+    token: str,
+    *,
+    low_stock: bool = False,
+    include_inactive: bool = False,
+    product_ids: list[str] | None = None,
+    search: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
 ) -> dict:
     """Staff only: paginated inventory rows, `{items, total, page, page_size,
-    pages}`. Each item has the same shape as get_availability() -- product_id
-    only, no product name (resolve it with services.products.get_product).
+    pages}`. Each item has the get_availability() shape plus `product_name`,
+    `product_sku` and `product_is_active` (list only). `search` matches the
+    product name or SKU; `product_ids` goes as repeated `product_id` (max 100).
     `low_stock=True` keeps rows where quantity_available <= reorder_level.
     Rows of inactive products are left out unless `include_inactive`, so the
     low-stock alert ignores discontinued products. The backend orders rows by
@@ -81,13 +89,31 @@ def list_inventory(
         ]
         if low_stock:
             items = [row for row in items if row["quantity_available"] <= row["reorder_level"]]
+        products = {p["id"]: p for p in mock_data.MOCK_PRODUCTS}
+        items = [
+            {
+                **row,
+                "product_name": products[row["product_id"]]["name"],
+                "product_sku": products[row["product_id"]]["sku"],
+                "product_is_active": products[row["product_id"]].get("is_active", True),
+            }
+            for row in items
+            if row["product_id"] in products
+        ]
+        if search:
+            needle = search.lower()
+            items = [r for r in items if needle in r["product_name"].lower() or needle in r["product_sku"].lower()]
         return {"items": items, "total": len(items), "page": 1, "page_size": len(items) or 1, "pages": 1}
 
     params: dict = {"page": page, "page_size": page_size}
+    if product_ids:
+        params["product_id"] = [str(product_id) for product_id in product_ids]
     if low_stock:
         params["low_stock"] = "true"
     if include_inactive:
         params["include_inactive"] = "true"
+    if search:
+        params["search"] = search
     return api_client.get("/api/v1/inventory", token=token, params=params)
 
 
@@ -95,16 +121,17 @@ def availability_by_product(token: str, product_ids: list[str]) -> dict[str, dic
     """Staff only: inventory rows for `product_ids` (active or not), keyed by
     product_id.
 
-    GET /inventory has no product filter, so this pages through it at the
-    backend's max page_size and stops as soon as every requested product is
-    found (or the rows run out). Products with no inventory row are simply
-    missing from the result.
+    One request filtered by `product_id` (at most 100 ids, one page). The
+    loop only goes past page 1 if a caller ever asks for more ids than that.
+    Products with no inventory row are missing from the result.
     """
     wanted = {str(product_id) for product_id in product_ids}
     found: dict[str, dict] = {}
     page = 1
     while wanted - found.keys():
-        result = list_inventory(token, include_inactive=True, page=page, page_size=MAX_PAGE_SIZE)
+        result = list_inventory(
+            token, include_inactive=True, product_ids=sorted(wanted), page=page, page_size=MAX_PAGE_SIZE
+        )
         for row in result["items"]:
             if row["product_id"] in wanted:
                 found[row["product_id"]] = row

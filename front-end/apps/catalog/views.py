@@ -31,8 +31,6 @@ def product_list(request, category_id=None):
         "total": result["total"],
         "page": result["page"],
         "pages": result["pages"],
-        "has_previous": result["page"] > 1,
-        "has_next": result["page"] < result["pages"],
         "categories": categories,
         "active_category": active_category,
         "search": search,
@@ -76,19 +74,59 @@ def wishlist_view(request):
 # call services/products.py, which calls backend-api directly.
 
 
+ADMIN_PAGE_SIZE = 50
+
+
+def product_filters(request, categories: list[dict]) -> tuple[str, str]:
+    """`q` (name or SKU) and `category` from the querystring of a staff
+    product list. An unknown category id is dropped rather than sent (the
+    backend would 422 a non-UUID).
+    """
+    search = request.GET.get("q", "").strip()
+    category_id = request.GET.get("category", "")
+    if category_id not in {c["id"] for c in categories}:
+        category_id = ""
+    return search, category_id
+
+
 @api_staff_required
 def product_admin_list(request):
-    # include_inactive: a product hidden from the catalog must stay listed
-    # here, or staff could never edit it back to visible.
+    # include_inactive (default): a product hidden from the catalog must stay
+    # listed here, or staff could never edit it back to visible.
     token = auth_service.get_access_token(request)
-    result = products.list_products(page=1, page_size=100, include_inactive=True, token=token)
-    return render(request, "catalog/admin_list.html", {"products": result["items"], "active_nav": "products"})
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except ValueError:
+        page = 1
+    categories = products.list_all_categories()
+    search, category_id = product_filters(request, categories)
+    only_published = request.GET.get("estado") == "publicados"
+    result = products.list_products(
+        category_id=category_id or None,
+        search=search or None,
+        page=page,
+        page_size=ADMIN_PAGE_SIZE,
+        include_inactive=not only_published,
+        token=token,
+    )
+    context = {
+        "products": result["items"],
+        "total": result["total"],
+        "page": result["page"],
+        "pages": result["pages"],
+        "categories": categories,
+        "search": search,
+        "category_id": category_id,
+        "only_published": only_published,
+        "active_nav": "products",
+    }
+    return render(request, "catalog/admin_list.html", context)
 
 
 @api_staff_required
 def product_admin_create(request):
     token = auth_service.get_access_token(request)
-    categories = products.list_categories(page_size=100)["items"]
+    categories = products.list_all_categories()
     form = ProductForm(request.POST or None, categories=categories)
 
     if request.method == "POST" and form.is_valid():
@@ -113,7 +151,7 @@ def product_admin_edit(request, product_id):
     if product is None:
         raise Http404("Producto no encontrado")
 
-    categories = products.list_categories(page_size=100)["items"]
+    categories = products.list_all_categories()
     token = auth_service.get_access_token(request)
 
     if request.method == "POST":

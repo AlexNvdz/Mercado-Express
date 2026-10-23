@@ -44,6 +44,17 @@ def list_categories(*, page: int = 1, page_size: int = 100) -> dict:
     )
 
 
+
+def list_all_categories() -> list[dict]:
+    """Every category, page after page (the backend caps page_size at 100):
+    for staff selects and lists, which must not silently stop at 100.
+    """
+    first = list_categories(page=1, page_size=100)
+    items = list(first["items"])
+    for page in range(2, first["pages"] + 1):
+        items += list_categories(page=page, page_size=100)["items"]
+    return items
+
 def get_category(category_id: str) -> dict | None:
     if settings.API_USE_MOCKS:
         return next((c for c in mock_data.MOCK_CATEGORIES if c["id"] == str(category_id)), None)

@@ -1,0 +1,32 @@
+/* ==========================================================================
+   Footer -- mint, closes the page with the same green family as the header.
+   It is pushed to the bottom by the body column (see `body` above).
+   ========================================================================== */
+.footer { margin-top: clamp(32px, 5vw, 56px); background: var(--volt-soft); color: var(--text-2); border-top: 1px solid var(--line); }
+.footer__inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 44px var(--gutter) 32px;
+    display: grid;
+    grid-template-columns: minmax(220px, 1.8fr) repeat(2, 1fr);
+    gap: 32px;
+}
+.footer__brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -0.035em; }
+.footer__brand .navbar__mark { width: 32px; height: 32px; border-radius: 10px 10px 10px 4px; }
+.footer__tagline { margin-top: 14px; max-width: 38ch; font-size: 0.9rem; line-height: 1.6; color: var(--text-2); }
+.footer__heading { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--ink); margin-bottom: 14px; }
+.footer__links { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.footer__links a { color: var(--text-2); font-size: 0.9rem; }
+.footer__links a:hover { color: var(--volt-deep); }
+.footer__bottom {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 18px var(--gutter);
+    border-top: 1px solid var(--line-2);
+    font-size: 0.82rem;
+    color: var(--text-3);
+}
+@media (max-width: 700px) {
+    .footer__inner { grid-template-columns: 1fr 1fr; }
+    .footer__brand-col { grid-column: 1 / -1; }
+}

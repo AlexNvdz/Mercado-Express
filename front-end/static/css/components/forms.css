@@ -1,0 +1,43 @@
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+.form { max-width: 480px; }
+.form-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: clamp(20px, 4vw, 32px); }
+.form-card--narrow { max-width: 520px; }
+.form-card__title { font-size: 1.05rem; margin-bottom: 4px; }
+.form-card__sub { color: var(--text-2); font-size: 0.9rem; margin-bottom: 20px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.form-field label { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+.form-field input:not([type=radio]):not([type=checkbox]):not([type=file]),
+.form-field select,
+.form-field textarea,
+.checkout-notes,
+.inline-form input[type="number"],
+.inline-form input[type="text"],
+.admin-inline select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-sm);
+    background: var(--paper);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form-field textarea, .checkout-notes { min-height: 96px; resize: vertical; }
+.form-field input:hover, .form-field select:hover, .form-field textarea:hover { border-color: var(--text-3); }
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus,
+.checkout-notes:focus, .inline-form input:focus, .admin-inline select:focus {
+    outline: none;
+    border-color: var(--volt);
+    box-shadow: 0 0 0 3px var(--volt-soft);
+}
+.form-field input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--volt); }
+.form-field:has(input[type=checkbox]) { flex-direction: row-reverse; justify-content: flex-end; align-items: center; gap: 10px; }
+.form-field:has(input[type=checkbox]) label { font-weight: 500; }
+input[type=file] { font-size: 0.88rem; max-width: 100%; }
+input[type=file]::file-selector-button { margin-right: 12px; padding: 8px 14px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--paper-2); color: var(--text); font-weight: 600; cursor: pointer; }
+.form-errors { list-style: none; margin: 0 0 12px; padding: 0; color: var(--rose); font-size: 0.85rem; }
+.form-errors li + li { margin-top: 4px; }
+.form-help { margin-top: 20px; text-align: center; font-size: 0.92rem; color: var(--text-2); }

@@ -1,0 +1,254 @@
+/* ==========================================================================
+   Header
+   Row 1 (white): brand, search (the dominant control), account + cart.
+   Row 2 (mint): one "Categorías" dropdown plus a few shortcuts, finished by
+   a striped market awning -- the one decorative flourish in the system.
+   ========================================================================== */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--paper);
+    color: var(--text);
+}
+.navbar__inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 12px var(--gutter);
+    display: flex;
+    align-items: center;
+    gap: 12px clamp(14px, 2.4vw, 28px);
+}
+.navbar__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.18rem;
+    letter-spacing: -0.035em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.navbar__brand:hover { text-decoration: none; }
+.navbar__mark {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px 11px 11px 4px;
+    background: var(--volt);
+    color: var(--signal);
+    flex-shrink: 0;
+}
+.navbar__brand-sub {
+    margin-left: 4px;
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+    background: var(--signal-soft);
+    color: var(--volt-deep);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    vertical-align: 2px;
+}
+
+.navbar__search { flex: 1 1 auto; min-width: 0; max-width: 640px; }
+.navbar__search form {
+    display: flex;
+    align-items: stretch;
+    height: 46px;
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.navbar__search form:hover { border-color: var(--line-2); }
+.navbar__search form:focus-within { background: var(--paper); border-color: var(--volt); box-shadow: 0 0 0 4px var(--volt-soft); }
+.navbar__search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    padding: 0 20px;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: transparent;
+    outline: none;
+}
+.navbar__search input::placeholder { color: var(--text-3); }
+.navbar__search button {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    margin: 4px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: var(--volt);
+    color: #fff;
+    cursor: pointer;
+}
+.navbar__search button:hover { background: var(--volt-deep); }
+
+.navbar__right { display: flex; align-items: center; gap: 4px; margin-left: auto; flex-shrink: 0; }
+.navbar__links { display: flex; align-items: center; gap: 2px; }
+.navbar__text-link {
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+.navbar__text-link:hover { color: var(--ink); background: var(--volt-soft); text-decoration: none; }
+.navbar__text-link--cta { margin-left: 4px; background: var(--volt); color: #fff; font-weight: 600; border-radius: var(--r-pill); padding-inline: 16px; }
+.navbar__text-link--cta:hover { background: var(--volt-deep); color: #fff; }
+
+.navbar__icon-link {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    color: var(--ink);
+}
+.navbar__icon-link:hover { background: var(--volt-soft); color: var(--volt-deep); text-decoration: none; }
+.navbar__icon-link .badge {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    background: var(--signal);
+    color: var(--ink);
+    box-shadow: 0 0 0 2px var(--paper);
+}
+
+.navbar__toggle {
+    display: none;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+}
+.navbar__toggle:hover { background: var(--volt-soft); }
+
+/* Mint strip with the awning edge: alternating green and white stripes
+   that end in a scalloped hem, drawn with gradients only. */
+.navbar__sub {
+    position: relative;
+    background: var(--volt-soft);
+    border-top: 1px solid var(--line);
+}
+.navbar__sub::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 9px;
+    background: repeating-linear-gradient(90deg, var(--volt) 0 24px, var(--signal) 24px 48px);
+    -webkit-mask: radial-gradient(12px 9px at 12px 0, #000 98%, transparent) 0 0 / 24px 9px repeat-x;
+    mask: radial-gradient(12px 9px at 12px 0, #000 98%, transparent) 0 0 / 24px 9px repeat-x;
+    pointer-events: none;
+}
+.navbar--console .navbar__sub::after { display: none; }
+.navbar__sub-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+}
+.navbar__sublink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: var(--r-sm);
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+}
+.navbar__sublink:hover { color: var(--ink); background: rgba(255, 255, 255, 0.75); text-decoration: none; }
+.navbar__sublink.is-active { color: var(--volt-deep); font-weight: 600; }
+.navbar__sub-note { margin-left: auto; font-size: 0.82rem; color: var(--text-2); white-space: nowrap; }
+
+/* Categories dropdown (native <details>, closes via app.js on outside click) */
+.navdrop { position: relative; }
+.navdrop > summary { list-style: none; cursor: pointer; font-weight: 600; color: var(--ink); }
+.navdrop > summary::-webkit-details-marker { display: none; }
+.navdrop > summary svg { transition: transform 0.15s ease; }
+.navdrop[open] > summary { background: var(--paper); }
+.navdrop[open] > summary svg { transform: rotate(180deg); }
+.navdrop__panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 50;
+    width: min(320px, calc(100vw - 32px));
+    padding: 8px;
+    background: var(--paper);
+    border-radius: var(--r-md);
+    box-shadow: var(--lift-lg);
+    border: 1px solid var(--line);
+}
+.navdrop__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--r-sm);
+    color: var(--text);
+    font-size: 0.92rem;
+}
+.navdrop__item:hover { background: var(--volt-soft); color: var(--volt-deep); text-decoration: none; }
+.navdrop__item.is-active { background: var(--volt-soft); color: var(--volt-deep); font-weight: 600; }
+.navdrop__item--all { font-weight: 600; border-bottom: 1px solid var(--line); border-radius: var(--r-sm) var(--r-sm) 0 0; margin-bottom: 4px; }
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--r-pill);
+    background: var(--volt);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.badge--soft { background: var(--volt-soft); color: var(--volt-deep); height: 22px; padding: 0 8px; font-size: 0.74rem; font-weight: 600; }
+
+@media (max-width: 900px) {
+    .navbar__inner { flex-wrap: wrap; padding-block: 10px; gap: 10px; }
+    .navbar__search { order: 3; flex-basis: 100%; max-width: none; }
+    .navbar__search form { height: 44px; }
+    .navbar__toggle { display: grid; }
+    .navbar__links { display: none; }
+    .navbar__links.is-open {
+        display: flex;
+        order: 4;
+        flex-basis: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+    }
+    .navbar__links.is-open .navbar__text-link { padding: 12px; }
+    .navbar__links.is-open .navbar__text-link--cta { margin: 4px 0 0; text-align: center; }
+    .navbar__sub-inner { flex-wrap: wrap; row-gap: 0; padding-block: 4px; }
+    .navbar__sub-note { display: none; }
+    .navdrop { position: static; }
+    .navdrop__panel { left: 16px; right: 16px; width: auto; }
+}

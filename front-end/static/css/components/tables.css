@@ -1,0 +1,21 @@
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+/* position: relative makes the card the containing block of absolutely
+   positioned descendants (e.g. .visually-hidden form labels), so they are
+   clipped by its horizontal scroll instead of widening the whole page. */
+.table-card { position: relative; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); overflow-x: auto; }
+.table { width: 100%; min-width: 560px; border-collapse: collapse; }
+.table th, .table td { padding: 13px 16px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+.table th { font-size: 0.8rem; font-weight: 600; color: var(--text-2); background: var(--paper-2); white-space: nowrap; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr { transition: background-color 0.12s ease; }
+.table tbody tr:hover { background: var(--paper-2); }
+.table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.table .cell-title { font-weight: 600; color: var(--text); }
+.table .cell-sub { font-size: 0.82rem; color: var(--text-3); }
+.table .cell-actions { text-align: right; white-space: nowrap; }
+.table .cell-actions .actions { justify-content: flex-end; flex-wrap: nowrap; }
+.table-thumb { width: 44px; height: 44px; border-radius: var(--r-sm); border: 1px solid var(--line); object-fit: cover; background: var(--paper-2); flex-shrink: 0; }
+.table-thumb--empty { display: grid; place-items: center; color: var(--line-2); }
+.cell-media { display: flex; align-items: center; gap: 12px; }
