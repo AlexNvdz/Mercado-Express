@@ -111,6 +111,7 @@
     </div>
 </div>
 
+<div{% if stats.sales_by_region %} class="sheets sheets--even"{% endif %}>
 <section class="sheet" aria-labelledby="top-title">
         <div class="sheet__head"><h2 class="sheet__title" id="top-title">Más vendidos</h2></div>
         {% if stats.top_products %}
@@ -126,4 +127,19 @@
         <div class="sheet-empty"><h2>Todavía no hay ventas</h2><p>El ranking se arma con los pedidos pagados.</p></div>
         {% endif %}
     </section>
+
+    {% if stats.sales_by_region %}
+    <section class="sheet" aria-labelledby="region-title">
+        <div class="sheet__head"><h2 class="sheet__title" id="region-title">Ventas por región</h2></div>
+        <table class="ledger">
+            <thead><tr><th>Región</th><th class="num">Pedidos</th><th class="num">Ingreso neto</th></tr></thead>
+            <tbody>
+                {% for row in stats.sales_by_region %}
+                <tr><td class="lead">{{ row.region }}</td><td class="num" data-label="Pedidos">{{ row.order_count|money }}</td><td class="num" data-label="Ingreso neto">${{ row.net_revenue|money }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+</div>
 {% endblock %}

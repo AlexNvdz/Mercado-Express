@@ -252,6 +252,10 @@ MOCK_REPORT_SUMMARY = {
         {"product_id": "00000000-0000-0000-0000-000000000202", "name": "Aceite vegetal 1L", "sku": "SKU-ACE-001", "units_sold": 1, "revenue": "12900.00"},
         {"product_id": "00000000-0000-0000-0000-000000000206", "name": "Leche entera 1L", "sku": "SKU-LEC-001", "units_sold": 1, "revenue": "4500.00"},
     ],
+    # Both seed orders ship to MOCK_ADDRESSES[0].
+    "sales_by_region": [
+        {"region": "Bogotá D.C.", "net_revenue": "30600.00", "order_count": 2},
+    ],
     "customer_count": 2,
     "product_count": 8,
     "generated_at": "2026-10-06T00:00:00Z",

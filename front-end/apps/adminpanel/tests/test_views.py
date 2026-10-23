@@ -83,6 +83,23 @@ def test_home_shows_net_gross_and_refunded_revenue(client, monkeypatch):
 
 
 @pytest.mark.django_db
+def test_home_shows_sales_by_region(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:home")).content.decode()
+    assert "Ventas por región" in content
+    assert "Bogotá D.C." in content
+
+
+@pytest.mark.django_db
+def test_home_hides_sales_by_region_when_empty(client, monkeypatch):
+    summary = {**mock_data.MOCK_REPORT_SUMMARY, "sales_by_region": []}
+    monkeypatch.setattr("services.reports.get_summary", lambda token, **kwargs: summary)
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:home")).content.decode()
+    assert "Ventas por región" not in content
+
+
+@pytest.mark.django_db
 def test_home_resolves_low_stock_product_names(client):
     _login_as_staff(client)
     content = client.get(reverse("adminpanel:home")).content.decode()
