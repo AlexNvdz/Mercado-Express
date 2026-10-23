@@ -18,18 +18,26 @@ class CategoryService:
     async def create(self, data: CategoryCreate) -> Category:
         if await self.repo.get_by_name(data.name) is not None:
             raise ConflictError(f"Category '{data.name}' already exists.")
-        return await self.repo.create(data.model_dump())
+        category = await self.repo.create(data.model_dump())
+        return await self.get(category.id)
 
     async def get(self, category_id: uuid.UUID) -> Category:
-        category = await self.repo.get(category_id)
+        """With `active_product_count` filled in, like every category this
+        service returns."""
+        category = await self.repo.get_with_count(category_id)
         if category is None:
             raise NotFoundError(f"Category {category_id} not found.")
         return category
 
-    async def list(self, *, offset: int, limit: int) -> tuple[list[Category], int]:
-        items = await self.repo.list(offset=offset, limit=limit, order_by=Category.name)
-        total = await self.repo.count()
-        return items, total
+    async def list(
+        self, *, offset: int, limit: int, with_products: bool = False, sort_by_products: bool = False
+    ) -> tuple[list[Category], int]:
+        """`with_products`: only categories with at least one active product.
+        `sort_by_products`: most active products first (then name) instead of
+        by name."""
+        return await self.repo.list_with_counts(
+            offset=offset, limit=limit, with_products=with_products, sort_by_products=sort_by_products
+        )
 
     async def update(self, category_id: uuid.UUID, data: CategoryUpdate) -> Category:
         category = await self.get(category_id)
@@ -42,7 +50,9 @@ class CategoryService:
         )
         if name_taken:
             raise ConflictError(f"Category '{new_name}' already exists.")
-        return await self.repo.update(category, updates)
+        await self.repo.update(category, updates)
+        # The flush expired active_product_count (a query expression): reload it.
+        return await self.get(category_id)
 
     async def delete(self, category_id: uuid.UUID) -> None:
         category = await self.get(category_id)

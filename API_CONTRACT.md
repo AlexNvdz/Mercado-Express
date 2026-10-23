@@ -155,14 +155,25 @@ Address body:
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/categories` | staff | Create category (optionally `parent_id` for subcategories). |
-| GET | `/categories` | none | Paginated list. |
+| GET | `/categories?with_products=&sort=&page=&page_size=` | none | Paginated list, by name. `with_products=true`: only categories with at least one active product. `sort=products`: most active products first, then by name (any other `sort` than `name`/`products` = `422`). Both combine with pagination; `total` counts the filter. |
 | GET | `/categories/{category_id}` | none | Get one. |
 | PATCH | `/categories/{category_id}` | staff | Partial update. |
 | DELETE | `/categories/{category_id}` | staff | Delete. `409` if any product still belongs to it; subcategories are kept with `parent_id` set to `null`. |
 
 ```json
+// POST request
 { "name": "Electronics", "description": "Gadgets and devices", "parent_id": null, "is_active": true }
 ```
+```json
+// response of every endpoint above (create, list item, get, update)
+{
+  "id": "...", "name": "Electronics", "description": "Gadgets and devices", "parent_id": null,
+  "is_active": true, "active_product_count": 3, "created_at": "...", "updated_at": "..."
+}
+```
+`active_product_count` (since 2026-10-23) is the number of products in the
+category with `is_active: true`, the ones the public catalog shows. Inactive
+products (e.g. the imported Olist ones) are not counted.
 
 ## `/api/v1/products`
 

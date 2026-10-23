@@ -24,6 +24,7 @@ class CategoryUpdate(BaseModel):
 
 class CategoryOut(CategoryBase):
     id: uuid.UUID
+    active_product_count: int = Field(..., description="Products in this category with is_active=true.")
     created_at: datetime
     updated_at: datetime
 
