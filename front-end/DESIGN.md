@@ -1,6 +1,6 @@
 ---
 name: MercadoExpress
-description: Staff panel set like the daily wholesale price bulletin; the storefront keeps its fresh-market look on the same tokens.
+description: Two worlds on one token file. The staff panel is set like the daily wholesale price bulletin. The storefront sits under a striped market-canvas awning and shows only real stock.
 colors:
   g0: "#f7faf6"
   g1: "#f3f8f2"
@@ -33,6 +33,7 @@ colors:
   line: "#dae8dc"
   line-2: "#c2d7c6"
   paper-2: "#f6faf5"
+  canvas-stripe: "#e9f4ea"
 typography:
   display:
     fontFamily: "Archivo, Segoe UI, system-ui, sans-serif"
@@ -80,6 +81,58 @@ typography:
     fontSize: "12.5px"
     fontWeight: 650
     fontFeature: "tnum"
+  store-hero:
+    fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
+    fontSize: "clamp(2.4rem, 1.6rem + 3.6vw, 4.3rem)"
+    fontWeight: 800
+    lineHeight: 0.97
+    letterSpacing: "-0.03em"
+    fontVariation: "'wdth' 80"
+  store-title:
+    fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
+    fontSize: "clamp(1.8rem, 1.4rem + 1.6vw, 2.4rem)"
+    fontWeight: 800
+    lineHeight: 1.15
+    letterSpacing: "-0.025em"
+    fontVariation: "'wdth' 82"
+  store-heading:
+    fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
+    fontSize: "clamp(1.6rem, 1.2rem + 1.4vw, 2.2rem)"
+    fontWeight: 700
+    lineHeight: 1.15
+    letterSpacing: "-0.025em"
+  store-shelf:
+    fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
+    fontSize: "clamp(1.15rem, 1rem + 0.6vw, 1.5rem)"
+    fontWeight: 800
+    lineHeight: 1.15
+    letterSpacing: "-0.025em"
+    fontVariation: "'wdth' 85"
+  store-price:
+    fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
+    fontSize: "1.35rem"
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: "-0.02em"
+  store-lead:
+    fontFamily: "Figtree, Segoe UI, system-ui, -apple-system, sans-serif"
+    fontSize: "clamp(1rem, 0.95rem + 0.3vw, 1.15rem)"
+    fontWeight: 400
+    lineHeight: 1.55
+  store-body:
+    fontFamily: "Figtree, Segoe UI, system-ui, -apple-system, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.55
+  store-chip:
+    fontFamily: "Figtree, Segoe UI, system-ui, -apple-system, sans-serif"
+    fontSize: "0.8rem"
+    fontWeight: 700
+  store-button:
+    fontFamily: "Figtree, Segoe UI, system-ui, -apple-system, sans-serif"
+    fontSize: "0.92rem"
+    fontWeight: 600
+    lineHeight: 1
 rounded:
   sheet: "0px"
   chip: "3px"
@@ -245,6 +298,122 @@ components:
   share-fill:
     backgroundColor: "{colors.volt}"
     height: "6px"
+  store-button:
+    backgroundColor: "{colors.volt}"
+    textColor: "{colors.paper}"
+    typography: "{typography.store-button}"
+    rounded: "{rounded.r-sm}"
+    padding: "0 18px"
+    height: "42px"
+  store-button-hover:
+    backgroundColor: "{colors.volt-deep}"
+  store-button-soft:
+    backgroundColor: "{colors.volt-soft}"
+    textColor: "{colors.volt-deep}"
+    rounded: "{rounded.r-sm}"
+    padding: "0 12px"
+    height: "34px"
+  header-search:
+    backgroundColor: "{colors.g1}"
+    textColor: "{colors.g10}"
+    rounded: "{rounded.r-pill}"
+    height: "46px"
+  header-search-focus:
+    backgroundColor: "{colors.paper}"
+  subnav:
+    backgroundColor: "{colors.volt-soft}"
+    textColor: "{colors.g9}"
+    height: "44px"
+  awning-hem:
+    backgroundColor: "{colors.volt}"
+    height: "9px"
+  category-menu:
+    backgroundColor: "{colors.paper}"
+    rounded: "{rounded.r-md}"
+    padding: "8px"
+    width: "320px"
+  hero-search:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.g10}"
+    rounded: "16px"
+    padding: "6px"
+  hero-search-button:
+    backgroundColor: "{colors.g10}"
+    textColor: "{colors.paper}"
+    rounded: "{rounded.r-sm}"
+    height: "46px"
+  product-card:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.g10}"
+    rounded: "{rounded.r-md}"
+    padding: "14px 16px 16px"
+  product-card-media:
+    backgroundColor: "{colors.paper-2}"
+    padding: "14px"
+  product-card-price:
+    textColor: "{colors.g10}"
+    typography: "{typography.store-price}"
+  stock-line:
+    textColor: "{colors.g7}"
+  stock-line-out:
+    textColor: "{colors.rose}"
+  count-chip:
+    backgroundColor: "{colors.signal}"
+    textColor: "{colors.g10}"
+    typography: "{typography.store-chip}"
+    rounded: "{rounded.r-pill}"
+    padding: "2px 9px"
+  category-row:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.g10}"
+    rounded: "{rounded.r-md}"
+    padding: "10px 16px"
+    height: "64px"
+  catalog-filter:
+    backgroundColor: "{colors.paper}"
+    rounded: "{rounded.r-md}"
+    padding: "16px 10px"
+    width: "240px"
+  catalog-filter-link:
+    textColor: "{colors.g7}"
+    rounded: "{rounded.r-sm}"
+    padding: "9px 10px"
+  catalog-filter-link-current:
+    backgroundColor: "{colors.volt-soft}"
+    textColor: "{colors.volt-deep}"
+  flow-card:
+    backgroundColor: "rgba(255, 255, 255, 0.94)"
+    textColor: "{colors.g10}"
+    rounded: "{rounded.r-lg}"
+    padding: "18px"
+    width: "440px"
+  flow-tag:
+    backgroundColor: "{colors.volt-soft}"
+    textColor: "{colors.g7}"
+    rounded: "{rounded.r-pill}"
+    padding: "2px 9px"
+  flow-track-segment:
+    backgroundColor: "{colors.volt-soft}"
+    rounded: "{rounded.r-pill}"
+    height: "6px"
+  flow-chip-paid:
+    backgroundColor: "{colors.signal}"
+    textColor: "{colors.g10}"
+    rounded: "{rounded.r-pill}"
+    padding: "8px 13px"
+  flow-chip-preparing:
+    backgroundColor: "{colors.sky-soft}"
+    textColor: "{colors.sky}"
+    rounded: "{rounded.r-pill}"
+    padding: "6px 12px"
+  flow-road:
+    backgroundColor: "{colors.violet-soft}"
+    rounded: "{rounded.r-pill}"
+    height: "32px"
+  flow-truck:
+    backgroundColor: "{colors.violet}"
+    textColor: "{colors.paper}"
+    size: "32px"
 ---
 
 # Design System: MercadoExpress
@@ -257,7 +426,13 @@ The staff panel (`/panel/` and `/catalogo/admin/`) reads like the daily wholesal
 
 The colour is flat and committed. An eleven-step green ramp supplies every neutral, the action green marks what can be clicked, lime marks what is current, and rose, amber, sky, violet and leaf speak only for state. Depth comes from hairlines and solid fills, never from shadows or gradients. Sheets are square; controls take small 3-6px corners. The panel refuses the usual admin template of floating metric cards above one generic table.
 
-The storefront keeps its earlier "fresh market" look on the same token file (`static/css/tokens.css`): Bricolage Grotesque for display type and prices, Figtree for 15px body text, rounder corners (`r-sm`, `r-md`, `r-lg`, `r-pill`), the soft `--lift` shadows on hover cards and menus, and the striped awning under the header as its one decorative flourish. The panel scopes its own world under the `panel-app` body class and restyles the shared components (`static/css/components/`) in `static/css/panel/`. The user rejected the "mercado campesino" storefront trial (slate green, kraft-paper tags, scalable section index, animated hero) on 2026-10-22; it stays out of both worlds.
+The panel scopes its own world under the `panel-app` body class and restyles the shared components (`static/css/components/`) in `static/css/panel/`. The storefront is a second world on the same token file (`static/css/tokens.css`).
+
+**Storefront North Star: "The Market Canvas" (La lona del mercado)**
+
+The storefront sits under a market stall's canvas. A scalloped hem of action green and lime stripes runs under the header on every customer page, and the home hero stands on wide stripes of pale canvas. A few real product photos drift slowly over those stripes, and a light card plays an example order through its five real states, from cart to delivered. Everything below is honest stock: square white product cards that state the units in the warehouse, a lime chip counting the products of every category, and only the categories and products that exist today. Bricolage Grotesque, narrowed and heavy, sets the headings and prices; Figtree sets the text at 15px. Corners are round (8, 14 and 22px, and pills), and a soft green-tinted shadow lifts a card on hover.
+
+The home, the product catalog and the category index carry this system, approved on 2026-10-23. Pages not yet restyled (cart, checkout, account, order detail) still wear the earlier "fresh market" styling on the same tokens. The user rejected the "mercado campesino" storefront trial (slate green, kraft-paper tags, scalable section index, its animated hero) on 2026-10-22; it stays out of both worlds. The motion the home does have, the example-order loop and the drifting photos, is what the user asked for afterwards.
 
 **Key Characteristics:**
 - Ruled sheets, not cards: a 1px g3 hairline around and between modules, g2 inside them, square corners.
@@ -265,6 +440,9 @@ The storefront keeps its earlier "fresh market" look on the same token file (`st
 - Archivo throughout: normal width for reading, condensed caps for structure, tabular figures everywhere.
 - Every key figure carries a signed variation against a stated reference.
 - The same task works on a phone: ledgers fold into label/value rows and no page scrolls sideways.
+- Storefront: a scalloped volt and lime awning hem under the header, and market-canvas stripes behind the home hero.
+- Storefront: square white product cards that state their stock, and a lime chip that counts every category.
+- Storefront: an example order cycles its five real states, each in its status hue, and stills to a list under reduced motion.
 
 ## Colors
 
@@ -300,12 +478,21 @@ The pinned MercadoExpress greens, stretched into a fixed ramp, with four state h
 - **Delivered Leaf** (`leaf` / `leaf-soft`): delivered and completed, with text darkened to #1f6b3e for contrast; the success toast dot.
 - **Alert Rose** (`rose` / `rose-soft`): cancelled, refunded, failed and returned; the "down" variation; "Oculto", "Inactivo" and "Agotado" chips; form errors; danger buttons. On the forest rail the low-stock count uses a pale rose (#f2b8c0).
 
+### Storefront
+The storefront reads the same values through its own aliases: `--ink` (g10) for text and the ink-filled hero search button, `--ink-2` (g9) for sub-navigation links, `--text-2` (g7) for secondary text, product names and the stock line, `--text-3` (g6) for placeholders, `--canvas` (g1) as the page background, `line` and `line-2` for card and row borders, `paper-2` for the product photo well.
+- **Market Canvas Stripe** (`canvas-stripe`, #e9f4ea): alternates with the mint canvas in 72px vertical bands behind the home hero. It is the `--canvas-stripe` custom property in `tokens.css`.
+- **Awning stripes:** the hem under the header alternates `volt` and `signal` in 24px stripes below the `volt-soft` sub-navigation strip.
+- **Lime** (`signal`): count chips ("3 productos"), the cart and wishlist count badges, and the "Pago aprobado" chip in the example order, always with ink text. `signal-soft` is the focus halo of the hero search.
+- **Order states in the example order:** lime for the approved payment, sky for "En preparación", violet for "Enviado" and the truck's road, action green for the cart step and the delivered badge. Out of stock is rose ("Agotado").
+
 ### Named Rules
 **The Ramp-Only Rule.** Every neutral in the panel comes from g0-g10: text, hairlines, row hover, chip fills, the rail. A new tone is taken from the ramp, not mixed. g6 and lighter fail 4.5:1 on white, so they never carry text; body copy is g10 and secondary copy g7.
 
 **The Lime Marks Now Rule.** Lime marks the current or selected thing: the brand mark, the square beside the active rail link, the count inside a group band, selected text. In the panel it never fills a button or a surface.
 
 **The State-Only Rule.** Rose, amber, sky, violet and leaf appear only as state: status chips, variation markers, the low-stock count, errors. They never decorate a section, a heading or a figure that is not reporting a state.
+
+**The Lime Counts Rule.** In the storefront lime fills small things that count or confirm: count chips, count badges, the payment-approved chip, and half of the awning's stripes. It always carries ink text and never fills a page section, a card or the primary action, which stays action green.
 
 ## Typography
 
@@ -332,6 +519,23 @@ Archivo is loaded as a variable font (width 62-125, weight 400-800) only on pane
 
 **The Tabular Rule.** The whole panel sets `tabular-nums`. Numeric columns are right-aligned so digits stack, and signed variations use a real minus sign (−), not a hyphen.
 
+### Storefront
+**Display Font:** Bricolage Grotesque (with Segoe UI, system-ui, sans-serif), variable: optical size 12-96, width 75-100, weight 600-800, loaded from Google Fonts in `base.html`.
+**Body Font:** Figtree (with Segoe UI, system-ui, -apple-system, sans-serif), weights 400-700.
+
+**Character:** A lively grotesque narrowed for the big words, the way a stall paints its name across the canvas, beside a plain, friendly sans for everything that is read.
+
+- **Hero** (`store-hero`: 800, clamp 2.4-4.3rem, 0.97, -0.03em, width 80, at most 11ch): the home's H1 only.
+- **Page title** (`store-title`: 800, clamp 1.8-2.4rem, width 82): "Todas las categorías". Other page H1s keep the default heading (`store-heading`: 700, clamp 1.6-2.2rem); the catalog's title uses the 1.3-1.7rem section title.
+- **Category name** (`store-shelf`: 800, width 85): shelf heads on the home (clamp 1.15-1.5rem) and category rows (1.12rem).
+- **Card title:** the example-order card's "Así va un pedido" at 750, 1.15rem.
+- **Price** (`store-price`: 600, 1.35rem, 1.1): product card prices, at normal width. The example order's total uses 800 at 1.6rem.
+- **Lead** (`store-lead`: Figtree 400, clamp 1-1.15rem, at most 40ch): `--text-2`, opening with the product count in bold ink.
+- **Body** (`store-body`: Figtree 400, 15px, 1.55). Product names at 0.92rem/1.35, clamped to two lines in `--text-2`; the stock line at 0.8rem.
+- **Chip** (`store-chip`: Figtree 700, 0.8rem, no wrap): count chips.
+
+**The Narrowed Heading Rule.** Only headings shout: the hero, page titles and category names set Bricolage at 800 on a narrowed width (80-85) with tight tracking. Prices stay at 600 and normal width, and running text is always Figtree.
+
 ## Layout
 
 The panel body is a two-column grid: a 232px forest rail and a fluid column holding a sticky 60px white top bar and the workspace (padding 22px 28px 64px, on the g1 canvas). The rail is sticky at full viewport height, with the brand, the grouped navigation (Operación, Catálogo) with live counts, and a footer pushed to the bottom. The top bar holds the global search (up to 620px wide, `/` shortcut hint) and the date and role at the right.
@@ -349,14 +553,41 @@ Responsive behaviour, measured from the build:
 
 **The Joined Module Rule.** Related figures and controls share one container divided by hairlines: the figure strip, the status tabs, the pagination bar under its ledger. Modules are never separated by air and floated as cards.
 
+### Storefront
+The storefront body is a full-height flex column whose `<main>` takes the slack, so the footer stays at the bottom of short pages. Content sits in a 1240px container with a `clamp(16px, 4vw, 28px)` gutter; the home's `<main>` drops its padding so the hero runs full bleed.
+
+- **Header:** sticky. A white row (brand, the search up to 640px, account links, wishlist and cart), then the 44px mint sub-navigation (Categorías menu, shortcuts, a right-aligned note), then the 9px awning hem. On the home the header search hides, because the hero's search is the page's only search field.
+- **Home hero:** a wrapping row on the canvas stripes, padded clamp(26px, 5vw, 56px) above and clamp(30px, 5vw, 60px) below. The copy (title, lead, search up to 560px, two text links) grows from 460px; the example-order card takes 360-440px beside it and drops below the copy on phones. The first thing in the copy is the H1; there is nothing above it.
+- **Shelves:** "Por categoría", then one section per category: a head row (category name, count chip, "Ver todo" pushed right) over a product grid. A full-width secondary button "Ver las N categorías" (at most 420px, centred) closes the list when more categories exist than shelves shown.
+- **Product grid:** 2 columns, 3 from 700px, 4 from 1100px (5 on the wide grid), gaps clamp(10px, 1.6vw, 16px).
+- **Catalog:** a 240px category list beside a fluid column (gap 24px); the list is sticky under the 118px header. The column holds the title and product count, the grid and pagination.
+- **Category index:** a single 720px column: title, lead, search, then the category rows 8px apart.
+
+Responsive behaviour, measured from the build:
+- **≤1100px:** the grid drops to 3 columns; the second and third floating photos hide.
+- **≤900px:** the header search takes its own full-width 44px row, account links fold behind a menu toggle, the sub-navigation note hides and the category menu spans the viewport with 16px insets; the catalog goes to one column and its category list becomes a closed `<details>` above the grid.
+- **≤760px:** the remaining floating photo shrinks to 76px and tucks off the right edge; card buttons grow to 44px.
+- **<700px:** the grid is 2 columns.
+
+**The Real Shelf Rule.** The storefront shows only what exists: the home lists only categories that have active products, most products first, and inside each only products in stock; the count in the lead and on every chip is the real one. No banner carousel, no wall of category icons, no invented delivery times, reviews or best sellers.
+
 ## Elevation & Depth
 
 The panel is flat. Depth is the g1 canvas behind white sheets, a 1px g3 hairline around and between modules, a 1px g2 rule inside them, and solid g10 fills for the rail, group bands, the current tab and page, plus a 2px g10 rule above a grand total. Hover changes fill, not height: a ledger row tints to g0 and a rail link fills g9. Panel buttons explicitly drop any shadow and any press offset.
 
-The tokens file keeps two shadows for the storefront: `--lift` (`0 12px 28px -16px rgba(23, 56, 42, 0.28)`, product cards on hover) and `--lift-lg` (`0 26px 50px -24px rgba(23, 56, 42, 0.38)`, menus and the hero ticket). The panel uses neither: `panel/records.css` strips them from the shared confirmation dialog and toasts, which take a `g3` hairline and 6px corners instead. They are not a precedent for panel surfaces.
+The storefront lifts softly, with shadows tinted by the forest ink (rgba 23, 56, 42). Cards and rows are flat at rest with a 1px `line` border; a product card lifts on hover, and menus and dialogs lift when open. Two things float at rest, both in the home hero: the example-order card and the drifting product photos. Focus on the two search fields is a 4px halo instead of an outline. The panel uses none of these shadows: `panel/records.css` strips them from the shared confirmation dialog and toasts, which take a `g3` hairline and 6px corners instead. They are not a precedent for panel surfaces.
+
+### Shadow Vocabulary
+- **Lift** (`--lift`, `box-shadow: 0 12px 28px -16px rgba(23, 56, 42, 0.28)`): a product card on hover, with a `line-2` border.
+- **Lift large** (`--lift-lg`, `box-shadow: 0 26px 50px -24px rgba(23, 56, 42, 0.38)`): the open category menu, the shared confirmation dialog and toasts.
+- **Flow card** (`box-shadow: 0 24px 50px -28px rgba(23, 56, 42, 0.55)`): the example-order card, on 94% white over the stripes.
+- **Floating photo** (`box-shadow: 0 16px 32px -16px rgba(23, 56, 42, 0.45)`): the hero's drifting photos, inside a 4px white frame.
+- **Search halo** (`box-shadow: 0 0 0 4px`): `signal-soft` around the hero search; `volt-soft` with a volt border around the header search.
 
 ### Named Rules
 **The Flat Sheet Rule.** Panel surfaces are flat at rest and on hover. A module separates from its neighbour by a hairline, never by a shadow or a gradient.
+
+**The Lift On Response Rule.** In the storefront a surface lifts only in response: a product card on hover, a menu or dialog when open. Only the hero's example-order card and floating photos float at rest.
 
 ## Shapes
 
@@ -366,6 +597,13 @@ Markers are drawn shapes. The variation triangle is an 8x7px `clip-path` in `cur
 
 ### Named Rules
 **The Drawn Marker Rule.** Triangles and chevrons are drawn with CSS `clip-path` in `currentColor`, never typed as glyphs (▲ ▼ →) or pulled from an icon font.
+
+### Storefront
+The storefront is round. Buttons, menu items and category links take 8px (`r-sm`); product cards, category rows, the catalog category list, the menu panel and empty states 14px (`r-md`); the example-order card and the product detail 22px (`r-lg`); the header search, count chips, tags, the flow's track and road, and its status chips are full pills. The hero search and the flow's inner tiles (photo, total) take 16px, the floating photos 20px inside a 4px white frame; icon links, the truck and the delivered badge are circles. Product photos sit in a square (1:1) well, contained with a 14px inset so a square photo is never cropped or stretched. The brand mark is a 36px volt tile with three 11px corners and one 4px corner, a lime bag drawn inside.
+
+The awning is CSS only: below the mint strip a 9px band of 24px volt and lime stripes is masked by a row of radial-gradient half-ellipses (12px by 9px, repeating every 24px) into a scalloped hem. The hero's canvas is a `repeating-linear-gradient` of 72px bands. Icons are inline SVG at 14-22px with 1.8-2.6px round strokes; the phone category list draws its chevron from two borders of a rotated 9px square.
+
+**The Painted Canvas Rule.** The awning hem and the canvas stripes are drawn with gradients and a mask, never an image. The hem appears once per page, under the storefront header; the staff console header drops it.
 
 ## Components
 
@@ -426,6 +664,49 @@ References in use: stock vs reorder level, time since the last status change ("E
 - **Facts:** a two-column label/value list, labels in g7, values at 550 right-aligned, g2 rules between rows.
 - **Share bar:** a 6px g2 track with a volt fill and the percentage on the right, for the order-status distribution.
 
+### Storefront components
+The storefront's own styling lives in `static/css/storefront/` (`header.css`, `home.css`, `catalog.css`) on top of the shared defaults in `static/css/components/`. Storefront buttons are the shared ones: 42px, 8px corners, Figtree 600 at 0.92rem, volt with a white label (volt-deep on hover), a 1px press offset; the soft variant (volt-soft fill, volt-deep text) adds to the cart, and the secondary one is white with a line border.
+
+### Header and awning (storefront)
+- **Top row:** white. The brand (mark plus "MercadoExpress" in Bricolage 700, 1.18rem); the header search (pill, canvas fill, 1px line border, 46px, a round volt submit button; on focus it turns white with a volt border and a 4px volt-soft halo); account links (0.9rem/500 in `--text-2`, "Crear cuenta" as a volt pill); two 42px round icon links (wishlist, cart) with lime count badges ringed in white.
+- **Sub-navigation:** the mint strip (volt-soft, 44px) with the Categorías menu, shortcuts (Favoritos, plus Seguir mi pedido and Direcciones when signed in) and the note "Pago al instante y seguimiento de cada envío". The awning hem hangs below it.
+- **Phones (≤900px):** the search takes its own row, the account links fold behind a 42px menu toggle into a column, the note hides.
+
+### Category menu
+A native `<details>` (app.js closes it on an outside click). The panel is white, up to 320px wide, 14px corners, a line border and `--lift-lg`. It lists "Ver todos los productos" first (600, ruled below), then each category with its product count right-aligned in tabular figures (the current one in volt-soft with volt-deep text), then "Ver todas las categorías" (600, volt-deep, ruled above). Items are 10px 12px with 8px corners and turn volt-soft on hover.
+
+### Hero search
+White, 2px ink border, 16px corners, 6px inner padding: a 46px field at 1.05rem ("¿Qué necesitas hoy?") and an ink-filled "Buscar" button. Focus adds a 4px `signal-soft` halo. The category index repeats it with 14px corners and a 44px field.
+
+### Product card
+- **Corner Style:** 14px, white, a 1px `line` border, contents clipped.
+- **Media:** a square `paper-2` well above a 1px line, the photo contained with a 14px inset; a heart button top-right on a 92% white disc (rose when saved). Without a photo, a drawn bag in `line-2`.
+- **Body** (14px 16px 16px, 6px gaps): the price in Bricolage, the name in two clamped lines (its link covers the whole card), the stock line ("49 en bodega" in `--text-2`, or "Agotado" in rose at 600), then a full-width soft "Añadir al carrito" button (34px; 44px under 760px). An inactive or sold-out product shows the same button disabled ("No disponible", "Agotado").
+- **Hover:** `--lift`, a `line-2` border, and the photo scales to 1.04 over 0.3s.
+
+### Count chip and category row
+- **Count chip:** a lime pill (2px 9px, ink text, Figtree 700 at 0.8rem) reading "N productos", beside each category name on the home and in each category row. The catalog's category list uses a compact one (0 7px, 0.78rem, tabular) pushed right.
+- **Category row** ("Todas las categorías"): a 64px white row with 14px corners and a line border: the name in Bricolage 800 at width 85, the count chip, a drawn volt-deep chevron. Hover turns the border volt. A search field above filters the list by name.
+
+### Catalog category list
+On desktop a 240px white panel (14px corners, line border, 16px 10px), sticky under the header: the title "Categorías: <current>" in Bricolage 600 at 0.95rem, then "Todas", the first 12 categories with compact count chips, and "Ver las N categorías". Links are 9px 10px with 8px corners, 0.92rem in `--text-2`; hover fills `paper-2`; the current one fills volt-soft with volt-deep text at 600. At 900px and below the same element is a closed `<details>` above the grid, with a 44px summary naming the current category and a drawn chevron; `static/js/modules/catalog-filter.js` opens it on wide screens.
+
+### Example order card (signature)
+"Así va un pedido", labelled "Ejemplo" in a volt-soft tag, floats beside the hero copy on 94% white with 22px corners and the flow shadow. Under the head runs a five-segment track (6px pills, 5px apart). The five steps share one grid cell and play in a CSS-only 14s loop, 2.8s each: a step enters from 14px below at 0.98 scale, holds, and leaves 6px upward; its badge pops in (0.5, then 1.12, then 1). The segments fill as the order advances: action green for the cart and the payment, sky for preparation, violet for shipment, action green for delivery.
+1. **Agregas al carrito:** a real in-stock product's photo (76px, 16px corners), name, price and units in stock, and a 44px volt add tile.
+2. **Pagas:** the total on a canvas tile (Bricolage 800, 1.6rem, "Total · Tarjeta") and a lime "Pago aprobado" chip with a drawn check.
+3. **Preparamos:** an example order code, a 36px product thumbnail and a sky "En preparación" chip.
+4. **Va en camino:** a tracking number ("Guía"), "Enviado" in violet, and a 32px violet truck that rides a violet-soft road.
+5. **Te llega:** a 60px volt circle with a check and "Entregado".
+
+Each step ends with a caption: the numbered step in bold, then one plain line. Under reduced motion the track hides and the five steps read as a static list, in order.
+
+### Floating photos
+Up to three real product photos taken from the shelves below, in 96, 76 and 68px tiles with 20px corners and a 4px white frame, at 0.85, 0.7 and 0.6 opacity, tilted between -8° and 9°, drifting 8-12px over 6, 7 and 8s. They are ambient: `aria-hidden`, empty `alt`, no link, no caption. Under reduced motion they stand still.
+
+### Pages not yet restyled
+Cart, checkout, account and order detail still use the earlier "fresh market" styling (`sections.css`, `cart-checkout.css`, `account.css`, `auth.css`) on the same tokens, for example stock pills in leaf, amber and rose and checkout steps numbered in volt circles. This is current state, not a pattern for new work: new storefront screens follow the home and catalog above.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -436,6 +717,13 @@ References in use: stock vs reorder level, time since the last status change ("E
 - **Do** keep sheets square with a 1px g3 border, and controls at 6px (4px for small pieces, 3px for chips).
 - **Do** grow every panel control to 44px under 700px.
 - **Do** scope panel styling under `.panel-app` in `static/css/panel/`, loaded after the shared components.
+- **Do** keep the scalloped awning hem under the storefront header and the canvas stripes behind the home hero.
+- **Do** open the home with the H1 and put the product count in bold at the start of the lead.
+- **Do** show only categories that have products, most products first, and on the home only products in stock.
+- **Do** use real product photos only: on cards, in the example order, in the floating hero tiles.
+- **Do** keep each order state in its status hue wherever the order flow is shown: sky for preparing, violet for shipped.
+- **Do** give every storefront animation a reduced-motion state that still shows its content.
+- **Do** count with lime pills and ink text.
 
 ### Don't:
 - **Don't** float metric cards separated by air above one generic table.
@@ -446,4 +734,9 @@ References in use: stock vs reorder level, time since the last status change ("E
 - **Don't** type arrows or triangles as glyphs; draw them with `clip-path`.
 - **Don't** let a ledger scroll the page sideways on a phone.
 - **Don't** bring the storefront's Bricolage Grotesque, Figtree, 14px and 22px corners or lift shadows into the panel.
-- **Don't** reuse the rejected "mercado campesino" trial (slate green, kraft-paper tags, scalable section index, animated hero).
+- **Don't** reuse the rejected "mercado campesino" trial (slate green, kraft-paper tags, scalable section index, its animated hero). The home's example-order loop and drifting photos are the motion the user asked for later.
+- **Don't** put an eyebrow, kicker or pill above a storefront H1.
+- **Don't** put a banner carousel or a wall of category icons on the home, or invent delivery times, reviews or best sellers.
+- **Don't** add a second search field to the home; the hero's search replaces the header's there.
+- **Don't** fill a card, a section or the primary action with lime.
+- **Don't** extend the earlier "fresh market" styling of the cart, checkout, account and order pages to new screens.

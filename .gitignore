@@ -19,7 +19,7 @@ wheels/
 front-end/.impeccable/mocks/
 front-end/.impeccable/review/
 front-end/.impeccable/build/
-front-end/.impeccable/decision-payload.json
+front-end/.impeccable/decision-payload*.json
 
 # Testing / coverage
 .pytest_cache/

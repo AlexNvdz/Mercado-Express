@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T05:18:09+00:00",
+  "generatedAt": "2026-10-23T10:09:19+00:00",
   "title": "Design System: MercadoExpress",
   "extensions": {
     "colorMeta": {
@@ -468,6 +468,21 @@
           "#e6efe6",
           "#f7faf6"
         ]
+      },
+      "canvas-stripe": {
+        "role": "neutral",
+        "displayName": "Market Canvas Stripe",
+        "canonical": "#e9f4ea",
+        "tonalRamp": [
+          "#17382a",
+          "#2f4f3f",
+          "#4b6858",
+          "#6c8677",
+          "#8ea996",
+          "#b5cbb9",
+          "#e6efe6",
+          "#f7faf6"
+        ]
       }
     },
     "typographyMeta": {
@@ -502,6 +517,42 @@
       "variation": {
         "displayName": "Variation",
         "purpose": "The signed figure of a variation marker."
+      },
+      "store-hero": {
+        "displayName": "Storefront Hero",
+        "purpose": "The home's H1 only; Bricolage 800 at width 80, at most 11ch."
+      },
+      "store-title": {
+        "displayName": "Storefront Page Title",
+        "purpose": "\"Todas las categor\u00edas\"; Bricolage 800 at width 82."
+      },
+      "store-heading": {
+        "displayName": "Storefront Heading",
+        "purpose": "Default H1 on storefront pages without their own title style."
+      },
+      "store-shelf": {
+        "displayName": "Category Name",
+        "purpose": "Home shelf heads and category rows; Bricolage 800 at width 85."
+      },
+      "store-price": {
+        "displayName": "Price",
+        "purpose": "Product card prices, at normal width."
+      },
+      "store-lead": {
+        "displayName": "Lead",
+        "purpose": "Hero lead, opening with the product count in bold ink."
+      },
+      "store-body": {
+        "displayName": "Storefront Body",
+        "purpose": "Running text, 15px Figtree."
+      },
+      "store-chip": {
+        "displayName": "Count Chip",
+        "purpose": "\"N productos\" on lime pills."
+      },
+      "store-button": {
+        "displayName": "Storefront Button",
+        "purpose": "Labels of the shared storefront buttons."
       }
     },
     "shadows": [
@@ -513,17 +564,32 @@
       {
         "name": "lift",
         "value": "0 12px 28px -16px rgba(23, 56, 42, 0.28)",
-        "purpose": "Storefront only: product cards on hover."
+        "purpose": "Storefront only: a product card on hover, with a line-2 border."
       },
       {
         "name": "lift-lg",
         "value": "0 26px 50px -24px rgba(23, 56, 42, 0.38)",
-        "purpose": "Storefront menus and hero ticket. Also reaches the shared confirm dialog and toasts in the panel, which are not yet restyled; not a panel precedent."
+        "purpose": "Storefront only: the open category menu, the shared confirmation dialog and toasts. The panel strips it; not a panel precedent."
       },
       {
         "name": "focus-ring",
         "value": "0 0 0 3px var(--volt-soft)",
         "purpose": "Focused text fields, with a volt border."
+      },
+      {
+        "name": "flow-card",
+        "value": "0 24px 50px -28px rgba(23, 56, 42, 0.55)",
+        "purpose": "The home's example-order card, on 94% white; floats at rest."
+      },
+      {
+        "name": "floating-photo",
+        "value": "0 16px 32px -16px rgba(23, 56, 42, 0.45)",
+        "purpose": "The hero's drifting product photos, inside a 4px white frame."
+      },
+      {
+        "name": "search-halo",
+        "value": "0 0 0 4px var(--signal-soft)",
+        "purpose": "Focus on the hero search; the header search uses var(--volt-soft) with a volt border."
       }
     ],
     "motion": [
@@ -545,7 +611,32 @@
       {
         "name": "reduced-motion",
         "value": "0.001ms",
-        "purpose": "prefers-reduced-motion collapses every animation and transition."
+        "purpose": "prefers-reduced-motion collapses every animation and transition. The home's example order becomes a static list of its five states and the floating photos stand still."
+      },
+      {
+        "name": "card-hover",
+        "value": "0.18s ease",
+        "purpose": "Product card shadow and border on hover; its photo scales to 1.04 over 0.3s ease."
+      },
+      {
+        "name": "hero-float",
+        "value": "6s / 7s / 8s ease-in-out infinite",
+        "purpose": "Floating photos rise 8-12px and swing 2deg, each on its own period."
+      },
+      {
+        "name": "flow-loop",
+        "value": "14s infinite, 2.8s per step",
+        "purpose": "Example order: a step enters from 14px below at 0.98 scale (ease-out), holds, leaves 6px up; the track fills segment by segment."
+      },
+      {
+        "name": "flow-pop",
+        "value": "scale 0.5 -> 1.12 -> 1",
+        "purpose": "Each step's badge pops in as the step appears."
+      },
+      {
+        "name": "flow-truck",
+        "value": "ease-in-out, about 2s of the step",
+        "purpose": "The truck rides the violet road from left to right in the shipping step."
       }
     ],
     "breakpoints": [
@@ -564,6 +655,14 @@
       {
         "name": "sheets-stack",
         "value": "1100px"
+      },
+      {
+        "name": "store-phone",
+        "value": "760px"
+      },
+      {
+        "name": "store-header",
+        "value": "900px"
       }
     ]
   },
@@ -605,7 +704,7 @@
       "kind": "nav",
       "refersTo": "rail",
       "description": "The solid forest rail: condensed-caps group names, links with live counts, lime square on the current link.",
-      "html": "<nav class=\"ds-rail\" aria-label=\"Operación\"><div class=\"ds-rail-group\">Operación</div><a class=\"ds-rail-link\" href=\"#\" aria-current=\"page\"><span class=\"ds-rail-label\">Pedidos</span><span class=\"ds-rail-count\">98.483</span></a><a class=\"ds-rail-link\" href=\"#\"><span class=\"ds-rail-label\">Clientes</span><span class=\"ds-rail-count\">96.104</span></a><a class=\"ds-rail-link\" href=\"#\"><span class=\"ds-rail-label\">Inventario</span><span class=\"ds-rail-count ds-rail-count-alert\">1 bajo</span></a></nav>",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Operaci\u00f3n\"><div class=\"ds-rail-group\">Operaci\u00f3n</div><a class=\"ds-rail-link\" href=\"#\" aria-current=\"page\"><span class=\"ds-rail-label\">Pedidos</span><span class=\"ds-rail-count\">98.483</span></a><a class=\"ds-rail-link\" href=\"#\"><span class=\"ds-rail-label\">Clientes</span><span class=\"ds-rail-count\">96.104</span></a><a class=\"ds-rail-link\" href=\"#\"><span class=\"ds-rail-label\">Inventario</span><span class=\"ds-rail-count ds-rail-count-alert\">1 bajo</span></a></nav>",
       "css": ".ds-rail { display: flex; flex-direction: column; width: 232px; padding: 8px 0; background: var(--g10, #17382a); color: var(--g3, #d3e2d5); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; font-variant-numeric: tabular-nums; } .ds-rail-group { margin: 8px 20px 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; color: var(--g5, #8ea996); } .ds-rail-link { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 20px; color: var(--g3, #d3e2d5); font-weight: 500; text-decoration: none; } .ds-rail-link:hover { background: var(--g9, #21503b); color: #fff; } .ds-rail-link:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-rail-link[aria-current='page'] { background: var(--g9, #21503b); color: #fff; font-weight: 650; } .ds-rail-link[aria-current='page'] .ds-rail-label::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 2px; background: var(--signal, #c8e46e); vertical-align: 1px; } .ds-rail-count { font-size: 12px; color: var(--g5, #8ea996); } .ds-rail-link[aria-current='page'] .ds-rail-count { color: var(--g3, #d3e2d5); } .ds-rail-count-alert { color: #f2b8c0; }"
     },
     {
@@ -621,7 +720,7 @@
       "kind": "card",
       "refersTo": "figure",
       "description": "Key figures joined by hairlines in one white strip, each with its variation against a reference.",
-      "html": "<section class=\"ds-figures\" aria-label=\"Cifras principales\"><div class=\"ds-figure\"><span class=\"ds-figure-label\">Ingresos netos</span><strong class=\"ds-figure-value\">$16.093.585</strong><span class=\"ds-figure-note\">Brutos $16.287.179 · <span class=\"ds-var ds-var-down\">Reembolsos $193.594</span></span></div><div class=\"ds-figure\"><span class=\"ds-figure-label\">Por preparar</span><strong class=\"ds-figure-value\">317</strong><span class=\"ds-figure-note\"><span class=\"ds-var ds-var-warn\">12 sin pagar detrás</span></span></div><div class=\"ds-figure\"><span class=\"ds-figure-label\">Disponible</span><strong class=\"ds-figure-value\">46</strong><span class=\"ds-figure-note\"><span class=\"ds-var ds-var-up\">+41 sobre reorden</span></span></div></section>",
+      "html": "<section class=\"ds-figures\" aria-label=\"Cifras principales\"><div class=\"ds-figure\"><span class=\"ds-figure-label\">Ingresos netos</span><strong class=\"ds-figure-value\">$16.093.585</strong><span class=\"ds-figure-note\">Brutos $16.287.179 \u00b7 <span class=\"ds-var ds-var-down\">Reembolsos $193.594</span></span></div><div class=\"ds-figure\"><span class=\"ds-figure-label\">Por preparar</span><strong class=\"ds-figure-value\">317</strong><span class=\"ds-figure-note\"><span class=\"ds-var ds-var-warn\">12 sin pagar detr\u00e1s</span></span></div><div class=\"ds-figure\"><span class=\"ds-figure-label\">Disponible</span><strong class=\"ds-figure-value\">46</strong><span class=\"ds-figure-note\"><span class=\"ds-var ds-var-up\">+41 sobre reorden</span></span></div></section>",
       "css": ".ds-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); background: #fff; border: 1px solid var(--g3, #d3e2d5); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--g10, #17382a); } .ds-figure { min-width: 0; padding: 14px 18px; border-left: 1px solid var(--g3, #d3e2d5); } .ds-figure:first-child { border-left: 0; } .ds-figure-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; color: var(--g7, #4b6858); } .ds-figure-value { display: block; margin: 6px 0 4px; font-size: 1.85rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; } .ds-figure-note { display: block; font-size: 12.5px; color: var(--g7, #4b6858); } .ds-var { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 650; white-space: nowrap; } .ds-var::before { content: ''; width: 8px; height: 7px; background: currentColor; } .ds-var-up { color: var(--volt, #2e7d50); } .ds-var-up::before, .ds-var-warn::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); } .ds-var-down { color: var(--rose, #c8364a); } .ds-var-down::before { clip-path: polygon(0 0, 100% 0, 50% 100%); } .ds-var-warn { color: var(--amber, #9a6200); }"
     },
     {
@@ -629,7 +728,7 @@
       "kind": "custom",
       "refersTo": "ledger-band",
       "description": "The signature bulletin table: caps column heads, a forest group band with lime count, code-first rows and a right-aligned variation column.",
-      "html": "<section class=\"ds-sheet\"><div class=\"ds-sheet-head\"><h2>Pedidos por atender</h2><a href=\"#\">Ver los 98.483</a></div><table class=\"ds-ledger\"><thead><tr><th>Pedido</th><th>Ciudad</th><th class=\"ds-num\">Total</th><th class=\"ds-vcol\">Espera</th></tr></thead><tbody><tr class=\"ds-band\"><td colspan=\"4\">Pagados, por preparar<b>317</b><a href=\"#\">Ver todos</a></td></tr><tr><td><a class=\"ds-code\" href=\"#\">ORD-4468555271</a></td><td>Medellín</td><td class=\"ds-num\">$129.900</td><td class=\"ds-vcol\"><span class=\"ds-var\">23 h</span></td></tr><tr><td><a class=\"ds-code\" href=\"#\">ORD-B85FAD1D49</a></td><td>Bogotá</td><td class=\"ds-num\">$19.490</td><td class=\"ds-vcol\"><span class=\"ds-var ds-var-warn\">4 d</span></td></tr></tbody></table></section>",
+      "html": "<section class=\"ds-sheet\"><div class=\"ds-sheet-head\"><h2>Pedidos por atender</h2><a href=\"#\">Ver los 98.483</a></div><table class=\"ds-ledger\"><thead><tr><th>Pedido</th><th>Ciudad</th><th class=\"ds-num\">Total</th><th class=\"ds-vcol\">Espera</th></tr></thead><tbody><tr class=\"ds-band\"><td colspan=\"4\">Pagados, por preparar<b>317</b><a href=\"#\">Ver todos</a></td></tr><tr><td><a class=\"ds-code\" href=\"#\">ORD-4468555271</a></td><td>Medell\u00edn</td><td class=\"ds-num\">$129.900</td><td class=\"ds-vcol\"><span class=\"ds-var\">23 h</span></td></tr><tr><td><a class=\"ds-code\" href=\"#\">ORD-B85FAD1D49</a></td><td>Bogot\u00e1</td><td class=\"ds-num\">$19.490</td><td class=\"ds-vcol\"><span class=\"ds-var ds-var-warn\">4 d</span></td></tr></tbody></table></section>",
       "css": ".ds-sheet { background: #fff; border: 1px solid var(--g3, #d3e2d5); font-family: Archivo, 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.45; font-variant-numeric: tabular-nums; color: var(--g10, #17382a); } .ds-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 16px; border-bottom: 1px solid var(--g3, #d3e2d5); } .ds-sheet-head h2 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; } .ds-sheet-head a { font-size: 13px; font-weight: 600; color: var(--volt-deep, #22623e); text-decoration: none; } .ds-ledger { width: 100%; border-collapse: collapse; } .ds-ledger th { padding: 8px 12px; border-bottom: 1px solid var(--g3, #d3e2d5); text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; color: var(--g7, #4b6858); } .ds-ledger td { padding: 8px 12px; border-bottom: 1px solid var(--g2, #e6efe6); } .ds-ledger tbody tr:hover td { background: var(--g0, #f7faf6); } .ds-ledger .ds-num { text-align: right; } .ds-ledger .ds-vcol { width: 1%; text-align: right; white-space: nowrap; border-left: 1px solid var(--g2, #e6efe6); } .ds-code { font-weight: 650; color: var(--g10, #17382a); text-decoration: none; } .ds-code:hover { color: var(--volt-deep, #22623e); } .ds-code:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-ledger tr.ds-band td, .ds-ledger tr.ds-band:hover td { padding: 6px 12px; background: var(--g10, #17382a); color: #fff; border: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-variation-settings: 'wdth' 72; letter-spacing: 0.12em; } .ds-band b { margin-left: 8px; color: var(--signal, #c8e46e); } .ds-band a { float: right; color: var(--signal, #c8e46e); text-transform: none; letter-spacing: 0; font-variation-settings: normal; text-decoration: none; } .ds-var { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 650; color: var(--g7, #4b6858); } .ds-var-warn { color: var(--amber, #9a6200); } .ds-var-warn::before { content: ''; width: 8px; height: 7px; background: currentColor; clip-path: polygon(50% 0, 100% 100%, 0 100%); }"
     },
     {
@@ -647,17 +746,60 @@
       "description": "Panel text field and label: sage border, 6px corners, green border and mint ring on focus.",
       "html": "<div class=\"ds-field\"><label for=\"ds-carrier\">Transportadora</label><input id=\"ds-carrier\" type=\"text\" placeholder=\"Servientrega\"></div>",
       "css": ".ds-field { display: flex; flex-direction: column; gap: 5px; font-family: Archivo, 'Segoe UI', system-ui, sans-serif; } .ds-field label { font-size: 13px; font-weight: 600; color: var(--g8, #2f4f3f); } .ds-field input { min-height: 38px; padding: 6px 10px; border: 1px solid var(--g4, #b5cbb9); border-radius: 6px; background: #fff; color: var(--g10, #17382a); font: inherit; font-size: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease; } .ds-field input:focus { outline: none; border-color: var(--volt, #2e7d50); box-shadow: 0 0 0 3px var(--volt-soft, #e2f1e5); }"
+    },
+    {
+      "name": "Storefront Header with Awning",
+      "kind": "nav",
+      "refersTo": "subnav",
+      "description": "White top row with the pill search, the mint sub-navigation strip, and the scalloped volt and lime awning hem drawn in CSS.",
+      "html": "<header class=\"ds-sf-head\"><div class=\"ds-sf-row\"><a class=\"ds-sf-brand\" href=\"#\"><span class=\"ds-sf-mark\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/><path d=\"M9 7V6a3 3 0 0 1 6 0v1\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></span>MercadoExpress</a><form class=\"ds-sf-search\" role=\"search\" onsubmit=\"return false\"><input type=\"search\" placeholder=\"Buscar arroz, leche, detergente...\" aria-label=\"Buscar productos\"><button type=\"submit\" aria-label=\"Buscar\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"m20 20-3.5-3.5\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></button></form></div><nav class=\"ds-sf-sub\" aria-label=\"Tienda\"><a class=\"ds-sf-sublink\" href=\"#\">Categor\u00edas</a><a class=\"ds-sf-sublink\" href=\"#\">Favoritos</a><span class=\"ds-sf-note\">Pago al instante y seguimiento de cada env\u00edo</span></nav></header>",
+      "css": ".ds-sf-head { position: relative; background: var(--paper, #fff); font-family: Figtree, 'Segoe UI', system-ui, sans-serif; color: var(--ink, #17382a); padding-bottom: 9px; } .ds-sf-row { display: flex; align-items: center; gap: 12px 20px; padding: 12px 16px; flex-wrap: wrap; } .ds-sf-brand { display: inline-flex; align-items: center; gap: 10px; font-family: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif; font-weight: 700; font-size: 1.18rem; letter-spacing: -0.035em; color: var(--ink, #17382a); text-decoration: none; } .ds-sf-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px 11px 11px 4px; background: var(--volt, #2e7d50); color: var(--signal, #c8e46e); } .ds-sf-search { flex: 1 1 240px; display: flex; height: 46px; background: var(--canvas, #f3f8f2); border: 1px solid var(--line, #dae8dc); border-radius: 999px; overflow: hidden; transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease; } .ds-sf-search:focus-within { background: var(--paper, #fff); border-color: var(--volt, #2e7d50); box-shadow: 0 0 0 4px var(--volt-soft, #e2f1e5); } .ds-sf-search input { flex: 1; min-width: 0; border: 0; padding: 0 20px; font: inherit; font-size: 0.95rem; background: transparent; color: var(--ink, #17382a); outline: none; } .ds-sf-search button { display: grid; place-items: center; width: 54px; margin: 4px; border: 0; border-radius: 999px; background: var(--volt, #2e7d50); color: #fff; cursor: pointer; } .ds-sf-search button:hover { background: var(--volt-deep, #22623e); } .ds-sf-search button:focus-visible { outline: 2px solid var(--volt-deep, #22623e); outline-offset: 2px; } .ds-sf-sub { position: relative; display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 16px; background: var(--volt-soft, #e2f1e5); border-top: 1px solid var(--line, #dae8dc); } .ds-sf-sub::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 9px; background: repeating-linear-gradient(90deg, var(--volt, #2e7d50) 0 24px, var(--signal, #c8e46e) 24px 48px); -webkit-mask: radial-gradient(12px 9px at 12px 0, #000 98%, transparent) 0 0 / 24px 9px repeat-x; mask: radial-gradient(12px 9px at 12px 0, #000 98%, transparent) 0 0 / 24px 9px repeat-x; } .ds-sf-sublink { padding: 7px 12px; border-radius: 8px; font-size: 0.88rem; font-weight: 500; color: var(--ink-2, #21503b); text-decoration: none; } .ds-sf-sublink:hover { background: rgba(255, 255, 255, 0.75); color: var(--ink, #17382a); } .ds-sf-sublink:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-sf-note { margin-left: auto; font-size: 0.82rem; color: var(--text-2, #4b6858); }"
+    },
+    {
+      "name": "Hero Search",
+      "kind": "input",
+      "refersTo": "hero-search",
+      "description": "The home's only search field: white, 2px ink border, 16px corners, ink button, lime-wash focus halo.",
+      "html": "<form class=\"ds-hero-search\" role=\"search\" onsubmit=\"return false\"><input type=\"search\" placeholder=\"\u00bfQu\u00e9 necesitas hoy?\" aria-label=\"Buscar productos\"><button type=\"submit\">Buscar</button></form>",
+      "css": ".ds-hero-search { display: flex; gap: 8px; max-width: 560px; padding: 6px; background: var(--paper, #fff); border: 2px solid var(--ink, #17382a); border-radius: 16px; font-family: Figtree, 'Segoe UI', system-ui, sans-serif; transition: box-shadow 0.15s ease; } .ds-hero-search:focus-within { box-shadow: 0 0 0 4px var(--signal-soft, #f2f9dc); } .ds-hero-search input { flex: 1; min-width: 0; min-height: 46px; padding: 0 12px; border: 0; background: transparent; font: inherit; font-size: 1.05rem; color: var(--ink, #17382a); outline: none; } .ds-hero-search button { min-height: 46px; padding: 0 18px; border: 1px solid var(--ink, #17382a); border-radius: 8px; background: var(--ink, #17382a); color: #fff; font: inherit; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: background-color 0.15s ease; } .ds-hero-search button:hover { background: var(--ink-2, #21503b); } .ds-hero-search button:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-hero-search button:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Product Card",
+      "kind": "card",
+      "refersTo": "product-card",
+      "description": "Square photo well, price in Bricolage, two-line name, the real stock line and a soft add-to-cart button; lifts on hover.",
+      "html": "<article class=\"ds-pcard\"><div class=\"ds-pcard-media\"><svg width=\"56\" height=\"56\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z\" stroke=\"currentColor\" stroke-width=\"1.3\"/><path d=\"M9 7V6a3 3 0 0 1 6 0v1\" stroke=\"currentColor\" stroke-width=\"1.3\"/></svg></div><div class=\"ds-pcard-body\"><div class=\"ds-pcard-price\">$12.900</div><div class=\"ds-pcard-name\"><a href=\"#\">Aceite vegetal 1L</a></div><div class=\"ds-pcard-stock\">46 en bodega</div><button type=\"button\" class=\"ds-pcard-cta\">A\u00f1adir al carrito</button></div></article>",
+      "css": ".ds-pcard { position: relative; display: flex; flex-direction: column; width: 220px; background: var(--paper, #fff); border: 1px solid var(--line, #dae8dc); border-radius: 14px; overflow: hidden; font-family: Figtree, 'Segoe UI', system-ui, sans-serif; transition: box-shadow 0.18s ease, border-color 0.18s ease; } .ds-pcard:hover { border-color: var(--line-2, #c2d7c6); box-shadow: var(--lift, 0 12px 28px -16px rgba(23, 56, 42, 0.28)); } .ds-pcard-media { aspect-ratio: 1 / 1; display: grid; place-items: center; background: var(--paper-2, #f6faf5); border-bottom: 1px solid var(--line, #dae8dc); color: var(--line-2, #c2d7c6); } .ds-pcard-media svg { transition: transform 0.3s ease; } .ds-pcard:hover .ds-pcard-media svg { transform: scale(1.04); } .ds-pcard-body { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; } .ds-pcard-price { font-family: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif; font-weight: 600; font-size: 1.35rem; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink, #17382a); } .ds-pcard-name { font-size: 0.92rem; line-height: 1.35; color: var(--text-2, #4b6858); min-height: 2.7em; } .ds-pcard-name a { color: inherit; text-decoration: none; } .ds-pcard-name a::after { content: ''; position: absolute; inset: 0; z-index: 1; } .ds-pcard-name a:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-pcard-stock { font-size: 0.8rem; color: var(--text-2, #4b6858); } .ds-pcard-cta { position: relative; z-index: 2; margin-top: 8px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--volt-soft, #e2f1e5); color: var(--volt-deep, #22623e); font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: background-color 0.15s ease; } .ds-pcard-cta:hover { background: #d1e8d6; } .ds-pcard-cta:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-pcard-cta:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Count Chip and Category Row",
+      "kind": "chip",
+      "refersTo": "count-chip",
+      "description": "Lime pill counting a category's products, shown in a 64px category row with a narrowed Bricolage name and a drawn chevron.",
+      "html": "<a class=\"ds-cat-row\" href=\"#\"><span class=\"ds-cat-name\">Abarrotes</span><span class=\"ds-count-chip\">2 productos</span><span class=\"ds-cat-go\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></span></a>",
+      "css": ".ds-cat-row { display: flex; align-items: center; gap: 12px; min-height: 64px; max-width: 520px; padding: 10px 16px; background: var(--paper, #fff); border: 1px solid var(--line, #dae8dc); border-radius: 14px; color: var(--ink, #17382a); text-decoration: none; font-family: Figtree, 'Segoe UI', system-ui, sans-serif; transition: border-color 0.15s ease; } .ds-cat-row:hover { border-color: var(--volt, #2e7d50); } .ds-cat-row:focus-visible { outline: 2px solid var(--volt, #2e7d50); outline-offset: 2px; } .ds-cat-name { flex: 1; min-width: 0; font-family: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif; font-variation-settings: 'wdth' 85; font-weight: 800; font-size: 1.12rem; letter-spacing: -0.025em; } .ds-count-chip { padding: 2px 9px; border-radius: 999px; background: var(--signal, #c8e46e); color: var(--ink, #17382a); font-size: 0.8rem; font-weight: 700; white-space: nowrap; } .ds-cat-go { display: grid; color: var(--volt-deep, #22623e); }"
+    },
+    {
+      "name": "Example Order Card",
+      "kind": "custom",
+      "refersTo": "flow-card",
+      "description": "Signature: \"As\u00ed va un pedido\" plays an example order through its five real states in a CSS-only 14s loop, each state in its hue; a static list under reduced motion.",
+      "html": "<section class=\"ds-flow\" aria-label=\"As\u00ed va un pedido\"><div class=\"ds-flow-head\"><strong class=\"ds-flow-title\">As\u00ed va un pedido</strong><span class=\"ds-flow-tag\">Ejemplo</span></div><div class=\"ds-flow-track\" aria-hidden=\"true\"><span></span><span></span><span></span><span></span><span></span></div><ol class=\"ds-flow-steps\"><li class=\"ds-flow-step\"><div class=\"ds-flow-scene\"><span class=\"ds-flow-thumb\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/><path d=\"M9 7V6a3 3 0 0 1 6 0v1\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></span><span class=\"ds-flow-grow\"><strong>Aceite vegetal 1L</strong><span class=\"ds-flow-muted\">$12.900 \u00b7 46 en bodega</span></span><span class=\"ds-flow-badge ds-flow-add\" aria-hidden=\"true\">+</span></div><p class=\"ds-flow-cap\"><strong>1. Agregas al carrito.</strong> Las unidades salen del stock real.</p></li><li class=\"ds-flow-step\"><div class=\"ds-flow-scene\"><span class=\"ds-flow-grow ds-flow-total\"><span class=\"ds-flow-muted\">Total \u00b7 Tarjeta</span><strong>$12.900</strong></span><span class=\"ds-flow-badge ds-flow-paid\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Pago aprobado</span></div><p class=\"ds-flow-cap\"><strong>2. Pagas.</strong> Pedido y pago se guardan juntos, al instante.</p></li><li class=\"ds-flow-step\"><div class=\"ds-flow-scene\"><span class=\"ds-flow-grow\"><span class=\"ds-flow-muted\">Pedido</span><strong>ORD-7F3A21C9</strong></span><span class=\"ds-flow-badge ds-flow-prep\">En preparaci\u00f3n</span></div><p class=\"ds-flow-cap\"><strong>3. Preparamos.</strong> Empacamos tu pedido.</p></li><li class=\"ds-flow-step\"><div class=\"ds-flow-scene ds-flow-col\"><div class=\"ds-flow-ship\"><span>Gu\u00eda <strong>SV-48120</strong></span><span class=\"ds-flow-shipped\">Enviado</span></div><div class=\"ds-flow-road\"><span class=\"ds-flow-truck\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M3 7h11v8H3zM14 10h4l3 3v2h-7z\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linejoin=\"round\"/></svg></span></div></div><p class=\"ds-flow-cap\"><strong>4. Va en camino.</strong> Con transportadora y n\u00famero de gu\u00eda.</p></li><li class=\"ds-flow-step\"><div class=\"ds-flow-scene\"><span class=\"ds-flow-badge ds-flow-done\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></span><span class=\"ds-flow-grow\"><strong>Entregado</strong><span class=\"ds-flow-muted\">Queda en Mis pedidos, con su estado y su gu\u00eda.</span></span></div><p class=\"ds-flow-cap\"><strong>5. Te llega.</strong> Cada cambio de estado queda registrado.</p></li></ol></section>",
+      "css": ".ds-flow { max-width: 440px; padding: 18px; background: rgba(255, 255, 255, 0.94); border-radius: 22px; box-shadow: 0 24px 50px -28px rgba(23, 56, 42, 0.55); font-family: Figtree, 'Segoe UI', system-ui, sans-serif; font-size: 15px; color: var(--ink, #17382a); } .ds-flow-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; } .ds-flow-title { font-family: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; } .ds-flow-tag { padding: 2px 9px; border-radius: 999px; background: var(--volt-soft, #e2f1e5); font-size: 0.75rem; font-weight: 600; color: var(--text-2, #4b6858); } .ds-flow-track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 14px; } .ds-flow-track span { height: 6px; border-radius: 999px; background: var(--volt-soft, #e2f1e5); } .ds-flow-track span:nth-child(1) { background: var(--volt, #2e7d50); } .ds-flow-track span:nth-child(2) { animation: ds-seg2 14s linear infinite; } .ds-flow-track span:nth-child(3) { animation: ds-seg3 14s linear infinite; } .ds-flow-track span:nth-child(4) { animation: ds-seg4 14s linear infinite; } .ds-flow-track span:nth-child(5) { animation: ds-seg5 14s linear infinite; } @keyframes ds-seg2 { 0%, 19.9% { background: var(--volt-soft, #e2f1e5); } 20%, 100% { background: var(--volt, #2e7d50); } } @keyframes ds-seg3 { 0%, 39.9% { background: var(--volt-soft, #e2f1e5); } 40%, 100% { background: var(--sky, #2a6a8f); } } @keyframes ds-seg4 { 0%, 59.9% { background: var(--volt-soft, #e2f1e5); } 60%, 100% { background: var(--violet, #5d559c); } } @keyframes ds-seg5 { 0%, 79.9% { background: var(--volt-soft, #e2f1e5); } 80%, 100% { background: var(--volt, #2e7d50); } } .ds-flow-steps { list-style: none; margin: 0; padding: 0; display: grid; } .ds-flow-step { grid-area: 1 / 1; opacity: 0; animation: ds-step 14s ease-out infinite both; } .ds-flow-step:nth-child(2) { animation-delay: 2.8s; } .ds-flow-step:nth-child(3) { animation-delay: 5.6s; } .ds-flow-step:nth-child(4) { animation-delay: 8.4s; } .ds-flow-step:nth-child(5) { animation-delay: 11.2s; } @keyframes ds-step { 0% { opacity: 0; transform: translateY(14px) scale(0.98); } 3%, 17% { opacity: 1; transform: none; } 20%, 100% { opacity: 0; transform: translateY(-6px); } } .ds-flow-scene { display: flex; align-items: center; gap: 14px; min-height: 104px; animation-delay: inherit; } .ds-flow-col { flex-direction: column; align-items: stretch; justify-content: center; gap: 12px; } .ds-flow-grow { flex: 1; min-width: 0; display: flex; flex-direction: column; } .ds-flow-muted { font-size: 0.85rem; color: var(--text-2, #4b6858); } .ds-flow-thumb { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 16px; background: var(--paper-2, #f6faf5); color: var(--line-2, #c2d7c6); } .ds-flow-total { padding: 12px 14px; border-radius: 16px; background: var(--canvas, #f3f8f2); } .ds-flow-total strong { font-family: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif; font-size: 1.6rem; font-weight: 800; } .ds-flow-badge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; font-weight: 700; font-size: 0.88rem; animation: ds-pop 14s ease-out infinite both; animation-delay: inherit; } @keyframes ds-pop { 0%, 2% { transform: scale(0.5); opacity: 0; } 5% { transform: scale(1.12); opacity: 1; } 7%, 100% { transform: none; opacity: 1; } } .ds-flow-add { width: 44px; height: 44px; border-radius: 14px; background: var(--volt, #2e7d50); color: #fff; font-size: 1.4rem; } .ds-flow-paid { padding: 8px 13px; border-radius: 999px; background: var(--signal, #c8e46e); color: var(--ink, #17382a); } .ds-flow-prep { padding: 6px 12px; border-radius: 999px; background: var(--sky-soft, #e3f0f6); color: var(--sky, #2a6a8f); } .ds-flow-done { width: 60px; height: 60px; border-radius: 50%; background: var(--volt, #2e7d50); color: #fff; } .ds-flow-ship { display: flex; justify-content: space-between; font-size: 0.9rem; } .ds-flow-shipped { color: var(--violet, #5d559c); font-weight: 700; } .ds-flow-road { position: relative; height: 32px; border-radius: 999px; background: var(--violet-soft, #ecebf7); } .ds-flow-truck { position: absolute; top: 0; left: 0; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--violet, #5d559c); color: #fff; } .ds-flow-step:nth-child(4) .ds-flow-truck { animation: ds-truck 14s ease-in-out 8.4s infinite both; } @keyframes ds-truck { 0%, 3% { left: 0; } 17%, 100% { left: calc(100% - 32px); } } .ds-flow-cap { margin: 2px 0 0; font-size: 0.92rem; } @media (prefers-reduced-motion: reduce) { .ds-flow-track { display: none; } .ds-flow-steps { gap: 10px; } .ds-flow-step { grid-area: auto; opacity: 1; animation: none; } .ds-flow-badge, .ds-flow-truck { animation: none !important; } .ds-flow-scene { min-height: 0; } }"
     }
   ],
   "narrative": {
-    "northStar": "The Price Bulletin (Boletín de precios)",
-    "overview": "The staff panel (`/panel/` and `/catalogo/admin/`) reads like the daily wholesale price bulletin printed for a Colombian food market: white sheets ruled in 1px hairlines, rows grouped under solid forest bands, tabular figures in every column, and each key figure printed beside its variation against a reference. The density is deliberate. Staff work through tens of thousands of orders, customers and SKUs, so rows sit on 8px of padding, structural labels are small condensed caps, and nothing on the page is ornament. A forest rail on the left and a white bar holding one global search frame every page.\n\nThe colour is flat and committed. An eleven-step green ramp supplies every neutral, the action green marks what can be clicked, lime marks what is current, and rose, amber, sky, violet and leaf speak only for state. Depth comes from hairlines and solid fills, never from shadows or gradients. Sheets are square; controls take small 3-6px corners. The panel refuses the usual admin template of floating metric cards above one generic table.\n\nThe storefront keeps its earlier \"fresh market\" look on the same token file (`static/css/tokens.css`): Bricolage Grotesque for display type and prices, Figtree for 15px body text, rounder corners (`r-sm`, `r-md`, `r-lg`, `r-pill`), the soft `--lift` shadows on hover cards and menus, and the striped awning under the header as its one decorative flourish. The panel scopes its own world under the `panel-app` body class and restyles the shared components (`static/css/components/`) in `static/css/panel/`. The user rejected the \"mercado campesino\" storefront trial (slate green, kraft-paper tags, scalable section index, animated hero) on 2026-10-22; it stays out of both worlds.",
+    "northStar": "The Price Bulletin (Bolet\u00edn de precios); storefront: The Market Canvas (La lona del mercado)",
+    "overview": "The staff panel (`/panel/` and `/catalogo/admin/`) reads like the daily wholesale price bulletin printed for a Colombian food market: white sheets ruled in 1px hairlines, rows grouped under solid forest bands, tabular figures in every column, and each key figure printed beside its variation against a reference. The density is deliberate. Staff work through tens of thousands of orders, customers and SKUs, so rows sit on 8px of padding, structural labels are small condensed caps, and nothing on the page is ornament. A forest rail on the left and a white bar holding one global search frame every page.\n\nThe colour is flat and committed. An eleven-step green ramp supplies every neutral, the action green marks what can be clicked, lime marks what is current, and rose, amber, sky, violet and leaf speak only for state. Depth comes from hairlines and solid fills, never from shadows or gradients. Sheets are square; controls take small 3-6px corners. The panel refuses the usual admin template of floating metric cards above one generic table.\n\nThe panel scopes its own world under the `panel-app` body class and restyles the shared components (`static/css/components/`) in `static/css/panel/`. The storefront is a second world on the same token file (`static/css/tokens.css`).\n\nThe storefront sits under a market stall's canvas. A scalloped hem of action green and lime stripes runs under the header on every customer page, and the home hero stands on wide stripes of pale canvas. A few real product photos drift slowly over those stripes, and a light card plays an example order through its five real states, from cart to delivered. Everything below is honest stock: square white product cards that state the units in the warehouse, a lime chip counting the products of every category, and only the categories and products that exist today. Bricolage Grotesque, narrowed and heavy, sets the headings and prices; Figtree sets the text at 15px. Corners are round (8, 14 and 22px, and pills), and a soft green-tinted shadow lifts a card on hover.\n\nThe home, the product catalog and the category index carry this system, approved on 2026-10-23. Pages not yet restyled (cart, checkout, account, order detail) still wear the earlier \"fresh market\" styling on the same tokens. The user rejected the \"mercado campesino\" storefront trial (slate green, kraft-paper tags, scalable section index, its animated hero) on 2026-10-22; it stays out of both worlds. The motion the home does have, the example-order loop and the drifting photos, is what the user asked for afterwards.",
     "keyCharacteristics": [
       "Ruled sheets, not cards: a 1px g3 hairline around and between modules, g2 inside them, square corners.",
       "One green ramp (g0-g10) for every neutral; volt for actions, lime for the current item.",
       "Archivo throughout: normal width for reading, condensed caps for structure, tabular figures everywhere.",
       "Every key figure carries a signed variation against a stated reference.",
-      "The same task works on a phone: ledgers fold into label/value rows and no page scrolls sideways."
+      "The same task works on a phone: ledgers fold into label/value rows and no page scrolls sideways.",
+      "Storefront: a scalloped volt and lime awning hem under the header, and market-canvas stripes behind the home hero.",
+      "Storefront: square white product cards that state their stock, and a lime chip that counts every category.",
+      "Storefront: an example order cycles its five real states, each in its status hue, and stills to a list under reduced motion."
     ],
     "rules": [
       {
@@ -676,13 +818,23 @@
         "section": "colors"
       },
       {
+        "name": "The Lime Counts Rule",
+        "body": "In the storefront lime fills small things that count or confirm: count chips, count badges, the payment-approved chip, and half of the awning's stripes. It always carries ink text and never fills a page section, a card or the primary action, which stays action green.",
+        "section": "colors"
+      },
+      {
         "name": "The Condensed Caps Rule",
         "body": "Condensed caps label structure: column heads, group bands, figure labels, rail group names. They never set a heading, a sentence or a button, and never sit above a page title.",
         "section": "typography"
       },
       {
         "name": "The Tabular Rule",
-        "body": "The whole panel sets `tabular-nums`. Numeric columns are right-aligned so digits stack, and signed variations use a real minus sign (−), not a hyphen.",
+        "body": "The whole panel sets `tabular-nums`. Numeric columns are right-aligned so digits stack, and signed variations use a real minus sign (\u2212), not a hyphen.",
+        "section": "typography"
+      },
+      {
+        "name": "The Narrowed Heading Rule",
+        "body": "Only headings shout: the hero, page titles and category names set Bricolage at 800 on a narrowed width (80-85) with tight tracking. Prices stay at 600 and normal width, and running text is always Figtree.",
         "section": "typography"
       },
       {
@@ -696,13 +848,28 @@
         "section": "layout"
       },
       {
+        "name": "The Real Shelf Rule",
+        "body": "The storefront shows only what exists: the home lists only categories that have active products, most products first, and inside each only products in stock; the count in the lead and on every chip is the real one. No banner carousel, no wall of category icons, no invented delivery times, reviews or best sellers.",
+        "section": "layout"
+      },
+      {
         "name": "The Flat Sheet Rule",
         "body": "Panel surfaces are flat at rest and on hover. A module separates from its neighbour by a hairline, never by a shadow or a gradient.",
         "section": "elevation"
       },
       {
+        "name": "The Lift On Response Rule",
+        "body": "In the storefront a surface lifts only in response: a product card on hover, a menu or dialog when open. Only the hero's example-order card and floating photos float at rest.",
+        "section": "elevation"
+      },
+      {
         "name": "The Drawn Marker Rule",
-        "body": "Triangles and chevrons are drawn with CSS `clip-path` in `currentColor`, never typed as glyphs (▲ ▼ →) or pulled from an icon font.",
+        "body": "Triangles and chevrons are drawn with CSS `clip-path` in `currentColor`, never typed as glyphs (\u25b2 \u25bc \u2192) or pulled from an icon font.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Painted Canvas Rule",
+        "body": "The awning hem and the canvas stripes are drawn with gradients and a mask, never an image. The hem appears once per page, under the storefront header; the staff console header drops it.",
         "section": "shapes"
       }
     ],
@@ -713,7 +880,14 @@
       "Do lead every ledger row with the record's code, linked, and give every other cell a `data-label`.",
       "Do keep sheets square with a 1px g3 border, and controls at 6px (4px for small pieces, 3px for chips).",
       "Do grow every panel control to 44px under 700px.",
-      "Do scope panel styling under `.panel-app` in `static/css/panel/`, loaded after the shared components."
+      "Do scope panel styling under `.panel-app` in `static/css/panel/`, loaded after the shared components.",
+      "Do keep the scalloped awning hem under the storefront header and the canvas stripes behind the home hero.",
+      "Do open the home with the H1 and put the product count in bold at the start of the lead.",
+      "Do show only categories that have products, most products first, and on the home only products in stock.",
+      "Do use real product photos only: on cards, in the example order, in the floating hero tiles.",
+      "Do keep each order state in its status hue wherever the order flow is shown: sky for preparing, violet for shipped.",
+      "Do give every storefront animation a reduced-motion state that still shows its content.",
+      "Do count with lime pills and ink text."
     ],
     "donts": [
       "Don't float metric cards separated by air above one generic table.",
@@ -724,7 +898,12 @@
       "Don't type arrows or triangles as glyphs; draw them with `clip-path`.",
       "Don't let a ledger scroll the page sideways on a phone.",
       "Don't bring the storefront's Bricolage Grotesque, Figtree, 14px and 22px corners or lift shadows into the panel.",
-      "Don't reuse the rejected \"mercado campesino\" trial (slate green, kraft-paper tags, scalable section index, animated hero)."
+      "Don't reuse the rejected \"mercado campesino\" trial (slate green, kraft-paper tags, scalable section index, its animated hero). The home's example-order loop and drifting photos are the motion the user asked for later.",
+      "Don't put an eyebrow, kicker or pill above a storefront H1.",
+      "Don't put a banner carousel or a wall of category icons on the home, or invent delivery times, reviews or best sellers.",
+      "Don't add a second search field to the home; the hero's search replaces the header's there.",
+      "Don't fill a card, a section or the primary action with lime.",
+      "Don't extend the earlier \"fresh market\" styling of the cart, checkout, account and order pages to new screens."
     ]
   }
 }
