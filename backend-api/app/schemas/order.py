@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from app.models.enums import OrderStatus, OrderStatusChangeSource
 from app.schemas.address import AddressOut
 from app.schemas.common import ActorOut
+from app.schemas.payment import PaymentOut
 
 
 class OrderItemCreate(BaseModel):
@@ -18,6 +19,12 @@ class OrderCreate(BaseModel):
     items: list[OrderItemCreate] = Field(..., min_length=1)
     shipping_address_id: uuid.UUID | None = None
     notes: str | None = Field(default=None, max_length=2000)
+
+
+class OrderCheckout(OrderCreate):
+    """POST /orders/checkout: the POST /orders body plus the payment method."""
+
+    method: str | None = Field(default=None, max_length=50, description="card, cash, transfer, ...")
 
 
 class OrderItemOut(BaseModel):
@@ -43,6 +50,7 @@ class OrderOut(BaseModel):
     shipping_address: AddressOut | None = None
     notes: str | None
     items: list[OrderItemOut]
+    payments: list[PaymentOut] = []
     created_at: datetime
     updated_at: datetime
 

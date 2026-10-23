@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import IntegrityError
 
 from app.core.asyncio_compat import apply_windows_event_loop_policy
 from app.core.config import settings
@@ -95,6 +96,29 @@ for exc_class, http_status in _ERROR_STATUS_MAP.items():
 async def _fallback_app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     logger.error("Unhandled AppError: %s", exc.detail)
     return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": exc.detail})
+
+
+# SQLSTATE -> (HTTP status, constraint kind) for a write the database itself
+# rejected. Services validate first (e.g. an unknown product is a 404 from
+# OrderService); this catches whatever gets past them, instead of a 500.
+_INTEGRITY_ERRORS: dict[str, tuple[int, str]] = {
+    "23503": (status.HTTP_409_CONFLICT, "foreign key"),
+    "23505": (status.HTTP_409_CONFLICT, "unique"),
+    "23514": (status.HTTP_422_UNPROCESSABLE_CONTENT, "check"),
+    "23502": (status.HTTP_422_UNPROCESSABLE_CONTENT, "not-null"),
+}
+
+
+@app.exception_handler(IntegrityError)
+async def _integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    sqlstate = getattr(exc.orig, "sqlstate", None) or ""
+    diag = getattr(exc.orig, "diag", None)
+    constraint = getattr(diag, "constraint_name", None) or getattr(diag, "column_name", None)
+    table = getattr(diag, "table_name", None)
+    http_status, kind = _INTEGRITY_ERRORS.get(sqlstate, (status.HTTP_409_CONFLICT, "integrity"))
+    detail = f"The database rejected the change: {kind} constraint '{constraint}' on table '{table}'."
+    logger.warning("IntegrityError %s: %s (%s %s)", sqlstate, detail, request.method, request.url.path)
+    return JSONResponse(status_code=http_status, content={"detail": detail})
 
 
 @app.get("/health", tags=["health"])
