@@ -3,11 +3,11 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Enum, ForeignKey, Numeric, String, Text
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, Index, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base_class import Base, TimestampMixin, UUIDPKMixin
+from app.db.base_class import Base, TimestampMixin, UUIDPKMixin, trigram_index
 from app.models.enums import OrderStatus
 
 if TYPE_CHECKING:
@@ -26,6 +26,9 @@ class Order(UUIDPKMixin, TimestampMixin, Base):
         CheckConstraint("tax_amount >= 0", name="ck_orders_tax_non_negative"),
         CheckConstraint("shipping_amount >= 0", name="ck_orders_shipping_non_negative"),
         CheckConstraint("total_amount >= 0", name="ck_orders_total_non_negative"),
+        # Newest-first listing and the created_from/created_to filter.
+        Index("ix_orders_created_at", "created_at"),
+        trigram_index("orders", "order_number"),
     )
 
     order_number: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)

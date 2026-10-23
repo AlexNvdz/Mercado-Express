@@ -6,10 +6,12 @@ placements can't oversell the same product.
 """
 
 import uuid
+from collections.abc import Collection
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.exceptions import InsufficientStockError, NotFoundError
 from app.models.inventory import Inventory
@@ -33,24 +35,58 @@ class InventoryRepository(BaseRepository[Inventory]):
         return result.scalar_one_or_none()
 
     @staticmethod
-    def _filters(*, low_stock: bool, include_inactive: bool) -> list[Any]:
+    def _filters(
+        *,
+        low_stock: bool,
+        include_inactive: bool,
+        product_ids: Collection[uuid.UUID] | None,
+        search: str | None,
+    ) -> list[Any]:
         filters: list[Any] = []
         if low_stock:
             filters.append(_LOW_STOCK)
         if not include_inactive:
             filters.append(_ACTIVE_PRODUCT)
+        if product_ids:
+            filters.append(Inventory.product_id.in_(set(product_ids)))
+        if search and search.strip():
+            pattern = f"%{search.strip()}%"
+            matching = select(Product.id).where(or_(Product.name.ilike(pattern), Product.sku.ilike(pattern)))
+            filters.append(Inventory.product_id.in_(matching))
         return filters
 
     async def list_filtered(
-        self, *, offset: int = 0, limit: int = 20, low_stock: bool = False, include_inactive: bool = False
+        self,
+        *,
+        offset: int = 0,
+        limit: int = 20,
+        low_stock: bool = False,
+        include_inactive: bool = False,
+        product_ids: Collection[uuid.UUID] | None = None,
+        search: str | None = None,
     ) -> list[Inventory]:
-        stmt = select(Inventory).where(*self._filters(low_stock=low_stock, include_inactive=include_inactive))
+        """Product eager-loaded: the list items carry its name/SKU/status."""
+        filters = self._filters(
+            low_stock=low_stock, include_inactive=include_inactive, product_ids=product_ids, search=search
+        )
+        stmt = select(Inventory).where(*filters).options(selectinload(Inventory.product))
         stmt = stmt.order_by(Inventory.updated_at.desc()).offset(offset).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def count_filtered(self, *, low_stock: bool = False, include_inactive: bool = False) -> int:
-        return await self.count(filters=self._filters(low_stock=low_stock, include_inactive=include_inactive))
+    async def count_filtered(
+        self,
+        *,
+        low_stock: bool = False,
+        include_inactive: bool = False,
+        product_ids: Collection[uuid.UUID] | None = None,
+        search: str | None = None,
+    ) -> int:
+        return await self.count(
+            filters=self._filters(
+                low_stock=low_stock, include_inactive=include_inactive, product_ids=product_ids, search=search
+            )
+        )
 
     async def get_by_product_id_locked(self, product_id: uuid.UUID) -> Inventory:
         result = await self.db.execute(

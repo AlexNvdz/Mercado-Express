@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Collection
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,13 +95,29 @@ class InventoryService:
     # Defined last: this method's own name shadows the builtin `list` for
     # any annotation below it in the class body (same as BaseRepository).
     async def list(
-        self, *, offset: int, limit: int, low_stock: bool = False, include_inactive: bool = False
+        self,
+        *,
+        offset: int,
+        limit: int,
+        low_stock: bool = False,
+        include_inactive: bool = False,
+        product_ids: Collection[uuid.UUID] | None = None,
+        search: str | None = None,
     ) -> tuple[list[Inventory], int]:
         """Batched read for dashboards (e.g. low-stock alerts) -- avoids
         callers paging `GET /inventory/{id}` once per product. Rows of
-        inactive products are left out unless `include_inactive`."""
+        inactive products are left out unless `include_inactive`; an empty
+        or None `product_ids` means every product; `search` matches the
+        product name or SKU (case-insensitive)."""
         items = await self.repo.list_filtered(
-            offset=offset, limit=limit, low_stock=low_stock, include_inactive=include_inactive
+            offset=offset,
+            limit=limit,
+            low_stock=low_stock,
+            include_inactive=include_inactive,
+            product_ids=product_ids,
+            search=search,
         )
-        total = await self.repo.count_filtered(low_stock=low_stock, include_inactive=include_inactive)
+        total = await self.repo.count_filtered(
+            low_stock=low_stock, include_inactive=include_inactive, product_ids=product_ids, search=search
+        )
         return items, total

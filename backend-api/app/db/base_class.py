@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, Index, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -31,4 +31,13 @@ class TimestampMixin:
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+
+def trigram_index(table: str, column: str) -> Index:
+    """GIN pg_trgm index, so the `search` filters (`column ILIKE '%text%'`,
+    which a btree can't serve) use an index. Needs the pg_trgm extension:
+    created by migration 5d8e1f2a9b47 and by the tests' conftest."""
+    return Index(
+        f"ix_{table}_{column}_trgm", column, postgresql_using="gin", postgresql_ops={column: "gin_trgm_ops"}
     )

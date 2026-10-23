@@ -6,11 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.order import Order
+from app.models.order_item import OrderItem
 from app.repositories.base import BaseRepository
 
 # Every relationship OrderOut serializes (see list_filtered for why).
 _ORDER_OUT_LOADS = (
-    selectinload(Order.items),
+    selectinload(Order.items).selectinload(OrderItem.product),
     selectinload(Order.shipping_address),
     selectinload(Order.payments),
 )

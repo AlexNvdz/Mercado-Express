@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Numeric, String, Te
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base_class import Base, TimestampMixin, UUIDPKMixin
+from app.db.base_class import Base, TimestampMixin, UUIDPKMixin, trigram_index
 
 if TYPE_CHECKING:
     from app.models.category import Category
@@ -17,7 +17,12 @@ if TYPE_CHECKING:
 
 class Product(UUIDPKMixin, TimestampMixin, Base):
     __tablename__ = "products"
-    __table_args__ = (CheckConstraint("price >= 0", name="ck_products_price_non_negative"),)
+    __table_args__ = (
+        CheckConstraint("price >= 0", name="ck_products_price_non_negative"),
+        # GET /products?search= and GET /inventory?search=.
+        trigram_index("products", "name"),
+        trigram_index("products", "sku"),
+    )
 
     sku: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)

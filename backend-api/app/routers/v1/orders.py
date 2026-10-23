@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,15 +53,30 @@ async def list_orders(
         alias="status",
         description="Only orders in these statuses; repeat it for several: ?status=paid&status=preparing.",
     ),
+    search: str | None = Query(
+        default=None,
+        max_length=100,
+        description="Case-insensitive match on order number, customer email or name.",
+    ),
+    created_from: date | None = Query(default=None, description="Created on or after this date (UTC)."),
+    created_to: date | None = Query(
+        default=None, description="Created on or before this date (UTC), inclusive."
+    ),
     pagination: PaginationParams = Depends(pagination_params),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Page[OrderOut]:
     """Customers see only their own orders; staff/admin see every order.
-    `total`/`pages` count the same filters."""
+    Filters combine (AND); `total`/`pages` count the same filters."""
     customer_id = current_user.id if current_user.role == UserRole.CUSTOMER else None
     items, total = await OrderService(db).list_orders(
-        customer_id=customer_id, statuses=statuses, offset=pagination.offset, limit=pagination.page_size
+        customer_id=customer_id,
+        statuses=statuses,
+        offset=pagination.offset,
+        limit=pagination.page_size,
+        search=search,
+        created_from=created_from,
+        created_to=created_to,
     )
     pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
     return Page(

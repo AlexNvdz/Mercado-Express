@@ -1,8 +1,10 @@
+import time
 from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.enums import OrderStatus
 from app.repositories.report_repository import ReportRepository
 from app.schemas.report import OrderStatusCount, ReportSummary, TopProduct
@@ -15,11 +17,29 @@ def _money(value: Decimal) -> Decimal:
     return value.quantize(_TWO_PLACES)
 
 
+# top_products_limit -> (time.monotonic() when computed, summary).
+# shortcut: per-process memory and expiry only (no invalidation on writes),
+# so a change shows up within REPORT_CACHE_SECONDS; with several workers each
+# keeps its own copy. Move to a shared cache (Redis) if that ever matters.
+_cache: dict[int, tuple[float, ReportSummary]] = {}
+
+
 class ReportService:
     def __init__(self, db: AsyncSession) -> None:
         self.repo = ReportRepository(db)
 
     async def summary(self, *, top_products_limit: int = 10) -> ReportSummary:
+        """Cached for settings.REPORT_CACHE_SECONDS; `generated_at` says when
+        it was computed."""
+        cached = _cache.get(top_products_limit)
+        if cached is not None and time.monotonic() - cached[0] < settings.REPORT_CACHE_SECONDS:
+            return cached[1]
+        summary = await self._compute(top_products_limit)
+        if settings.REPORT_CACHE_SECONDS > 0:
+            _cache[top_products_limit] = (time.monotonic(), summary)
+        return summary
+
+    async def _compute(self, top_products_limit: int) -> ReportSummary:
         totals = await self.repo.ledger_totals()
         status_counts = await self.repo.order_counts_by_status()
         top_rows = await self.repo.top_products(top_products_limit)

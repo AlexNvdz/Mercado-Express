@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, AliasPath, BaseModel, Field
 
 from app.models.enums import InventoryChangeKind
 from app.schemas.common import ActorOut
@@ -17,6 +17,17 @@ class InventoryOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class InventoryListItem(InventoryOut):
+    """Item of GET /inventory: the row plus its product's name, SKU and
+    status, read from the eager-loaded Inventory.product."""
+
+    product_name: str = Field(validation_alias=AliasChoices("product_name", AliasPath("product", "name")))
+    product_sku: str = Field(validation_alias=AliasChoices("product_sku", AliasPath("product", "sku")))
+    product_is_active: bool = Field(
+        validation_alias=AliasChoices("product_is_active", AliasPath("product", "is_active"))
+    )
 
 
 class InventoryAdjust(BaseModel):

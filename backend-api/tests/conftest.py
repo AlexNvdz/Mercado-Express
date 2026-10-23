@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.core.asyncio_compat import apply_windows_event_loop_policy
@@ -41,6 +42,8 @@ test_engine = create_async_engine(TEST_DB_URL, pool_pre_ping=True)
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def _create_schema() -> AsyncGenerator[None]:
     async with test_engine.begin() as conn:
+        # The trigram search indexes need it (migration 5d8e1f2a9b47 in real databases).
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with test_engine.begin() as conn:
@@ -75,6 +78,16 @@ def _isolate_media_root(tmp_path: Path) -> Generator[None]:
     settings.MEDIA_ROOT = str(tmp_path / "media")
     yield
     settings.MEDIA_ROOT = original
+
+
+@pytest.fixture(autouse=True)
+def _no_report_cache() -> Generator[None]:
+    """GET /reports/summary is cached for REPORT_CACHE_SECONDS; tests that
+    write then read the report need it fresh (test_reports turns it on)."""
+    original = settings.REPORT_CACHE_SECONDS
+    settings.REPORT_CACHE_SECONDS = 0
+    yield
+    settings.REPORT_CACHE_SECONDS = original
 
 
 @pytest_asyncio.fixture

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, AliasPath, BaseModel, Field
 
 from app.models.enums import OrderStatus, OrderStatusChangeSource
 from app.schemas.address import AddressOut
@@ -30,6 +30,9 @@ class OrderCheckout(OrderCreate):
 class OrderItemOut(BaseModel):
     id: uuid.UUID
     product_id: uuid.UUID
+    # Read from the eager-loaded OrderItem.product (see OrderRepository).
+    product_name: str = Field(validation_alias=AliasChoices("product_name", AliasPath("product", "name")))
+    product_sku: str = Field(validation_alias=AliasChoices("product_sku", AliasPath("product", "sku")))
     quantity: int
     unit_price: Decimal
     line_total: Decimal
