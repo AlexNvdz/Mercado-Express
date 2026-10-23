@@ -134,7 +134,7 @@ List endpoints accept `page` (default 1) and `page_size` (default 20, max
 | POST | `/customers/me/addresses` | any user | Add an address. |
 | PATCH | `/customers/me/addresses/{address_id}` | any user | Update own address. |
 | DELETE | `/customers/me/addresses/{address_id}` | any user | Delete own address. |
-| GET | `/customers` | staff | Paginated list of customers. |
+| GET | `/customers?search=&page=&page_size=` | staff | Paginated list of customers, newest first. Optional `search`: case-insensitive match on full name, email or phone (since 2026-10-22). |
 | GET | `/customers/{customer_id}` | staff | Get one customer. |
 
 Address body:
@@ -195,7 +195,7 @@ Address body:
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/inventory?low_stock=&include_inactive=&page=&page_size=` | staff | Paginated list of inventory rows of active products (`include_inactive=true` adds inactive products' rows). `low_stock=true` filters to rows where `quantity_available <= reorder_level` (for a dashboard alert -- replaces paging `GET /inventory/{id}` once per product). |
+| GET | `/inventory?low_stock=&include_inactive=&product_id=&search=&page=&page_size=` | staff | Paginated list of inventory rows of active products (`include_inactive=true` adds inactive products' rows). `low_stock=true` filters to rows where `quantity_available <= reorder_level` (for a dashboard alert -- replaces paging `GET /inventory/{id}` once per product). `product_id` (repeatable, at most 100: `?product_id=a&product_id=b`) keeps only those products' rows, e.g. the products on one screen in a single request; more than 100 = `422`. `search`: case-insensitive match on product name or SKU. All filters combine (AND). |
 | GET | `/inventory/{product_id}` | none | Check availability for one product. |
 | GET | `/inventory/{product_id}/history?page=&page_size=` | staff | Paginated history of manual stock changes (adjust / set levels), newest first. |
 | POST | `/inventory/{product_id}/adjust` | staff | Add/remove stock by a signed delta. Recorded in the history. |
@@ -215,7 +215,12 @@ or refunded, and turned into a real `quantity_on_hand` decrement when its
 shipment is dispatched.
 
 `GET /inventory` returns the standard `{items, total, page, page_size, pages}`
-envelope (see Pagination), `items` shaped as above.
+envelope (see Pagination), `items` shaped as above plus, since 2026-10-22,
+three fields of the row's product (only in this list, not in the single-row
+responses):
+```json
+{ "...": "...", "product_name": "Wireless Mouse", "product_sku": "ELEC-001", "product_is_active": true }
+```
 
 ```json
 // POST /inventory/{product_id}/adjust request
@@ -252,7 +257,7 @@ release, dispatch) are not recorded here, only manual staff changes.
 |---|---|---|---|
 | POST | `/orders` | customer | Create an order: validates products, reserves stock, computes totals. |
 | POST | `/orders/checkout` | customer | `POST /orders` + `POST /payments` in one transaction (see below). |
-| GET | `/orders?status=&page=&page_size=` | any user | Customers see only their own orders; staff see all. Optional `status`, repeatable (`?status=paid&status=preparing`); `total`/`pages` count the filter. Unknown status = `422`. |
+| GET | `/orders?status=&search=&created_from=&created_to=&page=&page_size=` | any user | Customers see only their own orders; staff see all. Newest first. Optional `status`, repeatable (`?status=paid&status=preparing`); unknown status = `422`. Since 2026-10-22: `search` (case-insensitive match on order number, customer email or customer full name) and `created_from` / `created_to` (`YYYY-MM-DD`, inclusive, UTC days: `created_to=2026-10-22` includes everything up to 23:59:59 UTC that day; another format = `422`). All filters combine (AND); `total`/`pages` count them. |
 | GET | `/orders/{order_id}` | any user | Get one (customers: only their own, else `404`). |
 | GET | `/orders/{order_id}/history` | staff | Every status change of the order, oldest first (flat list, not paginated). |
 | POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`); releases reserved stock. |
@@ -318,7 +323,8 @@ reachable before dispatch, so the goods never left:
     "is_default": true, "created_at": "...", "updated_at": "..."
   },
   "items": [
-    { "id": "...", "product_id": "b3f2b6f0-...", "quantity": 2, "unit_price": "19.99", "line_total": "39.98" }
+    { "id": "...", "product_id": "b3f2b6f0-...", "product_name": "Wireless Mouse", "product_sku": "ELEC-001",
+      "quantity": 2, "unit_price": "19.99", "line_total": "39.98" }
   ],
   "created_at": "2026-09-08T10:00:00Z", "updated_at": "2026-09-08T10:00:00Z"
 }
@@ -329,6 +335,10 @@ reachable before dispatch, so the goods never left:
 `shipping_address_id`) — added so staff can see where to ship without a
 separate address-lookup call; every `OrderOut` response (create, get, list,
 status update) includes it.
+
+Since 2026-10-22 each item also carries `product_name` and `product_sku`
+(the product's current name and SKU, so order screens don't need a
+`GET /products/{id}` per line; the price stays the `unit_price` snapshot).
 
 Since 2026-10-22 every `OrderOut` response also includes `payments`: the
 order's payments, same shape as the `/api/v1/payments` responses (`[]` while
@@ -469,7 +479,7 @@ fields — include them even though earlier notes didn't have them confirmed.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/reports/summary?top_products_limit=` | staff | Aggregate dashboard numbers, computed server-side from the sales ledger (not `Order.total_amount`). |
+| GET | `/reports/summary?top_products_limit=` | staff | Aggregate dashboard numbers, computed server-side from the sales ledger (not `Order.total_amount`). Cached for up to 10 s (`REPORT_CACHE_SECONDS`): a new sale can take that long to show; `generated_at` says when the numbers were computed. |
 
 The sales ledger is append-only. Each order has at most two entries, never
 edited or deleted:
