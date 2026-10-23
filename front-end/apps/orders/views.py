@@ -180,12 +180,15 @@ def checkout(request):
         messages.error(request, "Selecciona una dirección de envío.")
         return redirect("orders:checkout")
 
+    # No real payment gateway on the backend yet: the order is paid right away
+    # via the manual gateway, in the same transaction (see API_CONTRACT.md).
     try:
-        order = orders_service.create_order(
+        order = orders_service.checkout(
             token,
             request.cart.as_order_items(),
             shipping_address_id=shipping_address_id,
             notes=request.POST.get("notes") or None,
+            method="card",
         )
     except ApiConflictError:
         # 409 = insufficient stock. The backend's `detail` is English and
@@ -197,15 +200,6 @@ def checkout(request):
     except ApiError:
         messages.error(request, "No fue posible crear el pedido. Intenta más tarde.")
         return redirect("cart:detail")
-
-    # No real payment gateway on the backend yet -- this completes the order
-    # immediately via the manual/placeholder gateway (see API_CONTRACT.md).
-    try:
-        payments_service.create_payment(token, order["id"], method="card")
-    except ApiError:
-        messages.warning(
-            request, "El pedido se creó, pero el pago no se pudo confirmar automáticamente."
-        )
 
     request.cart.clear()
     messages.success(request, "¡Pedido creado con éxito!")

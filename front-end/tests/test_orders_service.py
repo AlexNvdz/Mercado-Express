@@ -124,3 +124,20 @@ def test_every_history_source_has_a_label():
     sources = {e["source"] for entries in mock_data.MOCK_ORDER_HISTORY.values() for e in entries}
     assert sources <= set(orders.ORDER_STATUS_SOURCE_LABELS)
     assert len(orders.ORDER_STATUS_SOURCE_LABELS) == 7
+
+
+def test_checkout_returns_paid_order_with_its_payment():
+    items = [{"product_id": mock_data.MOCK_PRODUCTS[0]["id"], "quantity": 2}]
+    order = orders.checkout("any", items, shipping_address_id=ADDRESS_ID, method="card")
+    assert order["status"] == "paid"
+    assert [(p["method"], p["status"], p["amount"]) for p in order["payments"]] == [
+        ("card", "completed", order["total_amount"])
+    ]
+    assert orders.get_order("any", order["id"])["payments"] == order["payments"]
+
+
+def test_checkout_unknown_product_creates_nothing():
+    before = len(mock_data.MOCK_ORDERS)
+    with pytest.raises(ApiConflictError):
+        orders.checkout("any", [{"product_id": "00000000-0000-0000-0000-000000000999", "quantity": 1}], ADDRESS_ID)
+    assert len(mock_data.MOCK_ORDERS) == before

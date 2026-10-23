@@ -13,7 +13,7 @@ tomadas del lado del frontend.
 | `services/customers.py` | `/customers/me` (GET/PATCH), `/customers/me/addresses` (CRUD) |
 | `services/products.py` | `/categories`, `/products` (+ `/{id}` de cada uno, `search=`, `include_inactive=` solo staff) |
 | `services/inventory.py` | `/inventory` (staff, `low_stock=`, `include_inactive=`), `/inventory/{product_id}` (+ `adjust`, PUT, `history`) |
-| `services/orders.py` | `/orders` (POST/GET, `status=`), `/orders/{id}`, `/orders/{id}/cancel`, `/orders/{id}/status`, `/orders/{id}/history` |
+| `services/orders.py` | `/orders` (POST/GET, `status=`), `/orders/checkout` (POST), `/orders/{id}`, `/orders/{id}/cancel`, `/orders/{id}/status`, `/orders/{id}/history` |
 | `services/payments.py` | `/payments` (POST), `/payments/order/{id}` |
 | `services/shipments.py` | `/shipments/order/{id}` (GET/POST), `/shipments/{id}` (PATCH), `/shipments/{id}/ship`, `/shipments/{id}/deliver` |
 | `services/reports.py` | `/reports/summary` (staff) + `/inventory?low_stock=true` + `/orders` para el resumen del panel |
@@ -23,6 +23,25 @@ este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=True` en todos los tests). En desarrollo/staging/producción
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
+
+## Cambios 2026-10-22: checkout en una sola transacción
+
+Rama `feat/momento2-backend`. backend-api agregó `POST /orders/checkout`:
+mismo body que `POST /orders` más `method` (pago), y crea pedido, detalle,
+reserva de stock, pago y venta en una sola transacción (todo o nada).
+`OrderOut` ahora trae `payments: [PaymentOut]`.
+
+- `apps/orders/views.py::checkout` llama a `services/orders.py::checkout`
+  (una sola petición) en vez de `POST /orders` + `POST /payments`. Ya no
+  existe el caso "pedido creado pero pago sin confirmar": si algo falla no
+  se crea nada (409 = stock insuficiente).
+- El detalle del pedido en el panel (`/panel/pedidos/<id>/`) muestra
+  `order.payments` (método, estado, valor). El detalle del cliente sigue
+  leyendo `GET /payments/order/{id}`.
+- Ninguna vista llama ya a `POST /payments`. `services/payments.py::create_payment`
+  queda solo para el modo mock del checkout y los tests.
+- Pendiente: verificar contra el backend real y que la forma quede en
+  `API_CONTRACT.md` (lo actualiza backend-api).
 
 ## Cambios 2026-10-07: filtros del panel e historial de cambios
 
@@ -279,9 +298,9 @@ de desarrollo del otro lado.
 - Las URLs de catálogo usan el `id` (UUID) del producto/categoría, no un
   slug -- el contrato no expone slugs.
 - El checkout no muestra un formulario de pago: como el backend no tiene
-  pasarela real (`POST /payments` completa el pago de inmediato con el
-  gateway manual), el frontend solo pide método de pago implícito ("card")
-  y llama a `POST /payments` justo después de crear el pedido.
+  pasarela real (el gateway manual completa el pago de inmediato), el
+  frontend envía el método implícito ("card") en `POST /orders/checkout`,
+  que crea el pedido y el pago en una sola transacción.
 - Favoritos ("wishlist") es estado de sesión en Django (como el carrito),
   no un endpoint del backend -- no hay recurso "wishlist" en el contrato.
 - Las vistas nunca muestran el `detail` de un error del backend (`exc.detail`)

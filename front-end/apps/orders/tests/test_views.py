@@ -115,7 +115,7 @@ def test_checkout_insufficient_stock_shows_spanish_message(client, monkeypatch):
     def raise_conflict(*args, **kwargs):
         raise ApiConflictError("409", status_code=409, payload={"detail": english_detail})
 
-    monkeypatch.setattr("apps.orders.views.orders_service.create_order", raise_conflict)
+    monkeypatch.setattr("apps.orders.views.orders_service.checkout", raise_conflict)
     _login(client)
     client.post(reverse("cart:add", kwargs={"product_id": ARROZ_ID}), {"quantity": 5})
 
