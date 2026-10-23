@@ -13,9 +13,11 @@ Payment, preparation, dispatch and delivery are separate services/routers
 import secrets
 import uuid
 from collections.abc import Collection
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
+from sqlalchemy import or_, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -25,6 +27,7 @@ from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.order_status_change import OrderStatusChange
 from app.models.sale import Sale
+from app.models.user import User
 from app.repositories.address_repository import AddressRepository
 from app.repositories.inventory_repository import InventoryRepository
 from app.repositories.order_repository import OrderRepository
@@ -177,14 +180,36 @@ class OrderService:
         statuses: Collection[OrderStatus] | None,
         offset: int,
         limit: int,
+        search: str | None = None,
+        created_from: date | None = None,
+        created_to: date | None = None,
     ) -> tuple[list[Order], int]:
         """`customer_id=None` lists every customer's orders (staff); an empty
-        or None `statuses` means any status. `total` counts the same filters."""
+        or None `statuses` means any status. `search` matches the order
+        number or the customer's email/full name (case-insensitive);
+        `created_from`/`created_to` are inclusive UTC dates. `total` counts
+        the same filters."""
         filters: list[Any] = []
         if customer_id is not None:
             filters.append(Order.customer_id == customer_id)
         if statuses:
             filters.append(Order.status.in_(set(statuses)))
+        if search and search.strip():
+            pattern = f"%{search.strip()}%"
+            # A UNION of ids instead of one OR, so each half can use its own
+            # trigram index (ix_orders_order_number_trgm, ix_users_*_trgm).
+            by_number = select(Order.id).where(Order.order_number.ilike(pattern))
+            by_customer = (
+                select(Order.id)
+                .join(User, User.id == Order.customer_id)
+                .where(or_(User.email.ilike(pattern), User.full_name.ilike(pattern)))
+            )
+            filters.append(Order.id.in_(union(by_number, by_customer)))
+        if created_from is not None:
+            filters.append(Order.created_at >= datetime.combine(created_from, time.min, tzinfo=UTC))
+        if created_to is not None:
+            next_day = datetime.combine(created_to + timedelta(days=1), time.min, tzinfo=UTC)
+            filters.append(Order.created_at < next_day)
         items = await self.orders.list_filtered(filters=filters, offset=offset, limit=limit)
         total = await self.orders.count(filters=filters)
         return items, total
@@ -238,8 +263,10 @@ class OrderService:
         # after flush, and this object is handed straight back to a Pydantic
         # response model without another query -- refresh so that read
         # happens here (inside an awaited call) rather than as an implicit
-        # lazy-load later (which would raise MissingGreenlet).
-        await self.db.refresh(order)
+        # lazy-load later (which would raise MissingGreenlet). Only that
+        # column: a full refresh() cascades to the items (cascade="all") and
+        # would expire their eager-loaded `product` the same way.
+        await self.db.refresh(order, ["updated_at"])
         return order
 
     async def record_reversal(self, order: Order) -> Sale | None:

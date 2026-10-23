@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError
@@ -19,8 +20,14 @@ class CustomerService:
             raise NotFoundError(f"Customer {user_id} not found.")
         return user
 
-    async def list(self, *, offset: int, limit: int) -> tuple[list[User], int]:
+    async def list(self, *, offset: int, limit: int, search: str | None = None) -> tuple[list[User], int]:
+        """`search`: case-insensitive match on full name, email or phone."""
         filters = [User.role == UserRole.CUSTOMER]
+        if search and search.strip():
+            pattern = f"%{search.strip()}%"
+            filters.append(
+                or_(User.full_name.ilike(pattern), User.email.ilike(pattern), User.phone.ilike(pattern))
+            )
         items = await self.repo.list(
             offset=offset, limit=limit, filters=filters, order_by=User.created_at.desc()
         )

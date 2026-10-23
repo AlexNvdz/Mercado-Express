@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     TAX_RATE: float = 0.0
     FLAT_SHIPPING_FEE: float = 0.0
 
+    # --- Reports ---
+    # GET /reports/summary is reused for this many seconds (0 = always
+    # recomputed): it aggregates the whole ledger, ~150 ms on the Olist data.
+    REPORT_CACHE_SECONDS: int = 10
+
     # --- Product images (local disk; see app/services/storage_service.py) ---
     # MEDIA_ROOT: where files are written, relative to the process's working
     # directory unless given as an absolute path.

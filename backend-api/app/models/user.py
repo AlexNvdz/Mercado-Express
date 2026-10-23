@@ -8,10 +8,10 @@ via the `role` column, so adding new roles later only means extending
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Enum, String
+from sqlalchemy import Boolean, Enum, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base_class import Base, TimestampMixin, UUIDPKMixin
+from app.db.base_class import Base, TimestampMixin, UUIDPKMixin, trigram_index
 from app.models.enums import UserRole
 
 if TYPE_CHECKING:
@@ -21,6 +21,13 @@ if TYPE_CHECKING:
 
 class User(UUIDPKMixin, TimestampMixin, Base):
     __tablename__ = "users"
+    __table_args__ = (
+        # Newest-first customer listing, and GET /customers?search= / GET /orders?search=.
+        Index("ix_users_created_at", "created_at"),
+        trigram_index("users", "email"),
+        trigram_index("users", "full_name"),
+        trigram_index("users", "phone"),
+    )
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)

@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -70,9 +70,15 @@ async def delete_my_address(
 
 @router.get("", response_model=Page[CustomerOut], dependencies=[Depends(require_staff)])
 async def list_customers(
-    pagination: PaginationParams = Depends(pagination_params), db: AsyncSession = Depends(get_db)
+    search: str | None = Query(
+        default=None, max_length=100, description="Case-insensitive match on full name, email or phone."
+    ),
+    pagination: PaginationParams = Depends(pagination_params),
+    db: AsyncSession = Depends(get_db),
 ) -> Page[CustomerOut]:
-    items, total = await CustomerService(db).list(offset=pagination.offset, limit=pagination.page_size)
+    items, total = await CustomerService(db).list(
+        offset=pagination.offset, limit=pagination.page_size, search=search
+    )
     pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
     return Page(
         items=[CustomerOut.model_validate(i) for i in items],

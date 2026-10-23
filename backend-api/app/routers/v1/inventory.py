@@ -8,10 +8,19 @@ from app.dependencies import PaginationParams, pagination_params, require_staff
 from app.models.inventory import Inventory
 from app.models.user import User
 from app.schemas.common import Page
-from app.schemas.inventory import InventoryAdjust, InventoryChangeOut, InventoryOut, InventorySetLevel
+from app.schemas.inventory import (
+    InventoryAdjust,
+    InventoryChangeOut,
+    InventoryListItem,
+    InventoryOut,
+    InventorySetLevel,
+)
 from app.services.inventory_service import InventoryService
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
+
+# One page of products on screen at most (MAX_PAGE_SIZE); keeps the IN list short.
+_MAX_PRODUCT_IDS = 100
 
 
 def _out(inventory: Inventory) -> InventoryOut:
@@ -26,7 +35,7 @@ def _out(inventory: Inventory) -> InventoryOut:
     )
 
 
-@router.get("", response_model=Page[InventoryOut], dependencies=[Depends(require_staff)])
+@router.get("", response_model=Page[InventoryListItem], dependencies=[Depends(require_staff)])
 async def list_inventory(
     low_stock: bool = Query(
         default=False, description="Only return items where quantity_available <= reorder_level."
@@ -34,9 +43,19 @@ async def list_inventory(
     include_inactive: bool = Query(
         default=False, description="Also return rows of inactive products (left out by default)."
     ),
+    product_ids: list[uuid.UUID] | None = Query(
+        default=None,
+        alias="product_id",
+        max_length=_MAX_PRODUCT_IDS,
+        description=f"Only these products; repeat it for several (at most {_MAX_PRODUCT_IDS}): "
+        "?product_id=...&product_id=...",
+    ),
+    search: str | None = Query(
+        default=None, max_length=100, description="Case-insensitive match on product name or SKU."
+    ),
     pagination: PaginationParams = Depends(pagination_params),
     db: AsyncSession = Depends(get_db),
-) -> Page[InventoryOut]:
+) -> Page[InventoryListItem]:
     """Staff/admin only: batched inventory read (e.g. for a low-stock
     dashboard alert) -- replaces paging GET /inventory/{id} once per product."""
     items, total = await InventoryService(db).list(
@@ -44,10 +63,12 @@ async def list_inventory(
         limit=pagination.page_size,
         low_stock=low_stock,
         include_inactive=include_inactive,
+        product_ids=product_ids,
+        search=search,
     )
     pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
     return Page(
-        items=[InventoryOut.model_validate(i) for i in items],
+        items=[InventoryListItem.model_validate(i) for i in items],
         total=total,
         page=pagination.page,
         page_size=pagination.page_size,

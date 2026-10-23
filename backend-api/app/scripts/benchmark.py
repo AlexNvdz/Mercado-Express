@@ -70,6 +70,17 @@ def _http_benchmark(
         product_id = next((row["product_id"] for row in stock if row["quantity_available"] >= 1), None)
         if product_id is None:
             raise SystemExit("No active product with available stock for the checkout benchmark.")
+        # Inputs for the admin panel's lookups: one page of products (as the
+        # inventory screen sends them), an order number and a customer email.
+        page_ids = [
+            p["id"]
+            for p in client.get(
+                "/products", params={"include_inactive": "true", "page_size": 50}, headers=staff
+            ).json()["items"]
+        ]
+        order_term = orders[-1]["order_number"][3:11].lower()
+        customers = client.get("/customers", params={"page_size": 1}, headers=staff).json()["items"]
+        customer_term = customers[0]["email"].split("@")[0][:12]
 
         def checkout() -> httpx.Response:
             return client.post(
@@ -106,6 +117,25 @@ def _http_benchmark(
             (
                 "GET /orders?page=1 (staff)",
                 lambda: client.get("/orders", params={"page": 1}, headers=staff),
+                None,
+            ),
+            (
+                f"GET /orders?search={order_term} (staff)",
+                lambda: client.get("/orders", params={"search": order_term}, headers=staff),
+                None,
+            ),
+            (
+                f"GET /customers?search={customer_term} (staff)",
+                lambda: client.get("/customers", params={"search": customer_term}, headers=staff),
+                None,
+            ),
+            (
+                f"GET /inventory?product_id=x{len(page_ids)}&include_inactive=true (staff)",
+                lambda: client.get(
+                    "/inventory",
+                    params={"product_id": page_ids, "include_inactive": "true", "page_size": 100},
+                    headers=staff,
+                ),
                 None,
             ),
             ("GET /reports/summary (staff)", lambda: client.get("/reports/summary", headers=staff), None),

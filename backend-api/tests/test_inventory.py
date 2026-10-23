@@ -1,3 +1,5 @@
+import uuid
+
 from httpx import AsyncClient
 
 from app.models.user import User
@@ -164,3 +166,30 @@ async def test_set_levels_below_reserved_is_rejected(
     assert too_low.status_code == 409  # used to be a 500 (CHECK constraint)
     exact = await admin_client.put(f"/api/v1/inventory/{product_id}", json={"quantity_on_hand": 3})
     assert exact.status_code == 200
+
+
+async def test_list_inventory_filters_by_product_id(admin_client: AsyncClient) -> None:
+    first = await _make_product(admin_client, "INV-PID-1")
+    second = await _make_product(admin_client, "INV-PID-2")
+    inactive = await _make_product(admin_client, "INV-PID-3")
+    await admin_client.patch(f"/api/v1/products/{inactive}", json={"is_active": False})
+
+    resp = await admin_client.get("/api/v1/inventory", params={"product_id": [first, inactive]})
+    assert {row["product_id"] for row in resp.json()["items"]} == {first}
+    assert resp.json()["total"] == 1
+
+    # Combines with the other filters, as an AND.
+    resp = await admin_client.get(
+        "/api/v1/inventory", params={"product_id": [first, inactive], "include_inactive": "true"}
+    )
+    assert {row["product_id"] for row in resp.json()["items"]} == {first, inactive}
+    resp = await admin_client.get("/api/v1/inventory", params={"product_id": [second], "low_stock": "true"})
+    assert [row["product_id"] for row in resp.json()["items"]] == [second]  # 0 available <= reorder 0
+
+
+async def test_list_inventory_product_id_limit(admin_client: AsyncClient) -> None:
+    ids = [str(uuid.uuid4()) for _ in range(101)]
+    assert (await admin_client.get("/api/v1/inventory", params={"product_id": ids})).status_code == 422
+    resp = await admin_client.get("/api/v1/inventory", params={"product_id": ids[:100]})
+    assert resp.status_code == 200
+    assert resp.json()["total"] == 0
