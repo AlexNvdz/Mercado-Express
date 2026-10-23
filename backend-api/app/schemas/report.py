@@ -22,6 +22,18 @@ class TopProduct(BaseModel):
     )
 
 
+class RegionSales(BaseModel):
+    region: str = Field(
+        ..., description="State of the order's shipping address, or 'Sin dirección' if it has none."
+    )
+    net_revenue: Decimal = Field(
+        ...,
+        description="Sum of the Sale ledger (sale and reversal entries) for the region's orders. "
+        "BRL and USD amounts are summed as is, with no currency conversion.",
+    )
+    order_count: int = Field(..., description="Orders with a `sale` entry, later reversed ones included.")
+
+
 class ReportSummary(BaseModel):
     net_revenue: Decimal = Field(
         ...,
@@ -38,6 +50,9 @@ class ReportSummary(BaseModel):
     reversal_count: int = Field(..., description="Number of `reversal` entries.")
     orders_by_status: list[OrderStatusCount]
     top_products: list[TopProduct]
+    sales_by_region: list[RegionSales] = Field(
+        ..., description="Every region, net_revenue desc; the regions add up to net_revenue."
+    )
     customer_count: int
     product_count: int
     generated_at: datetime

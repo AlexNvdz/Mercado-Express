@@ -7,9 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.enums import OrderStatus
 from app.repositories.report_repository import ReportRepository
-from app.schemas.report import OrderStatusCount, ReportSummary, TopProduct
+from app.schemas.report import OrderStatusCount, RegionSales, ReportSummary, TopProduct
 
 _TWO_PLACES = Decimal("0.01")
+NO_ADDRESS_REGION = "Sin dirección"
 
 
 def _money(value: Decimal) -> Decimal:
@@ -43,6 +44,7 @@ class ReportService:
         totals = await self.repo.ledger_totals()
         status_counts = await self.repo.order_counts_by_status()
         top_rows = await self.repo.top_products(top_products_limit)
+        region_rows = await self.repo.sales_by_region()
         customer_count = await self.repo.customer_count()
         product_count = await self.repo.product_count()
 
@@ -58,6 +60,14 @@ class ReportService:
             top_products=[
                 TopProduct(product_id=pid, name=name, sku=sku, units_sold=int(units), revenue=rev)
                 for pid, name, sku, units, rev in top_rows
+            ],
+            sales_by_region=[
+                RegionSales(
+                    region=state if state is not None else NO_ADDRESS_REGION,
+                    net_revenue=_money(net),
+                    order_count=int(count),
+                )
+                for state, net, count in region_rows
             ],
             customer_count=customer_count,
             product_count=product_count,

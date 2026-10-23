@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from httpx import AsyncClient
 
 
@@ -100,6 +102,56 @@ async def test_report_summary_is_net_of_cancelled_and_refunded_orders(
     assert top["RPT-NET"]["revenue"] == "100.00"
 
 
+async def test_report_summary_sales_by_region(
+    admin_client: AsyncClient, customer_client: AsyncClient
+) -> None:
+    product_id = await _make_stocked_product(admin_client, "RPT-REG", stock=20, price="50.00")
+
+    async def address(state: str) -> str:
+        resp = await customer_client.post(
+            "/api/v1/customers/me/addresses",
+            json={
+                "line1": "Calle 1",
+                "city": "Ciudad",
+                "state": state,
+                "postal_code": "050001",
+                "country": "CO",
+            },
+        )
+        return resp.json()["id"]
+
+    async def order(quantity: int, address_id: str | None, *, pay: bool = True) -> str:
+        resp = await customer_client.post(
+            "/api/v1/orders",
+            json={
+                "items": [{"product_id": product_id, "quantity": quantity}],
+                "shipping_address_id": address_id,
+            },
+        )
+        if pay:
+            await _pay_order(customer_client, resp.json()["id"])
+        return resp.json()["id"]
+
+    antioquia, cundinamarca = await address("Antioquia"), await address("Cundinamarca")
+    await order(3, antioquia)  # 150.00
+    refunded = await order(1, antioquia)  # 50.00, then reversed: nets to 0, still one paid order
+    await order(1, cundinamarca)  # 50.00
+    await order(4, cundinamarca, pay=False)  # never paid: no ledger entry
+    await order(2, None)  # 100.00, no shipping address
+    resp = await admin_client.patch(f"/api/v1/orders/{refunded}/status", json={"status": "refunded"})
+    assert resp.status_code == 200
+
+    body = (await admin_client.get("/api/v1/reports/summary")).json()
+    assert body["sales_by_region"] == [
+        {"region": "Antioquia", "net_revenue": "150.00", "order_count": 2},
+        {"region": "Sin dirección", "net_revenue": "100.00", "order_count": 1},
+        {"region": "Cundinamarca", "net_revenue": "50.00", "order_count": 1},
+    ]
+    regions = body["sales_by_region"]
+    assert sum(Decimal(r["net_revenue"]) for r in regions) == Decimal(body["net_revenue"])
+    assert sum(r["order_count"] for r in regions) == body["sale_count"]
+
+
 async def test_report_summary_money_fields_are_2dp_when_ledger_is_empty(admin_client: AsyncClient) -> None:
     body = (await admin_client.get("/api/v1/reports/summary")).json()
     assert body["net_revenue"] == "0.00"
@@ -107,6 +159,7 @@ async def test_report_summary_money_fields_are_2dp_when_ledger_is_empty(admin_cl
     assert body["refunded_amount"] == "0.00"
     assert body["sale_count"] == 0
     assert body["reversal_count"] == 0
+    assert body["sales_by_region"] == []
 
 
 async def test_report_summary_top_products_limit(
