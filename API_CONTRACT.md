@@ -521,6 +521,10 @@ migration (`bdd517b5e052`).
   "top_products": [
     { "product_id": "...", "name": "Wireless Mouse", "sku": "ELEC-001", "units_sold": 14, "revenue": "279.86" }
   ],
+  "sales_by_region": [
+    { "region": "SP", "net_revenue": "799.98", "order_count": 8 },
+    { "region": "Sin dirección", "net_revenue": "250.00", "order_count": 4 }
+  ],
   "customer_count": 8,
   "product_count": 7,
   "generated_at": "2026-09-12T10:00:00Z"
@@ -543,6 +547,19 @@ migration (`bdd517b5e052`).
 and not reversed. Orders that were never paid (still `pending`, cancelled
 before payment, etc.) never contribute, and neither do paid orders that were
 later cancelled or refunded.
+
+`sales_by_region` lists every region, ordered by `net_revenue` descending
+(no limit: the Olist data has 27 states plus a few demo ones):
+- `region`: the `state` of the order's shipping address, or
+  `"Sin dirección"` for orders without one.
+- `net_revenue`: sum of the ledger (`sale` and `reversal` entries) for the
+  region's orders, the same basis as `net_revenue`, so the regions add up to
+  the headline figure.
+- `order_count`: orders with a `sale` entry (ever paid), including ones later
+  cancelled or refunded; the regions add up to `sale_count`.
+- Known caveat: BRL and USD amounts are summed as is, with no currency
+  conversion. The same is true of `net_revenue`.
+- Added 2026-10-23.
 
 ---
 
@@ -590,4 +607,4 @@ exercised without any manual setup:
 - Multi-warehouse inventory (currently single stock pool per product).
 
 ---
-_Maintained by the backend-api service. Last updated: 2026-10-07 (`GET /orders?status=` filter; staff-only `include_inactive` on `GET /products` and `GET /inventory`, which now hides inactive products' rows by default; append-only `GET /orders/{id}/history` and `GET /inventory/{id}/history`; `PUT /inventory` takes `reason` and returns `409` below reserved stock). Previous update 2026-10-06 (net revenue: sales ledger gets `reversal` entries, `GET /reports/summary` returns `net_revenue`/`gross_revenue`/`refunded_amount`/`reversal_count` instead of `total_revenue`; shipment flow: create from `paid` or `preparing` with `carrier`/`tracking_number`, new `PATCH /shipments/{id}`, new shipment status `cancelled`, `shipped`/`delivered` no longer manual order targets, refund releases reserved stock). Previous update 2026-09-12: added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes._
+_Maintained by the backend-api service. Last updated: 2026-10-23 (`sales_by_region` on `GET /reports/summary`). Previous update 2026-10-07 (`GET /orders?status=` filter; staff-only `include_inactive` on `GET /products` and `GET /inventory`, which now hides inactive products' rows by default; append-only `GET /orders/{id}/history` and `GET /inventory/{id}/history`; `PUT /inventory` takes `reason` and returns `409` below reserved stock). Previous update 2026-10-06 (net revenue: sales ledger gets `reversal` entries, `GET /reports/summary` returns `net_revenue`/`gross_revenue`/`refunded_amount`/`reversal_count` instead of `total_revenue`; shipment flow: create from `paid` or `preparing` with `carrier`/`tracking_number`, new `PATCH /shipments/{id}`, new shipment status `cancelled`, `shipped`/`delivered` no longer manual order targets, refund releases reserved stock). Previous update 2026-09-12: added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes._

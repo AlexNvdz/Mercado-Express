@@ -11,7 +11,8 @@ Every number comes from the backend: revenue is summed server-side from the
 computed there too. A paid order later cancelled or refunded gets a negative
 (reversal) ledger entry, so `net_revenue = gross_revenue - refunded_amount`
 (`refunded_amount` is positive); `sale_count` counts sales only,
-`reversal_count` the reversals. This module only reshapes the three
+`reversal_count` the reversals; `sales_by_region` is ledger revenue per
+shipping region, best first. This module only reshapes the three
 responses for the template and resolves product names for the low-stock rows
 (InventoryOut has no name).
 """
@@ -42,6 +43,8 @@ TOP_PRODUCTS_LIMIT = 6
 # shows the backend's `total`, the table only the LOW_STOCK_SHOWN lowest.
 LOW_STOCK_PAGE_SIZE = inventory_service.MAX_PAGE_SIZE
 LOW_STOCK_SHOWN = 10
+# The backend returns every region, best first; the card shows the top ones.
+REGIONS_SHOWN = 10
 
 
 def _to_decimal(value) -> Decimal:
@@ -113,6 +116,11 @@ def get_dashboard_stats(token: str) -> dict:
         "orders_by_status": orders_by_status,
         "to_attend": to_attend,
         "top_products": summary["top_products"],
+        # .get: an older backend without the field just hides the card.
+        "sales_by_region": [
+            {**row, "net_revenue": _to_decimal(row["net_revenue"])}
+            for row in summary.get("sales_by_region", [])[:REGIONS_SHOWN]
+        ],
         "low_stock": low_stock,
         "low_stock_count": low_stock_count,
         "sold_out_count": sold_out_count,

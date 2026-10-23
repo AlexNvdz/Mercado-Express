@@ -14,6 +14,7 @@ from typing import NamedTuple
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.address import Address
 from app.models.enums import OrderStatus, SaleKind, UserRole
 from app.models.order import Order
 from app.models.order_item import OrderItem
@@ -68,6 +69,22 @@ class ReportRepository:
             .group_by(Product.id, Product.name, Product.sku)
             .order_by(func.sum(OrderItem.quantity).desc())
             .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+        return [tuple(row) for row in result.all()]
+
+    async def sales_by_region(self) -> list[tuple[str | None, Decimal, int]]:
+        """(state, net ledger total, orders ever paid) per shipping-address
+        state, net total desc; state is None for orders with no address.
+        Like ledger_totals, BRL and USD amounts are summed as is (no
+        currency conversion), so the regions add up to net revenue."""
+        net = func.sum(Sale.total_amount)
+        stmt = (
+            select(Address.state, net, func.count().filter(Sale.kind == SaleKind.SALE))
+            .join(Order, Order.id == Sale.order_id)
+            .outerjoin(Address, Address.id == Order.shipping_address_id)
+            .group_by(Address.state)
+            .order_by(net.desc(), Address.state)
         )
         result = await self.db.execute(stmt)
         return [tuple(row) for row in result.all()]

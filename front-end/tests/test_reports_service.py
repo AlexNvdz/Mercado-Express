@@ -17,6 +17,19 @@ def test_dashboard_stats_come_from_summary():
     assert stats["top_products"][0]["units_sold"] == 2
 
 
+def test_sales_by_region_parses_decimals_and_keeps_top_rows(monkeypatch):
+    rows = [{"region": f"R{n}", "net_revenue": f"{100 - n}.50", "order_count": n} for n in range(12)]
+    monkeypatch.setitem(mock_data.MOCK_REPORT_SUMMARY, "sales_by_region", rows)
+    regions = reports.get_dashboard_stats("any")["sales_by_region"]
+    assert len(regions) == reports.REGIONS_SHOWN
+    assert regions[0] == {"region": "R0", "net_revenue": Decimal("100.50"), "order_count": 0}
+
+
+def test_sales_by_region_missing_from_older_backend(monkeypatch):
+    monkeypatch.delitem(mock_data.MOCK_REPORT_SUMMARY, "sales_by_region")
+    assert reports.get_dashboard_stats("any")["sales_by_region"] == []
+
+
 def test_orders_by_status_follows_lifecycle_and_hides_zero_rows():
     stats = reports.get_dashboard_stats("any")
     assert list(stats["orders_by_status"]) == ["shipped", "delivered"]
