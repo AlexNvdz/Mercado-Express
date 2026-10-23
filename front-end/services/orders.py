@@ -3,6 +3,7 @@ Order creation, listing, detail and cancellation. See
 ../API_CONTRACT.md#apiv1orders.
 
     POST /api/v1/orders                       {items, shipping_address_id, notes}
+    POST /api/v1/orders/checkout              same body + method: order and payment in one transaction
     GET  /api/v1/orders?page=&page_size=&status=  -> own orders (customer) / all (staff)
     GET  /api/v1/orders/{order_id}
     POST  /api/v1/orders/{order_id}/cancel
@@ -22,7 +23,7 @@ from decimal import Decimal
 
 from django.conf import settings
 
-from . import mock_data
+from . import mock_data, payments
 from .api_client import api_client
 from .exceptions import ApiConflictError, ApiNotFoundError
 
@@ -111,7 +112,9 @@ def list_orders(token: str, *, page: int = 1, page_size: int = 20, status: str |
 
 def get_order(token: str, order_id: str) -> dict | None:
     if settings.API_USE_MOCKS:
-        return next((o for o in mock_data.MOCK_ORDERS if o["id"] == str(order_id)), None)
+        order = next((o for o in mock_data.MOCK_ORDERS if o["id"] == str(order_id)), None)
+        # OrderOut carries the order's payments; mock mode keeps them in MOCK_PAYMENTS.
+        return {**order, "payments": mock_data.MOCK_PAYMENTS.get(order["id"], [])} if order else None
 
     try:
         return api_client.get(f"/api/v1/orders/{order_id}", token=token)
@@ -132,6 +135,25 @@ def create_order(token: str, items: list[dict], shipping_address_id: str, notes:
     if notes:
         payload["notes"] = notes
     return api_client.post("/api/v1/orders", token=token, json=payload)
+
+
+def checkout(
+    token: str, items: list[dict], shipping_address_id: str, notes: str | None = None, method: str = "card"
+) -> dict:
+    """create_order + payments.create_payment in one backend transaction:
+    order, items, stock reservation, payment and sale are all saved or none
+    is (409 = insufficient stock, nothing created). Returns the order already
+    `paid`, with its `payments`.
+    """
+    if settings.API_USE_MOCKS:
+        order = _mock_create_order(items, shipping_address_id, notes)
+        payments.create_payment(token, order["id"], method=method)
+        return get_order(token, order["id"])
+
+    payload = {"items": items, "shipping_address_id": shipping_address_id, "method": method}
+    if notes:
+        payload["notes"] = notes
+    return api_client.post("/api/v1/orders/checkout", token=token, json=payload)
 
 
 def _mock_create_order(items: list[dict], shipping_address_id: str, notes: str | None) -> dict:

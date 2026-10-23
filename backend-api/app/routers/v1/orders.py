@@ -8,7 +8,13 @@ from app.dependencies import PaginationParams, get_current_user, pagination_para
 from app.models.enums import OrderStatus, UserRole
 from app.models.user import User
 from app.schemas.common import Page
-from app.schemas.order import OrderCreate, OrderOut, OrderStatusChangeOut, OrderStatusUpdate
+from app.schemas.order import (
+    OrderCheckout,
+    OrderCreate,
+    OrderOut,
+    OrderStatusChangeOut,
+    OrderStatusUpdate,
+)
 from app.services.order_service import OrderService
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -23,6 +29,19 @@ async def create_order(
     """Create an order for the current (customer) user. Validates products,
     reserves inventory and computes totals -- see OrderService.create_order."""
     order = await OrderService(db).create_order(current_user.id, data)
+    return OrderOut.model_validate(order)
+
+
+@router.post("/checkout", response_model=OrderOut, status_code=status.HTTP_201_CREATED)
+async def checkout(
+    data: OrderCheckout,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> OrderOut:
+    """POST /orders and POST /payments in one transaction: order, items,
+    stock reservation, payment and sales-ledger entry are all saved or none
+    is -- see OrderService.checkout."""
+    order = await OrderService(db).checkout(current_user.id, data)
     return OrderOut.model_validate(order)
 
 

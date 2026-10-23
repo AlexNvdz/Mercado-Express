@@ -672,3 +672,15 @@ def test_customer_detail_loads_for_staff(client):
     response = client.get(reverse("adminpanel:customer_detail", kwargs={"customer_id": CUSTOMER_ID}))
     assert response.status_code == 200
     assert b"Ana Torres" in response.content
+
+
+@pytest.mark.django_db
+def test_order_detail_shows_order_payments(client):
+    _login_as_staff(client)
+    order = orders_service.checkout(
+        "any", [{"product_id": PRODUCT_ID, "quantity": 1}], shipping_address_id=mock_data.MOCK_ADDRESSES[0]["id"]
+    )
+    content = client.get(reverse("adminpanel:order_detail", kwargs={"order_id": order["id"]})).content.decode()
+    assert "Pagos" in content
+    assert "Tarjeta" in content
+    assert "Completado" in content

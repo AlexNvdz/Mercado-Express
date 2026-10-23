@@ -124,6 +124,23 @@
         </div>
 
         <div class="card">
+            <h2 class="card__title">Pagos</h2>
+            {% if order.payments %}
+            <div class="stack">
+                {% for payment in order.payments %}
+                <div class="flex-between">
+                    <span>{% if payment.method == "card" %}Tarjeta{% else %}{{ payment.method|default:"Sin método" }}{% endif %}</span>
+                    <span class="status status--{{ payment.status }}">{{ payment.status|payment_status_label }}</span>
+                    <strong class="num">${{ payment.amount|money }}</strong>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="muted">Sin pagos registrados.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
             <h2 class="card__title">Cambiar estado manualmente</h2>
             {% if next_statuses %}
             <p class="muted" style="margin-bottom:14px;">Esto es para correcciones y solo muestra los estados a los que este pedido puede pasar ahora. Despachar y entregar se hacen desde el envío.</p>

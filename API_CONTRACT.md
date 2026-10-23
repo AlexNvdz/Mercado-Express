@@ -96,6 +96,15 @@ unique field, insufficient stock, invalid status transition), `422`
 (request body failed validation — Pydantic's default FastAPI error shape,
 `{"detail": [...]}` with field-level errors).
 
+The services validate before writing, so the database rarely rejects a
+change. When it does (since 2026-10-22, instead of a `500`), the response
+names the constraint: a foreign key or unique violation is `409`, a CHECK
+or NOT NULL violation is `422`, with `detail` as a string:
+```json
+// 409
+{ "detail": "The database rejected the change: foreign key constraint 'order_items_product_id_fkey' on table 'order_items'." }
+```
+
 ## Pagination
 
 List endpoints accept `page` (default 1) and `page_size` (default 20, max
@@ -242,6 +251,7 @@ release, dispatch) are not recorded here, only manual staff changes.
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/orders` | customer | Create an order: validates products, reserves stock, computes totals. |
+| POST | `/orders/checkout` | customer | `POST /orders` + `POST /payments` in one transaction (see below). |
 | GET | `/orders?status=&page=&page_size=` | any user | Customers see only their own orders; staff see all. Optional `status`, repeatable (`?status=paid&status=preparing`); `total`/`pages` count the filter. Unknown status = `422`. |
 | GET | `/orders/{order_id}` | any user | Get one (customers: only their own, else `404`). |
 | GET | `/orders/{order_id}/history` | staff | Every status change of the order, oldest first (flat list, not paginated). |
@@ -320,6 +330,24 @@ reachable before dispatch, so the goods never left:
 separate address-lookup call; every `OrderOut` response (create, get, list,
 status update) includes it.
 
+Since 2026-10-22 every `OrderOut` response also includes `payments`: the
+order's payments, same shape as the `/api/v1/payments` responses (`[]` while
+unpaid). Additive; no other field changed.
+
+`POST /orders/checkout` takes the `POST /orders` body plus an optional
+`method` (same as `POST /payments`):
+```json
+{ "items": [{ "product_id": "b3f2b6f0-...", "quantity": 2 }], "shipping_address_id": null, "notes": null, "method": "card" }
+```
+It creates the order, its items, the stock reservation, the payment and the
+sales-ledger `sale` entry in a single transaction, and answers `201` with the
+`OrderOut` (`status: "paid"`, one `completed` payment in `payments`). If any
+step raises an error, nothing is saved: no order, no reservation, no payment.
+(A payment a future real gateway declines would not raise: as with
+`POST /payments`, the order stays `pending` with a `failed` payment.) Same
+errors as `POST /orders` (`404` unknown/inactive product or address, `409`
+insufficient stock). `POST /orders` and `POST /payments` are unchanged.
+
 ```json
 // each item of GET /orders/{order_id}/history
 {
@@ -383,6 +411,11 @@ not change this contract.
 | POST | `/shipments/{shipment_id}/ship` | staff | Mark dispatched; decrements real stock, order → `shipped`. |
 | POST | `/shipments/{shipment_id}/deliver` | staff | Mark delivered; order → `delivered`. |
 | GET | `/shipments/order/{order_id}` | any user | Get the shipment for an order. |
+
+Since migration `9c4e2a7b1d35` the database enforces two dates: an
+`in_transit` shipment has `shipped_at` (`ck_shipments_in_transit_has_shipped_at`)
+and a `delivered` one has `delivered_at` (`ck_shipments_delivered_has_delivered_at`).
+The endpoints above always set them, so their behavior does not change.
 
 ```json
 // POST /shipments/order/{order_id} request

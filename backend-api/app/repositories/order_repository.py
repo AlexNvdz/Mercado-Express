@@ -8,6 +8,13 @@ from sqlalchemy.orm import selectinload
 from app.models.order import Order
 from app.repositories.base import BaseRepository
 
+# Every relationship OrderOut serializes (see list_filtered for why).
+_ORDER_OUT_LOADS = (
+    selectinload(Order.items),
+    selectinload(Order.shipping_address),
+    selectinload(Order.payments),
+)
+
 
 class OrderRepository(BaseRepository[Order]):
     def __init__(self, db: AsyncSession) -> None:
@@ -19,11 +26,7 @@ class OrderRepository(BaseRepository[Order]):
         two requests on the same order (e.g. a double-submitted "ship", or
         "ship" racing "cancel") run one after the other, and the second one
         sees the first one's result instead of acting on a stale status."""
-        stmt = (
-            select(Order)
-            .where(Order.id == order_id)
-            .options(selectinload(Order.items), selectinload(Order.shipping_address))
-        )
+        stmt = select(Order).where(Order.id == order_id).options(*_ORDER_OUT_LOADS)
         if for_update:
             stmt = stmt.with_for_update().execution_options(populate_existing=True)
         result = await self.db.execute(stmt)
@@ -44,7 +47,7 @@ class OrderRepository(BaseRepository[Order]):
         result = await self.db.execute(
             select(Order)
             .where(*filters)
-            .options(selectinload(Order.items), selectinload(Order.shipping_address))
+            .options(*_ORDER_OUT_LOADS)
             .order_by(Order.created_at.desc())
             .offset(offset)
             .limit(limit)

@@ -32,7 +32,9 @@ from app.repositories.order_status_change_repository import OrderStatusChangeRep
 from app.repositories.product_repository import ProductRepository
 from app.repositories.sale_repository import SaleRepository
 from app.repositories.shipment_repository import ShipmentRepository
-from app.schemas.order import OrderCreate
+from app.schemas.order import OrderCheckout, OrderCreate
+from app.schemas.payment import PaymentCreate
+from app.services.payment_service import PaymentService
 
 # Manual-override targets for PATCH /orders/{id}/status (staff corrections).
 # The normal flow is driven by other resources: PaymentService moves
@@ -141,6 +143,20 @@ class OrderService:
         loaded = await self.orders.get_with_items(order.id)
         assert loaded is not None
         return loaded
+
+    async def checkout(self, customer_id: uuid.UUID, data: OrderCheckout) -> Order:
+        """POST /orders/checkout: create_order + PaymentService.create_payment
+        (order, items, stock reservation, payment and Sale) in the caller's
+        transaction. get_db commits once at the end of the request, so if any
+        step raises, none of it is saved."""
+        order = await self.create_order(customer_id, data)
+        await PaymentService(self.db).create_payment(
+            PaymentCreate(order_id=order.id, method=data.method), actor_id=customer_id
+        )
+        # The payment changed status/updated_at, and `payments` was loaded
+        # (empty) by create_order: reload both here, not lazily in Pydantic.
+        await self.db.refresh(order, ["status", "updated_at", "payments"])
+        return order
 
     async def get(self, order_id: uuid.UUID) -> Order:
         order = await self.orders.get_with_items(order_id)
