@@ -1,143 +1,119 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}MercadoExpress - Tu mercado en línea{% endblock %}
+{% block main_class %}home{% endblock %}
+{% block body_attrs %} class="is-home"{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div class="hero__copy">
-        <h1 class="hero__title">El mercado de la semana, sin salir de casa</h1>
-        <p class="hero__lead">Arma tu pedido con stock real por producto, paga al confirmar y mira en qué paso va tu envío hasta que llega a tu puerta.</p>
-        <div class="hero__actions">
-            <a class="btn btn--lg" href="{% url 'catalog:list' %}">Empezar a comprar</a>
-            {% if is_api_authenticated %}
-            <a class="btn btn--secondary btn--lg" href="{% url 'orders:list' %}">Ver mis pedidos</a>
-            {% else %}
-            <a class="btn btn--secondary btn--lg" href="{% url 'accounts:register' %}">Crear cuenta</a>
-            {% endif %}
-        </div>
-        <div class="hero__facts">
-            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Stock confirmado antes de pagar</span>
-            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Cancela gratis mientras esté pendiente</span>
-        </div>
-    </div>
+<section class="home-hero">
+    {% for url in ambient %}<img class="home-hero__float home-hero__float--{{ forloop.counter }}" src="{{ url }}" alt="" aria-hidden="true">{% endfor %}
 
-    <div class="ticket" aria-label="Ejemplo de seguimiento de un pedido">
-        <div class="ticket__head">
-            <span class="ticket__id">Así sigues tu pedido</span>
-            <span class="ticket__eta">En vivo</span>
+    <div class="home-hero__inner container">
+        <div class="home-hero__copy">
+            <h1 class="home-hero__title">Lo que ves aquí, está en bodega.</h1>
+            <p class="home-hero__lead"><strong>{{ product_count }} producto{{ product_count|pluralize }} en la tienda.</strong> Pagas al instante y sigues tu pedido paso a paso hasta tu puerta.</p>
+            <form class="home-search" method="get" action="{% url 'catalog:list' %}" role="search">
+                <label class="visually-hidden" for="home-search">Buscar productos</label>
+                <input id="home-search" type="search" name="q" placeholder="¿Qué necesitas hoy?" autocomplete="off">
+                <button type="submit" class="btn">Buscar</button>
+            </form>
+            <div class="home-hero__links">
+                {% if is_api_authenticated %}
+                <a href="{% url 'orders:list' %}">Mis pedidos</a>
+                {% if last_order %}
+                <form method="post" action="{% url 'orders:reorder' last_order.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="link-btn">Repetir mi último pedido ({{ last_order.order_number }})</button>
+                </form>
+                {% endif %}
+                {% else %}
+                <a href="{% url 'accounts:register' %}">Crear cuenta</a>
+                <a href="{% url 'catalog:categories' %}">Ver las {{ category_count }} categorías</a>
+                {% endif %}
+            </div>
         </div>
-        <div class="ticket__body">
-            <ol class="ticket__steps">
-                <li class="ticket__step is-done">
-                    <span class="ticket__dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                    <div><div class="ticket__label">Pedido creado</div><div class="ticket__time">Reservamos tu stock</div></div>
+
+        <section class="flow" aria-labelledby="flow-title">
+            <div class="flow__head">
+                <h2 class="flow__title" id="flow-title">Así va un pedido</h2>
+                <span class="flow__tag">Ejemplo</span>
+            </div>
+            <div class="flow__track" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+            <ol class="flow__steps">
+                <li class="flow__step">
+                    <div class="flow__scene">
+                        {% if example %}<img class="flow__thumb" src="{{ example.images.0.url }}" alt="">{% endif %}
+                        <div class="flow__grow">
+                            <strong>{% if example %}{{ example.name }}{% else %}Tu producto{% endif %}</strong>
+                            <span class="flow__muted">{% if example %}${{ example.price|money }} · {{ example.availability.quantity_available }} en bodega{% else %}Con su stock real{% endif %}</span>
+                        </div>
+                        <span class="flow__badge flow__badge--add" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>
+                    </div>
+                    <p class="flow__caption"><strong>1. Agregas al carrito.</strong> Las unidades salen del stock real.</p>
                 </li>
-                <li class="ticket__step is-done">
-                    <span class="ticket__dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                    <div><div class="ticket__label">Pago confirmado</div><div class="ticket__time">Al instante</div></div>
+                <li class="flow__step">
+                    <div class="flow__scene">
+                        <div class="flow__grow flow__total"><span class="flow__muted">Total · Tarjeta</span><strong>{% if example %}${{ example.price|money }}{% else %}Tu total{% endif %}</strong></div>
+                        <span class="flow__badge flow__badge--paid"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Pago aprobado</span>
+                    </div>
+                    <p class="flow__caption"><strong>2. Pagas.</strong> Pedido y pago se guardan juntos, al instante.</p>
                 </li>
-                <li class="ticket__step is-current">
-                    <span class="ticket__dot"></span>
-                    <div><div class="ticket__label">Preparando</div><div class="ticket__time">Empacamos tus productos</div></div>
+                <li class="flow__step">
+                    <div class="flow__scene">
+                        <div class="flow__grow">
+                            <span class="flow__muted">Pedido</span>
+                            <strong class="flow__code">ORD-7F3A21C9</strong>
+                            {% if example %}<img class="flow__mini" src="{{ example.images.0.url }}" alt="">{% endif %}
+                        </div>
+                        <span class="flow__badge flow__badge--preparing">En preparación</span>
+                    </div>
+                    <p class="flow__caption"><strong>3. Preparamos.</strong> Empacamos tu pedido.</p>
                 </li>
-                <li class="ticket__step is-upcoming">
-                    <span class="ticket__dot"></span>
-                    <div><div class="ticket__label">Enviado</div><div class="ticket__time">Con número de guía</div></div>
+                <li class="flow__step">
+                    <div class="flow__scene flow__scene--column">
+                        <div class="flow__ship"><span>Guía <strong>SV-48120</strong></span><span class="flow__shipped">Enviado</span></div>
+                        <div class="flow__road"><span class="flow__truck" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span></div>
+                    </div>
+                    <p class="flow__caption"><strong>4. Va en camino.</strong> Con transportadora y número de guía.</p>
                 </li>
-                <li class="ticket__step is-upcoming">
-                    <span class="ticket__dot"></span>
-                    <div><div class="ticket__label">Entregado</div></div>
+                <li class="flow__step">
+                    <div class="flow__scene">
+                        <span class="flow__badge flow__badge--done" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                        <div class="flow__grow"><strong>Entregado</strong><span class="flow__muted">Queda en Mis pedidos, con su estado y su guía.</span></div>
+                    </div>
+                    <p class="flow__caption"><strong>5. Te llega.</strong> Cada cambio de estado queda registrado.</p>
                 </li>
             </ol>
-        </div>
-        <div class="ticket__foot">
-            <span class="subtle">Cada cambio se refleja en Mis pedidos</span>
-        </div>
+        </section>
     </div>
 </section>
 
-<div class="trust-bar">
-    <div class="trust-bar__item">
-        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
-        <div><div class="trust-bar__title">Stock real</div><div class="trust-bar__text">Ves cuántas unidades quedan</div></div>
+<div class="container home-shelves">
+    {% if sections %}
+    <h2 class="home-shelves__title">Por categoría</h2>
+    {% for section in sections %}
+    <section class="home-shelf" aria-labelledby="shelf-{{ forloop.counter }}">
+        <div class="home-shelf__head">
+            <h3 class="home-shelf__name" id="shelf-{{ forloop.counter }}">{{ section.category.name }}</h3>
+            <span class="count-chip">{{ section.category.active_product_count }} producto{{ section.category.active_product_count|pluralize }}</span>
+            <a class="home-shelf__all" href="{% url 'catalog:category' section.category.id %}">Ver todo</a>
+        </div>
+        <div class="product-grid">
+            {% for product in section.products %}
+                {% include "catalog/_product_card.html" %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+    {% if category_count > sections|length %}
+    <a class="btn btn--secondary btn--full home-shelves__more" href="{% url 'catalog:categories' %}">Ver las {{ category_count }} categorías</a>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <h2>Aún no hay productos publicados</h2>
+        <p>El catálogo se está preparando. Vuelve en un rato.</p>
     </div>
-    <div class="trust-bar__item">
-        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg></span>
-        <div><div class="trust-bar__title">Pago al instante</div><div class="trust-bar__text">Tu pedido queda confirmado</div></div>
-    </div>
-    <div class="trust-bar__item">
-        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 16V7a1 1 0 0 1 1-1h10v10M3 16h11m0 0h3m-3 0V10h3.5l2.5 3v3h-3" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18" r="1.7" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="18" r="1.7" stroke="currentColor" stroke-width="1.8"/></svg></span>
-        <div><div class="trust-bar__title">Envío con guía</div><div class="trust-bar__text">Transportadora y número de seguimiento</div></div>
-    </div>
-    <div class="trust-bar__item">
-        <span class="trust-bar__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <div><div class="trust-bar__title">Repite tu compra</div><div class="trust-bar__text">Un clic desde tus pedidos</div></div>
-    </div>
+    {% endif %}
 </div>
-
-<section class="section">
-    <div class="section-head">
-        <div>
-            <h2 class="section-title">Compra por categoría</h2>
-            <p class="section-sub">Todo organizado como en tu mercado de siempre.</p>
-        </div>
-    </div>
-    <div class="cat-tiles">
-        {% for category in categories %}
-        <a class="cat-tile" href="{% url 'catalog:category' category.id %}">
-            <span class="cat-tile__initial" aria-hidden="true">{{ category.name|first|upper }}</span>
-            <span>
-                <span class="cat-tile__name">{{ category.name }}</span><br>
-                <span class="cat-tile__go">Ver productos</span>
-            </span>
-        </a>
-        {% empty %}
-        <p class="muted">No hay categorías disponibles todavía.</p>
-        {% endfor %}
-    </div>
-</section>
-
-<section class="section">
-    <div class="section-head">
-        <div>
-            <h2 class="section-title">Productos destacados</h2>
-            <p class="section-sub">Lo que más se lleva la gente esta semana.</p>
-        </div>
-        <a class="section-link" href="{% url 'catalog:list' %}">Ver todos los productos</a>
-    </div>
-    <div class="product-grid">
-        {% for product in featured_products %}
-            {% include "catalog/_product_card.html" %}
-        {% empty %}
-        <div class="empty-state">
-            <div class="empty-state__icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 7h16l-1.4 10.3A2 2 0 0 1 16.6 19H7.4a2 2 0 0 1-2-1.7L4 7Z" stroke="currentColor" stroke-width="1.6"/></svg></div>
-            <h2>Aún no hay productos publicados</h2>
-            <p>El catálogo se está preparando. Vuelve en un rato.</p>
-        </div>
-        {% endfor %}
-    </div>
-</section>
-
-<section class="section">
-    <div class="section-head">
-        <h2 class="section-title">Cómo funciona</h2>
-    </div>
-    <div class="steps">
-        <div class="step">
-            <div class="step__num">1</div>
-            <div class="step__title">Elige</div>
-            <p class="step__text">Busca por categoría o con el buscador y añade al carrito lo que necesitas.</p>
-        </div>
-        <div class="step">
-            <div class="step__num">2</div>
-            <div class="step__title">Paga</div>
-            <p class="step__text">Confirma tu dirección de envío. El pago se aprueba en el momento.</p>
-        </div>
-        <div class="step">
-            <div class="step__num">3</div>
-            <div class="step__title">Recibe</div>
-            <p class="step__text">Sigue cada paso del envío desde Mis pedidos hasta que llegue.</p>
-        </div>
-    </div>
-</section>
 {% endblock %}

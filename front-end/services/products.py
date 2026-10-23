@@ -26,6 +26,7 @@ API_CONTRACT.md yet, ask the backend to add it there.
 from __future__ import annotations
 
 import uuid
+from collections import Counter
 
 from django.conf import settings
 
@@ -54,6 +55,37 @@ def list_all_categories() -> list[dict]:
     for page in range(2, first["pages"] + 1):
         items += list_categories(page=page, page_size=100)["items"]
     return items
+
+
+def list_categories_with_products() -> list[dict]:
+    """Categories with at least one active product, most products first, each
+    with `active_product_count` (GET /categories?with_products=true&sort=products).
+    The storefront shows only these: the other categories (e.g. the Olist ones,
+    whose products are all inactive) would lead to empty pages.
+    """
+    if settings.API_USE_MOCKS:
+        counts = Counter(p["category_id"] for p in mock_data.MOCK_PRODUCTS if p.get("is_active", True))
+        categories = mock_data.MOCK_CATEGORIES
+    else:
+        result = api_client.get(
+            "/api/v1/categories", params={"with_products": "true", "sort": "products", "page_size": 100}
+        )
+        if not result["items"] or "active_product_count" in result["items"][0]:
+            return result["items"]
+        # shortcut: a backend without the product count ignores those params;
+        # count the active products here until feat/categories-product-count ships.
+        counts = Counter()
+        page = 1
+        while True:
+            products = list_products(page=page, page_size=100)
+            counts.update(p.get("category_id") for p in products["items"])
+            if page >= products["pages"]:
+                break
+            page += 1
+        categories = list_all_categories()
+    items = [{**c, "active_product_count": counts[c["id"]]} for c in categories if counts[c["id"]]]
+    return sorted(items, key=lambda c: (-c["active_product_count"], c["name"]))
+
 
 def get_category(category_id: str) -> dict | None:
     if settings.API_USE_MOCKS:

@@ -62,10 +62,11 @@
                 <div class="navdrop__panel">
                     <a class="navdrop__item navdrop__item--all" href="{% url 'catalog:list' %}">Ver todos los productos</a>
                     {% for category in nav_categories %}
-                    <a class="navdrop__item{% if category.id == active_category.id %} is-active{% endif %}" href="{% url 'catalog:category' category.id %}">{{ category.name }}</a>
+                    <a class="navdrop__item{% if category.id == active_category.id %} is-active{% endif %}" href="{% url 'catalog:category' category.id %}">{{ category.name }} <span class="navdrop__count">{{ category.active_product_count }}</span></a>
                     {% empty %}
                     <span class="navdrop__item muted">Sin categorías todavía</span>
                     {% endfor %}
+                    <a class="navdrop__item navdrop__item--more" href="{% url 'catalog:categories' %}">Ver todas las categorías</a>
                 </div>
             </details>
             <a class="navbar__sublink" href="{% url 'catalog:wishlist' %}">Favoritos</a>

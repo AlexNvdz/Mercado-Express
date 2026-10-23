@@ -244,3 +244,23 @@ def test_product_detail_disables_buying_inactive_product(client):
     response = client.get(reverse("catalog:detail", kwargs={"product_id": ARROZ_ID}))
     assert response.status_code == 200
     assert "No disponible" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_order_list_filters_server_side_and_paginates(client, api_calls, settings):
+    session = client.session
+    session[settings.API_ACCESS_TOKEN_SESSION_KEY] = "mock-access-token"
+    session[settings.API_ROLE_SESSION_KEY] = "customer"
+    session.save()
+
+    def respond(method, path, kwargs):
+        if path == "/api/v1/orders":
+            return {"items": [mock_data.MOCK_ORDERS[0]], "total": 25, "page": 2, "page_size": 10, "pages": 3}
+        return {"items": [], "total": 0, "page": 1, "page_size": 8, "pages": 0}
+
+    api_calls.response = respond
+    content = client.get(reverse("orders:list"), {"status": "paid", "page": 2}).content.decode()
+
+    orders_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/orders")
+    assert orders_call["params"] == {"page": 2, "page_size": 10, "status": "paid"}
+    assert "Página 2 de 3" in content

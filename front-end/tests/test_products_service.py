@@ -86,3 +86,32 @@ def test_list_all_categories_reads_every_page(api_calls):
         {"page": 1, "page_size": 100},
         {"page": 2, "page_size": 100},
     ]
+
+
+def test_categories_with_products_mock_only_lists_categories_with_active_products():
+    mock_data.MOCK_PRODUCTS[0]["is_active"] = False
+    result = products.list_categories_with_products()
+    counts = [c["active_product_count"] for c in result]
+    assert all(n > 0 for n in counts)
+    assert counts == sorted(counts, reverse=True)
+
+
+def test_categories_with_products_asks_backend_for_the_filter(api_calls):
+    api_calls.response = {"items": [{"id": "a", "name": "Abarrotes", "active_product_count": 2}], "total": 1, "page": 1, "page_size": 100, "pages": 1}
+    assert products.list_categories_with_products() == [{"id": "a", "name": "Abarrotes", "active_product_count": 2}]
+    method, path, kwargs = api_calls[0]
+    assert (method, path) == ("GET", "/api/v1/categories")
+    assert kwargs["params"] == {"with_products": "true", "sort": "products", "page_size": 100}
+
+
+def test_categories_with_products_counts_locally_on_an_older_backend(api_calls):
+    categories = [{"id": "a", "name": "Abarrotes"}, {"id": "b", "name": "Bebidas"}, {"id": "c", "name": "Cine"}]
+
+    def respond(method, path, kwargs):
+        if path == "/api/v1/categories":
+            return {"items": categories, "total": 3, "page": 1, "page_size": 100, "pages": 1}
+        return {"items": [{"category_id": "b"}, {"category_id": "a"}, {"category_id": "b"}], "total": 3, "page": 1, "page_size": 100, "pages": 1}
+
+    api_calls.response = respond
+    result = products.list_categories_with_products()
+    assert [(c["id"], c["active_product_count"]) for c in result] == [("b", 2), ("a", 1)]

@@ -10,7 +10,11 @@
     border-radius: var(--r-md);
     padding: 16px 10px;
 }
-.catalog-filter__title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; padding: 0 8px 10px; }
+.catalog-filter__title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; padding: 0 8px 10px; list-style: none; cursor: pointer; }
+.catalog-filter__title::-webkit-details-marker { display: none; }
+.catalog-filter__title span { color: var(--volt-deep); }
+.catalog-filter__count { float: right; padding: 0 7px; border-radius: var(--r-pill); background: var(--signal); color: var(--ink); font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.catalog-filter__link--more { font-weight: 600; color: var(--volt-deep); }
 .catalog-filter__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .catalog-filter__link { display: block; padding: 9px 10px; border-radius: var(--r-sm); font-size: 0.92rem; color: var(--text-2); }
 .catalog-filter__link:hover { background: var(--paper-2); color: var(--text); text-decoration: none; }
@@ -34,8 +38,11 @@
 
 @media (max-width: 900px) {
     .catalog-layout { grid-template-columns: minmax(0, 1fr); }
-    .catalog-filter { display: none; }
-    .category-pills { display: flex; }
+    .catalog-filter { position: static; padding: 4px 10px; margin-bottom: 14px; }
+    .catalog-filter__title { display: flex; align-items: center; min-height: 44px; padding: 0 6px; }
+    .catalog-filter__title::after { content: ""; margin-left: auto; width: 9px; height: 9px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-3px); }
+    .catalog-filter[open] .catalog-filter__title::after { transform: rotate(-135deg); }
+    .catalog-filter__list { padding-bottom: 8px; }
 }
 
 /* Product grid + card */
@@ -151,3 +158,21 @@
     .product-detail { grid-template-columns: minmax(0, 1fr); }
     .product-detail__media { border-right: 0; border-bottom: 1px solid var(--line); }
 }
+
+.product-card__stock { font-size: 0.8rem; color: var(--text-2); }
+.product-card__stock.is-out { color: var(--rose); font-weight: 600; }
+/* 8. Touch targets on phones (PRODUCT.md: 44px). */
+@media (max-width: 760px) { .product-card .btn--sm { min-height: 44px; } }
+
+/* All categories (templates/catalog/categories.html) */
+.cat-index { max-width: 720px; }
+.cat-index__title { font-variation-settings: "wdth" 82; font-weight: 800; font-size: clamp(1.8rem, 1.4rem + 1.6vw, 2.4rem); letter-spacing: -0.025em; }
+.cat-index__lead { margin: 8px 0 16px; color: var(--text-2); }
+.cat-index__search { display: flex; gap: 8px; padding: 6px; margin-bottom: 18px; background: var(--paper); border: 2px solid var(--ink); border-radius: 16px; }
+.cat-index__search input { flex: 1; min-width: 0; min-height: 44px; padding: 0 10px; border: 0; background: transparent; font: inherit; font-size: 1rem; outline: none; }
+.cat-index__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cat-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 16px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); }
+.cat-row:hover { border-color: var(--volt); text-decoration: none; }
+.cat-row__name { flex: 1; min-width: 0; font-family: var(--font-display); font-variation-settings: "wdth" 85; font-weight: 800; font-size: 1.12rem; }
+.cat-row__count { padding: 2px 9px; border-radius: var(--r-pill); background: var(--signal); color: var(--ink); font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.cat-row__go { flex: none; color: var(--volt-deep); }
