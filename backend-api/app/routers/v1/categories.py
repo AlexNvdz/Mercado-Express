@@ -1,6 +1,7 @@
 import uuid
+from typing import Literal
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -25,9 +26,21 @@ async def create_category(data: CategoryCreate, db: AsyncSession = Depends(get_d
 
 @router.get("", response_model=Page[CategoryOut])
 async def list_categories(
-    pagination: PaginationParams = Depends(pagination_params), db: AsyncSession = Depends(get_db)
+    with_products: bool = Query(
+        default=False, description="Only categories with at least one active product."
+    ),
+    sort: Literal["name", "products"] = Query(
+        default="name", description="`products`: most active products first, then by name."
+    ),
+    pagination: PaginationParams = Depends(pagination_params),
+    db: AsyncSession = Depends(get_db),
 ) -> Page[CategoryOut]:
-    items, total = await CategoryService(db).list(offset=pagination.offset, limit=pagination.page_size)
+    items, total = await CategoryService(db).list(
+        offset=pagination.offset,
+        limit=pagination.page_size,
+        with_products=with_products,
+        sort_by_products=sort == "products",
+    )
     pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
     return Page(
         items=[CategoryOut.model_validate(i) for i in items],

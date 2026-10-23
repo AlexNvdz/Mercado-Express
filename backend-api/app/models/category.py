@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, query_expression, relationship
 
 from app.db.base_class import Base, TimestampMixin, UUIDPKMixin
 
@@ -22,6 +22,9 @@ class Category(UUIDPKMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    # Not a column: products with is_active=true, filled per query by
+    # CategoryRepository; None when a query didn't ask for it.
+    active_product_count: Mapped[int | None] = query_expression()
 
     parent: Mapped["Category | None"] = relationship(remote_side="Category.id", back_populates="children")
     children: Mapped[list["Category"]] = relationship(back_populates="parent")
