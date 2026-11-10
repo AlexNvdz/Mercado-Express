@@ -1,5 +1,7 @@
 from django import forms
 
+from services.products import MIN_PRODUCT_PRICE
+
 
 class ProductForm(forms.Form):
     """Staff-only product create/edit form. Posts straight to backend-api
@@ -10,7 +12,7 @@ class ProductForm(forms.Form):
     name = forms.CharField(label="Nombre", max_length=255)
     description = forms.CharField(label="Descripción", required=False, widget=forms.Textarea(attrs={"rows": 4}))
     category_id = forms.ChoiceField(label="Categoría")
-    price = forms.DecimalField(label="Precio", min_value=0, decimal_places=2, max_digits=12)
+    price = forms.DecimalField(label="Precio", min_value=MIN_PRODUCT_PRICE, decimal_places=2, max_digits=12)
     is_active = forms.BooleanField(label="Activo (visible en el catálogo)", required=False, initial=True)
 
     def __init__(self, *args, categories=None, **kwargs):

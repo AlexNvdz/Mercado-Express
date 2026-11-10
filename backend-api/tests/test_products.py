@@ -15,12 +15,12 @@ async def test_admin_can_create_category_and_product(admin_client: AsyncClient) 
 
     resp = await admin_client.post(
         "/api/v1/products",
-        json={"sku": "SKU-001", "name": "Widget", "category_id": category_id, "price": "19.99"},
+        json={"sku": "SKU-001", "name": "Widget", "category_id": category_id, "price": "19990.00"},
     )
     assert resp.status_code == 201
     body = resp.json()
     assert body["sku"] == "SKU-001"
-    assert body["price"] == "19.99"
+    assert body["price"] == "19990.00"
 
 
 async def test_customer_cannot_create_product(
@@ -29,14 +29,14 @@ async def test_customer_cannot_create_product(
     category_id = await _make_category(admin_client, "Books")
     resp = await customer_client.post(
         "/api/v1/products",
-        json={"sku": "SKU-002", "name": "Novel", "category_id": category_id, "price": "9.99"},
+        json={"sku": "SKU-002", "name": "Novel", "category_id": category_id, "price": "9990.00"},
     )
     assert resp.status_code == 403
 
 
 async def test_duplicate_sku_conflicts(admin_client: AsyncClient) -> None:
     category_id = await _make_category(admin_client, "Toys")
-    payload = {"sku": "SKU-DUPE", "name": "Toy", "category_id": category_id, "price": "5.00"}
+    payload = {"sku": "SKU-DUPE", "name": "Toy", "category_id": category_id, "price": "6000.00"}
     first = await admin_client.post("/api/v1/products", json=payload)
     assert first.status_code == 201
     second = await admin_client.post("/api/v1/products", json=payload)
@@ -50,7 +50,7 @@ async def test_creating_product_for_missing_category_returns_404(admin_client: A
             "sku": "SKU-003",
             "name": "Ghost",
             "category_id": "00000000-0000-0000-0000-000000000000",
-            "price": "1.00",
+            "price": "6000.00",
         },
     )
     assert resp.status_code == 404
@@ -60,7 +60,7 @@ async def test_list_and_get_product(admin_client: AsyncClient) -> None:
     category_id = await _make_category(admin_client, "Garden")
     created = await admin_client.post(
         "/api/v1/products",
-        json={"sku": "SKU-004", "name": "Shovel", "category_id": category_id, "price": "15.00"},
+        json={"sku": "SKU-004", "name": "Shovel", "category_id": category_id, "price": "15000.00"},
     )
     product_id = created.json()["id"]
 
@@ -82,11 +82,11 @@ async def test_search_matches_name_or_sku_case_insensitively(admin_client: Async
     category_id = await _make_category(admin_client, "Search Cat")
     await admin_client.post(
         "/api/v1/products",
-        json={"sku": "SRCH-001", "name": "Wireless Mouse", "category_id": category_id, "price": "9.99"},
+        json={"sku": "SRCH-001", "name": "Wireless Mouse", "category_id": category_id, "price": "9990.00"},
     )
     await admin_client.post(
         "/api/v1/products",
-        json={"sku": "SRCH-002", "name": "Keyboard", "category_id": category_id, "price": "29.99"},
+        json={"sku": "SRCH-002", "name": "Keyboard", "category_id": category_id, "price": "29990.00"},
     )
 
     by_name = await admin_client.get("/api/v1/products", params={"search": "mouse"})
@@ -110,7 +110,13 @@ async def test_inactive_products_are_listed_only_for_staff_on_request(
     async def create(sku: str, *, active: bool) -> str:
         resp = await admin_client.post(
             "/api/v1/products",
-            json={"sku": sku, "name": sku, "category_id": category_id, "price": "3.00", "is_active": active},
+            json={
+                "sku": sku,
+                "name": sku,
+                "category_id": category_id,
+                "price": "6000.00",
+                "is_active": active,
+            },
         )
         assert resp.status_code == 201
         return resp.json()["id"]

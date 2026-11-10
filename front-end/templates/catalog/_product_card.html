@@ -27,7 +27,7 @@
             {% csrf_token %}
             <input type="hidden" name="quantity" value="1">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            {% if product.is_active is False %}
+            {% if not product|purchasable %}
             <button type="submit" class="btn btn--soft btn--sm btn--full" disabled>No disponible</button>
             {% elif product.availability and product.availability.quantity_available <= 0 %}
             <button type="submit" class="btn btn--soft btn--sm btn--full" disabled>Agotado</button>

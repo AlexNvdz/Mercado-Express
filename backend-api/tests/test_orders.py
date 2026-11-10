@@ -5,7 +5,9 @@ from app.models.enums import UserRole
 from tests.conftest import _authed_client, _create_user
 
 
-async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00") -> str:
+async def _make_stocked_product(
+    admin_client: AsyncClient, sku: str, stock: int, price: str = "25000.00"
+) -> str:
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     category_id = category.json()["id"]
     product = await admin_client.post(
@@ -20,7 +22,7 @@ async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int,
 async def test_create_order_reserves_stock_and_computes_totals(
     admin_client: AsyncClient, customer_client: AsyncClient
 ) -> None:
-    product_id = await _make_stocked_product(admin_client, "ORD-001", stock=10, price="25.00")
+    product_id = await _make_stocked_product(admin_client, "ORD-001", stock=10, price="25000.00")
 
     resp = await customer_client.post(
         "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 3}]}
@@ -28,8 +30,8 @@ async def test_create_order_reserves_stock_and_computes_totals(
     assert resp.status_code == 201
     order = resp.json()
     assert order["status"] == "pending"
-    assert order["subtotal"] == "75.00"
-    assert order["total_amount"] == "75.00"
+    assert order["subtotal"] == "75000.00"
+    assert order["total_amount"] == "75000.00"
     assert len(order["items"]) == 1
 
     inv = await admin_client.get(f"/api/v1/inventory/{product_id}")
@@ -118,7 +120,7 @@ async def test_refund_releases_reserved_stock(
 async def test_full_order_lifecycle_to_delivered(
     admin_client: AsyncClient, customer_client: AsyncClient
 ) -> None:
-    product_id = await _make_stocked_product(admin_client, "ORD-005", stock=10, price="50.00")
+    product_id = await _make_stocked_product(admin_client, "ORD-005", stock=10, price="50000.00")
 
     order_resp = await customer_client.post(
         "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 2}]}
@@ -183,7 +185,7 @@ async def test_staff_can_list_all_orders_with_items(
     via the frontend's admin dashboard (apps/adminpanel), which was the first
     caller to ever exercise plain `GET /orders` as staff.
     """
-    product_id = await _make_stocked_product(admin_client, "ORD-006", stock=5, price="10.00")
+    product_id = await _make_stocked_product(admin_client, "ORD-006", stock=5, price="10000.00")
     created = await customer_client.post(
         "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 1}]}
     )

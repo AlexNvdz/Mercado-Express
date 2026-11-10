@@ -19,7 +19,7 @@ async def _make_product(admin_client: AsyncClient, sku: str = "IMG-001") -> str:
             "sku": sku,
             "name": "Widget",
             "category_id": category.json()["id"],
-            "price": "9.99",
+            "price": "9990.00",
         },
     )
     assert product.status_code == 201

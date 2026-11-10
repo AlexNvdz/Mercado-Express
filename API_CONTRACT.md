@@ -193,14 +193,14 @@ products (e.g. the imported Olist ones) are not counted.
   "name": "Wireless Mouse",
   "description": "2.4GHz wireless mouse",
   "category_id": "b3f2b6f0-1234-4a5b-9c1d-abcdef123456",
-  "price": "19.99",
+  "price": "39900.00",
   "is_active": true,
   "images": [
     { "id": "...", "url": "http://127.0.0.1:8000/media/products/{product_id}/{uuid}.jpg", "position": 0, "created_at": "..." }
   ]
 }
 ```
-`price` is a decimal-as-string in responses (2 decimal places). `images` is returned on `GET`/list responses (empty array if none); it is not accepted on `POST`/`PATCH /products` -- images are managed only via the endpoints above. Image files are stored locally by backend-api under `MEDIA_ROOT` and served back out at `MEDIA_URL` (`/media` by default) -- `url` is an absolute link built from the request host, safe to use as-is in an `<img src>`.
+`price` is a decimal-as-string in responses (2 decimal places). Since 2026-11-10 `POST`/`PATCH /products` reject a `price` below `5900.00` (`MIN_PRODUCT_PRICE` in `app/schemas/product.py`) with `422`; `5900.00` itself is accepted. Rows priced lower before that date (Olist BRL prices, old demo data) are still returned as is by `GET`, but cannot be bought (see `POST /orders`). `images` is returned on `GET`/list responses (empty array if none); it is not accepted on `POST`/`PATCH /products` -- images are managed only via the endpoints above. Image files are stored locally by backend-api under `MEDIA_ROOT` and served back out at `MEDIA_URL` (`/media` by default) -- `url` is an absolute link built from the request host, safe to use as-is in an `<img src>`.
 
 ## `/api/v1/inventory`
 
@@ -326,7 +326,7 @@ reachable before dispatch, so the goods never left:
 {
   "id": "...", "order_number": "ORD-A1B2C3D4E5",
   "customer_id": "...", "status": "pending",
-  "subtotal": "39.98", "tax_amount": "0.00", "shipping_amount": "0.00", "total_amount": "39.98",
+  "subtotal": "79800.00", "tax_amount": "0.00", "shipping_amount": "0.00", "total_amount": "79800.00",
   "shipping_address_id": "c4a1...", "notes": "Leave at front door",
   "shipping_address": {
     "id": "c4a1...", "user_id": "...", "line1": "Calle 10 # 20-30", "line2": null,
@@ -335,12 +335,14 @@ reachable before dispatch, so the goods never left:
   },
   "items": [
     { "id": "...", "product_id": "b3f2b6f0-...", "product_name": "Wireless Mouse", "product_sku": "ELEC-001",
-      "quantity": 2, "unit_price": "19.99", "line_total": "39.98" }
+      "quantity": 2, "unit_price": "39900.00", "line_total": "79800.00" }
   ],
   "created_at": "2026-09-08T10:00:00Z", "updated_at": "2026-09-08T10:00:00Z"
 }
 ```
 `409` if any item is out of stock — no partial reservation is made (all-or-nothing).
+`422` if any product is priced below `5900.00` (a row that predates the
+minimum, e.g. `0.00`): nothing is reserved or saved.
 
 `shipping_address` is the resolved address object (`null` if the order has no
 `shipping_address_id`) — added so staff can see where to ship without a
@@ -367,7 +369,7 @@ step raises an error, nothing is saved: no order, no reservation, no payment.
 (A payment a future real gateway declines would not raise: as with
 `POST /payments`, the order stays `pending` with a `failed` payment.) Same
 errors as `POST /orders` (`404` unknown/inactive product or address, `409`
-insufficient stock). `POST /orders` and `POST /payments` are unchanged.
+insufficient stock, `422` product priced below the minimum). `POST /orders` and `POST /payments` are unchanged.
 
 ```json
 // each item of GET /orders/{order_id}/history
@@ -398,7 +400,7 @@ will not change this contract.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/payments` | customer | Pay for own order in `pending`. |
+| POST | `/payments` | customer | Pay for own order in `pending`. `422` if the order total is `0.00`. |
 | GET | `/payments/{payment_id}` | any user | Get one (customers: only for their own order). |
 | GET | `/payments/order/{order_id}` | any user | List payments for an order. |
 
@@ -409,7 +411,7 @@ will not change this contract.
 ```json
 // response (201) -- status is "completed" immediately (manual gateway)
 {
-  "id": "...", "order_id": "...", "amount": "39.98", "currency": "USD",
+  "id": "...", "order_id": "...", "amount": "79800.00", "currency": "USD",
   "status": "completed", "provider": "manual", "provider_reference": "manual-...",
   "method": "card", "paid_at": "2026-09-08T10:01:00Z", "created_at": "2026-09-08T10:01:00Z"
 }

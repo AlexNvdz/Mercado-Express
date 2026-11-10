@@ -24,6 +24,19 @@ este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
 
+## Cambios 2026-11-10: precio mínimo $5.900
+
+- `POST`/`PATCH /products` responden `422` si `price` es menor que `5900.00`
+  (`5900.00` sí vale). El formulario de `/catalogo/admin/` usa el mismo
+  mínimo (`services/products.py::MIN_PRODUCT_PRICE`), así que el staff ve el
+  error en español antes de llegar a la API.
+- `POST /orders` y `POST /orders/checkout` responden `422` si algún producto
+  sigue con un precio menor (filas anteriores a la regla, p. ej. $0). La
+  tienda trata esos productos igual que los inactivos
+  (`services/products.py::is_purchasable`): "No disponible", `cart:add` los
+  rechaza y el checkout devuelve al carrito.
+- `POST /payments` responde `422` si el total del pedido es `0.00`.
+
 ## Cambios 2026-10-23: la tienda solo muestra categorías con productos
 
 Rama `feat/storefront-redesign`. backend-api agregó a `GET /categories`
