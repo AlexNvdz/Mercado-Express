@@ -19,9 +19,9 @@ def add(request, product_id):
     if product is None:
         messages.error(request, "Producto no encontrado.")
         return redirect("core:home")
-    if product.get("is_active") is False:
-        # GET /products/{id} still returns inactive products, but POST /orders
-        # rejects them -- don't let one into the cart.
+    if not products_service.is_purchasable(product):
+        # GET /products/{id} still returns inactive or under-minimum-price
+        # products, but POST /orders rejects them -- don't let one into the cart.
         messages.error(request, f"{product['name']} ya no está disponible.")
         return redirect(request.POST.get("next") or "catalog:list")
 

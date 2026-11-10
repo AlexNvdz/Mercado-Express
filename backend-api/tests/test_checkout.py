@@ -13,7 +13,7 @@ from tests.test_orders import _make_stocked_product
 async def test_checkout_creates_paid_order_with_payment_and_sale(
     admin_client: AsyncClient, customer_client: AsyncClient
 ) -> None:
-    product_id = await _make_stocked_product(admin_client, "CHK-001", stock=10, price="25.00")
+    product_id = await _make_stocked_product(admin_client, "CHK-001", stock=10, price="25000.00")
 
     resp = await customer_client.post(
         "/api/v1/orders/checkout",
@@ -24,13 +24,13 @@ async def test_checkout_creates_paid_order_with_payment_and_sale(
     assert order["status"] == "paid"
     assert len(order["items"]) == 1
     assert [(p["status"], p["amount"], p["method"]) for p in order["payments"]] == [
-        ("completed", "50.00", "card")
+        ("completed", "50000.00", "card")
     ]
 
     inv = (await admin_client.get(f"/api/v1/inventory/{product_id}")).json()
     assert inv["quantity_reserved"] == 2
     summary = (await admin_client.get("/api/v1/reports/summary")).json()
-    assert summary["net_revenue"] == "50.00"
+    assert summary["net_revenue"] == "50000.00"
     history = (await admin_client.get(f"/api/v1/orders/{order['id']}/history")).json()
     assert [h["source"] for h in history] == ["order_created", "payment"]
 
@@ -88,7 +88,7 @@ async def test_checkout_rolls_back_everything_if_payment_fails(
 
 
 async def test_order_out_includes_payments(admin_client: AsyncClient, customer_client: AsyncClient) -> None:
-    product_id = await _make_stocked_product(admin_client, "CHK-004", stock=10, price="10.00")
+    product_id = await _make_stocked_product(admin_client, "CHK-004", stock=10, price="10000.00")
     order = (
         await customer_client.post(
             "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 1}]}
@@ -100,7 +100,7 @@ async def test_order_out_includes_payments(admin_client: AsyncClient, customer_c
 
     detail = (await customer_client.get(f"/api/v1/orders/{order['id']}")).json()
     assert [(p["status"], p["amount"], p["method"]) for p in detail["payments"]] == [
-        ("completed", "10.00", "cash")
+        ("completed", "10000.00", "cash")
     ]
     listed = (await admin_client.get("/api/v1/orders")).json()["items"]
     assert [len(o["payments"]) for o in listed] == [1]

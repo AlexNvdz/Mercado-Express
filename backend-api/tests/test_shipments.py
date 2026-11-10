@@ -1,7 +1,9 @@
 from httpx import AsyncClient
 
 
-async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int, price: str = "20.00") -> str:
+async def _make_stocked_product(
+    admin_client: AsyncClient, sku: str, stock: int, price: str = "20000.00"
+) -> str:
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     category_id = category.json()["id"]
     product = await admin_client.post(

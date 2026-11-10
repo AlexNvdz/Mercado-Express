@@ -27,12 +27,22 @@ from __future__ import annotations
 
 import uuid
 from collections import Counter
+from decimal import Decimal
 
 from django.conf import settings
 
 from . import mock_data
 from .api_client import api_client
 from .exceptions import ApiNotFoundError
+
+# Mirrors backend-api's MIN_PRODUCT_PRICE: POST/PATCH /products reject a lower
+# price and POST /orders refuses products still priced below it (422).
+MIN_PRODUCT_PRICE = Decimal("5900")
+
+
+def is_purchasable(product: dict) -> bool:
+    """Inactive products and ones priced below the minimum (e.g. $0) can't be bought."""
+    return product.get("is_active") is not False and Decimal(str(product["price"])) >= MIN_PRODUCT_PRICE
 
 
 def list_categories(*, page: int = 1, page_size: int = 100) -> dict:

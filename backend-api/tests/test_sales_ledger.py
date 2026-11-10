@@ -40,16 +40,16 @@ async def _entries(db_session: AsyncSession, order_id: str) -> list[tuple[SaleKi
 async def test_cancel_or_refund_of_paid_order_appends_reversal(
     admin_client: AsyncClient, customer_client: AsyncClient, db_session: AsyncSession, target: str
 ) -> None:
-    order_id = await _paid_order(admin_client, customer_client, f"LED-{target}", "40.00")
-    assert await _entries(db_session, order_id) == [(SaleKind.SALE, Decimal("40.00"))]
+    order_id = await _paid_order(admin_client, customer_client, f"LED-{target}", "40000.00")
+    assert await _entries(db_session, order_id) == [(SaleKind.SALE, Decimal("40000.00"))]
 
     resp = await admin_client.patch(f"/api/v1/orders/{order_id}/status", json={"status": target})
     assert resp.status_code == 200
 
     # The original sale is untouched; the reversal is its negation.
     assert await _entries(db_session, order_id) == [
-        (SaleKind.SALE, Decimal("40.00")),
-        (SaleKind.REVERSAL, Decimal("-40.00")),
+        (SaleKind.SALE, Decimal("40000.00")),
+        (SaleKind.REVERSAL, Decimal("-40000.00")),
     ]
 
 
@@ -59,7 +59,12 @@ async def test_cancelling_unpaid_order_writes_no_ledger_entry(
     category = await admin_client.post("/api/v1/categories", json={"name": "Cat-LED-unpaid"})
     product = await admin_client.post(
         "/api/v1/products",
-        json={"sku": "LED-UNPAID", "name": "Unpaid", "category_id": category.json()["id"], "price": "9.00"},
+        json={
+            "sku": "LED-UNPAID",
+            "name": "Unpaid",
+            "category_id": category.json()["id"],
+            "price": "9000.00",
+        },
     )
     await admin_client.post(f"/api/v1/inventory/{product.json()['id']}/adjust", json={"delta": 5})
     order = await customer_client.post(
@@ -75,7 +80,7 @@ async def test_cancelling_unpaid_order_writes_no_ledger_entry(
 async def test_record_reversal_is_idempotent(
     admin_client: AsyncClient, customer_client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    order_id = await _paid_order(admin_client, customer_client, "LED-IDEM", "15.00")
+    order_id = await _paid_order(admin_client, customer_client, "LED-IDEM", "15000.00")
     await admin_client.patch(f"/api/v1/orders/{order_id}/status", json={"status": "refunded"})
 
     service = OrderService(db_session)
@@ -92,15 +97,15 @@ async def test_record_reversal_is_idempotent(
 async def test_database_rejects_second_reversal_and_wrong_sign(
     admin_client: AsyncClient, customer_client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    order_id = uuid.UUID(await _paid_order(admin_client, customer_client, "LED-DB", "10.00"))
+    order_id = uuid.UUID(await _paid_order(admin_client, customer_client, "LED-DB", "10000.00"))
     await admin_client.patch(f"/api/v1/orders/{order_id}/status", json={"status": "cancelled"})
 
     bad_rows = [
         Sale(order_id=order_id, kind=SaleKind.REVERSAL, total_amount=Decimal("-10.00")),  # duplicate
-        Sale(order_id=order_id, kind=SaleKind.SALE, total_amount=Decimal("10.00")),  # duplicate
+        Sale(order_id=order_id, kind=SaleKind.SALE, total_amount=Decimal("10000.00")),  # duplicate
     ]
-    other_order_id = uuid.UUID(await _paid_order(admin_client, customer_client, "LED-DB2", "10.00"))
-    bad_rows.append(Sale(order_id=other_order_id, kind=SaleKind.REVERSAL, total_amount=Decimal("5.00")))
+    other_order_id = uuid.UUID(await _paid_order(admin_client, customer_client, "LED-DB2", "10000.00"))
+    bad_rows.append(Sale(order_id=other_order_id, kind=SaleKind.REVERSAL, total_amount=Decimal("5000.00")))
 
     for row in bad_rows:
         with pytest.raises(IntegrityError):

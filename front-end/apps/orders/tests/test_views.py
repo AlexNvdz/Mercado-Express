@@ -239,6 +239,21 @@ def test_checkout_blocks_product_deactivated_after_adding_it(client):
 
 
 @pytest.mark.django_db
+def test_product_priced_below_minimum_cannot_be_bought(client):
+    _login(client)
+    client.post(reverse("cart:add", kwargs={"product_id": ARROZ_ID}), {"quantity": 1})
+    mock_data.MOCK_PRODUCTS[0]["price"] = "0.00"
+
+    assert "No disponible" in client.get(reverse("catalog:detail", kwargs={"product_id": ARROZ_ID})).content.decode()
+    response = client.get(reverse("orders:checkout"))
+    assert response.url == reverse("cart:detail")
+    client.post(reverse("cart:remove", kwargs={"product_id": ARROZ_ID}))
+    added = client.post(reverse("cart:add", kwargs={"product_id": ARROZ_ID}), {"quantity": 1}, follow=True)
+    assert "ya no está disponible" in added.content.decode()
+    assert ARROZ_ID not in client.session.get("cart", {})
+
+
+@pytest.mark.django_db
 def test_product_detail_disables_buying_inactive_product(client):
     mock_data.MOCK_PRODUCTS[0]["is_active"] = False
     response = client.get(reverse("catalog:detail", kwargs={"product_id": ARROZ_ID}))

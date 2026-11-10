@@ -169,7 +169,7 @@ def checkout(request):
         messages.info(request, "Añade una dirección de envío para continuar.")
         return redirect(f"{reverse('dashboard:address_add')}?next={reverse('orders:checkout')}")
 
-    unavailable = [item["product"]["name"] for item in request.cart if item["product"].get("is_active") is False]
+    unavailable = [item["product"]["name"] for item in request.cart if not products_service.is_purchasable(item["product"])]
     if unavailable:
         messages.error(
             request,

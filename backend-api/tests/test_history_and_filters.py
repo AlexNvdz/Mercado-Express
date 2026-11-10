@@ -12,7 +12,12 @@ async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int 
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     product = await admin_client.post(
         "/api/v1/products",
-        json={"sku": sku, "name": f"Product {sku}", "category_id": category.json()["id"], "price": "20.00"},
+        json={
+            "sku": sku,
+            "name": f"Product {sku}",
+            "category_id": category.json()["id"],
+            "price": "20000.00",
+        },
     )
     product_id = product.json()["id"]
     await admin_client.post(f"/api/v1/inventory/{product_id}/adjust", json={"delta": stock})

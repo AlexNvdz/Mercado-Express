@@ -32,25 +32,25 @@ DEMO_CATALOG: list[tuple[str, str, list[tuple[str, str, str, str, int]]]] = [
         "Electronics",
         "Phones, computers and gadgets",
         [
-            ("ELEC-001", "Wireless Mouse", "2.4GHz wireless mouse, USB receiver", "19.99", 100),
-            ("ELEC-002", "Mechanical Keyboard", "RGB backlit mechanical keyboard", "59.99", 50),
-            ("ELEC-003", "USB-C Hub", "7-in-1 USB-C hub with HDMI", "34.99", 75),
+            ("ELEC-001", "Wireless Mouse", "2.4GHz wireless mouse, USB receiver", "39900.00", 100),
+            ("ELEC-002", "Mechanical Keyboard", "RGB backlit mechanical keyboard", "100000.00", 50),
+            ("ELEC-003", "USB-C Hub", "7-in-1 USB-C hub with HDMI", "19900.00", 75),
         ],
     ),
     (
         "Home & Kitchen",
         "Everyday home and kitchen essentials",
         [
-            ("HOME-001", "Ceramic Mug Set", "Set of 4 ceramic mugs, 350ml", "24.99", 60),
-            ("HOME-002", "Stainless Steel Knife Set", "6-piece kitchen knife set", "44.99", 30),
+            ("HOME-001", "Ceramic Mug Set", "Set of 4 ceramic mugs, 350ml", "40000.00", 60),
+            ("HOME-002", "Stainless Steel Knife Set", "6-piece kitchen knife set", "79900.00", 30),
         ],
     ),
     (
         "Books",
         "Fiction and non-fiction",
         [
-            ("BOOK-001", "The Pragmatic Programmer", "Software craftsmanship classic", "39.99", 40),
-            ("BOOK-002", "Clean Code", "A handbook of agile software craftsmanship", "42.99", 40),
+            ("BOOK-001", "The Pragmatic Programmer", "Software craftsmanship classic", "50000.00", 40),
+            ("BOOK-002", "Clean Code", "A handbook of agile software craftsmanship", "30000.00", 40),
         ],
     ),
 ]

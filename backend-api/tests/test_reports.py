@@ -3,7 +3,9 @@ from decimal import Decimal
 from httpx import AsyncClient
 
 
-async def _make_stocked_product(admin_client: AsyncClient, sku: str, stock: int, price: str = "25.00") -> str:
+async def _make_stocked_product(
+    admin_client: AsyncClient, sku: str, stock: int, price: str = "25000.00"
+) -> str:
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     category_id = category.json()["id"]
     product = await admin_client.post(
@@ -33,7 +35,7 @@ async def test_report_summary_requires_auth(client: AsyncClient) -> None:
 async def test_report_summary_reflects_paid_orders_only(
     admin_client: AsyncClient, customer_client: AsyncClient
 ) -> None:
-    product_id = await _make_stocked_product(admin_client, "RPT-001", stock=10, price="50.00")
+    product_id = await _make_stocked_product(admin_client, "RPT-001", stock=10, price="50000.00")
 
     paid = await customer_client.post(
         "/api/v1/orders", json={"items": [{"product_id": product_id, "quantity": 2}]}
@@ -64,7 +66,7 @@ async def test_report_summary_reflects_paid_orders_only(
 async def test_report_summary_is_net_of_cancelled_and_refunded_orders(
     admin_client: AsyncClient, customer_client: AsyncClient
 ) -> None:
-    product_id = await _make_stocked_product(admin_client, "RPT-NET", stock=20, price="50.00")
+    product_id = await _make_stocked_product(admin_client, "RPT-NET", stock=20, price="50000.00")
 
     async def paid_order(quantity: int) -> str:
         order = await customer_client.post(
@@ -91,21 +93,21 @@ async def test_report_summary_is_net_of_cancelled_and_refunded_orders(
 
     body = (await admin_client.get("/api/v1/reports/summary")).json()
     # Each test runs in its own rolled-back transaction, so these are exact.
-    assert body["gross_revenue"] == "300.00"
-    assert body["refunded_amount"] == "200.00"
-    assert body["net_revenue"] == "100.00"
+    assert body["gross_revenue"] == "300000.00"
+    assert body["refunded_amount"] == "200000.00"
+    assert body["net_revenue"] == "100000.00"
     assert body["sale_count"] == 3
     assert body["reversal_count"] == 2
 
     top = {row["sku"]: row for row in body["top_products"]}
     assert top["RPT-NET"]["units_sold"] == 2
-    assert top["RPT-NET"]["revenue"] == "100.00"
+    assert top["RPT-NET"]["revenue"] == "100000.00"
 
 
 async def test_report_summary_sales_by_region(
     admin_client: AsyncClient, customer_client: AsyncClient
 ) -> None:
-    product_id = await _make_stocked_product(admin_client, "RPT-REG", stock=20, price="50.00")
+    product_id = await _make_stocked_product(admin_client, "RPT-REG", stock=20, price="50000.00")
 
     async def address(state: str) -> str:
         resp = await customer_client.post(
@@ -143,9 +145,9 @@ async def test_report_summary_sales_by_region(
 
     body = (await admin_client.get("/api/v1/reports/summary")).json()
     assert body["sales_by_region"] == [
-        {"region": "Antioquia", "net_revenue": "150.00", "order_count": 2},
-        {"region": "Sin dirección", "net_revenue": "100.00", "order_count": 1},
-        {"region": "Cundinamarca", "net_revenue": "50.00", "order_count": 1},
+        {"region": "Antioquia", "net_revenue": "150000.00", "order_count": 2},
+        {"region": "Sin dirección", "net_revenue": "100000.00", "order_count": 1},
+        {"region": "Cundinamarca", "net_revenue": "50000.00", "order_count": 1},
     ]
     regions = body["sales_by_region"]
     assert sum(Decimal(r["net_revenue"]) for r in regions) == Decimal(body["net_revenue"])
