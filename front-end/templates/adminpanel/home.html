@@ -13,7 +13,7 @@
     </div>
 </div>
 
-<section class="figures" aria-label="Cifras principales">
+<section class="figures figures--lead" aria-label="Cifras principales">
     <div class="figure figure--lead">
         <span class="figure__label caps">Ingresos netos</span>
         <strong class="figure__value">${{ stats.net_revenue|money }}</strong>
@@ -36,11 +36,33 @@
     </div>
 </section>
 
+<p class="group-label caps">Operación</p>
+<section class="sheet flow" aria-labelledby="status-title">
+    <div class="sheet__head">
+        <h2 class="sheet__title" id="status-title">Pedidos por estado</h2>
+        <a class="sheet__link" href="{% url 'adminpanel:orders_list' %}">Ver los {{ stats.total_orders|money }}</a>
+    </div>
+    {% if stats.orders_by_status %}
+    <div class="flow__bar" aria-hidden="true">{% for status, count in stats.orders_by_status.items %}<span class="flow__seg status--{{ status }}" style="width: {% widthratio count stats.total_orders 100 %}%"></span>{% endfor %}</div>
+    <ul class="flow__stages">
+        {% for status, count in stats.orders_by_status.items %}
+        <li class="flow__stage">
+            <a href="{% url 'adminpanel:orders_list' %}?status={{ status }}"><span class="status status--{{ status }}">{{ status|order_status_label }}</span></a>
+            <strong class="flow__count">{{ count|money }}</strong>
+            <span class="flow__share">{% widthratio count stats.total_orders 100 %} %</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="sheet-empty"><h2>Todavía no hay pedidos</h2><p>Aparecerán aquí en cuanto un cliente confirme una compra.</p></div>
+    {% endif %}
+</section>
+
 <div class="sheets">
     <section class="sheet" aria-labelledby="attend-title">
         <div class="sheet__head">
             <h2 class="sheet__title" id="attend-title">Pedidos por atender</h2>
-            <a class="sheet__link" href="{% url 'adminpanel:orders_list' %}">Ver los {{ stats.total_orders|money }}</a>
+            <a class="sheet__link" href="{% url 'adminpanel:orders_list' %}">Ver todos</a>
         </div>
         <table class="ledger">
             <thead><tr><th>Pedido</th><th>Ciudad</th><th class="num">Productos</th><th class="num">Total</th><th class="vcol" title="Tiempo desde el último cambio de estado">Espera</th></tr></thead>
@@ -49,7 +71,7 @@
                 <tr class="band"><td colspan="5">{{ stage.label }}<b>{{ stage.count|money }}</b>{% if stage.count > stage.orders|length %}<a href="{% url 'adminpanel:orders_list' %}?status={{ stage.status }}">Ver todos</a>{% endif %}</td></tr>
                 {% for order in stage.orders %}
                 <tr>
-                    <td class="lead"><a class="code" href="{% url 'adminpanel:order_detail' order.id %}">{{ order.order_number }}</a></td>
+                    <td class="lead"><a class="code code--clip" href="{% url 'adminpanel:order_detail' order.id %}" title="{{ order.order_number }}">{{ order.order_number }}</a></td>
                     <td data-label="Ciudad">{{ order.shipping_address.city|default:"Sin dirección" }}</td>
                     <td class="num" data-label="Productos">{{ order.items|length }}</td>
                     <td class="num" data-label="Total">${{ order.total_amount|money }}</td>
@@ -63,7 +85,6 @@
         </table>
     </section>
 
-    <div class="stack-sheets">
     <section class="sheet" aria-labelledby="low-title">
         <div class="sheet__head">
             <h2 class="sheet__title" id="low-title">Stock bajo</h2>
@@ -75,7 +96,7 @@
             <tbody>
                 {% for row in stats.low_stock %}
                 <tr>
-                    <td class="lead"><span class="code">{{ row.sku|default:"Sin SKU" }}</span>{% if row.availability.quantity_available <= 0 %} <span class="chip chip--off">Agotado</span>{% endif %}<span class="sub">{{ row.name }}</span></td>
+                    <td class="lead"><span class="code code--clip" title="{{ row.sku }}">{{ row.sku|default:"Sin SKU" }}</span>{% if row.availability.quantity_available <= 0 %} <span class="chip chip--off">Agotado</span>{% endif %}<span class="sub">{{ row.name }}</span></td>
                     <td class="num" data-label="Disponible">{{ row.availability.quantity_available }}</td>
                     <td class="num" data-label="Reorden">{{ row.availability.reorder_level }}</td>
                     <td class="vcol" data-label="Variación"><span class="var {{ row.availability.quantity_available|stock_gap_tone:row.availability.reorder_level }}">{{ row.availability.quantity_available|stock_gap:row.availability.reorder_level }}</span></td>
@@ -88,31 +109,11 @@
         <div class="sheet-empty"><h2>Todo el stock está en orden</h2><p>Ningún producto está por debajo de su nivel de reorden.</p></div>
         {% endif %}
     </section>
-    <section class="sheet" aria-labelledby="status-title">
-        <div class="sheet__head"><h2 class="sheet__title" id="status-title">Pedidos por estado</h2></div>
-        {% if stats.orders_by_status %}
-        <table class="ledger">
-            <thead><tr><th>Estado</th><th class="num">Pedidos</th><th>Participación</th></tr></thead>
-            <tbody>
-                {% for status, count in stats.orders_by_status.items %}
-                <tr>
-                    <td class="lead"><a href="{% url 'adminpanel:orders_list' %}?status={{ status }}"><span class="status status--{{ status }}">{{ status|order_status_label }}</span></a></td>
-                    <td class="num" data-label="Pedidos">{{ count|money }}</td>
-                    <td data-label="Participación"><div class="share"><span class="share__bar"><span class="share__fill" style="width: {% widthratio count stats.total_orders 100 %}%"></span></span><span class="num">{% widthratio count stats.total_orders 100 %} %</span></div></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="sheet-empty"><h2>Todavía no hay pedidos</h2><p>Aparecerán aquí en cuanto un cliente confirme una compra.</p></div>
-        {% endif %}
-    </section>
-
-    </div>
 </div>
 
+<p class="group-label caps">Ventas</p>
 <div{% if stats.sales_by_region %} class="sheets sheets--even"{% endif %}>
-<section class="sheet" aria-labelledby="top-title">
+    <section class="sheet" aria-labelledby="top-title">
         <div class="sheet__head"><h2 class="sheet__title" id="top-title">Más vendidos</h2></div>
         {% if stats.top_products %}
         <table class="ledger">
@@ -130,12 +131,12 @@
 
     {% if stats.sales_by_region %}
     <section class="sheet" aria-labelledby="region-title">
-        <div class="sheet__head"><h2 class="sheet__title" id="region-title">Ventas por región</h2></div>
+        <div class="sheet__head"><h2 class="sheet__title" id="region-title">Ventas por región</h2><p class="sheet__note">Ingreso neto del libro de ventas</p></div>
         <table class="ledger">
-            <thead><tr><th>Región</th><th class="num">Pedidos</th><th class="num">Ingreso neto</th></tr></thead>
+            <thead><tr><th>Región</th><th class="num">Pedidos</th><th class="num">Ingreso neto</th><th class="vcol">Del total</th></tr></thead>
             <tbody>
                 {% for row in stats.sales_by_region %}
-                <tr><td class="lead">{{ row.region }}</td><td class="num" data-label="Pedidos">{{ row.order_count|money }}</td><td class="num" data-label="Ingreso neto">${{ row.net_revenue|money }}</td></tr>
+                <tr><td class="lead">{{ row.region }}</td><td class="num" data-label="Pedidos">{{ row.order_count|money }}</td><td class="num" data-label="Ingreso neto">${{ row.net_revenue|money }}</td><td class="vcol" data-label="Del total">{% widthratio row.net_revenue stats.net_revenue 100 %} %</td></tr>
                 {% endfor %}
             </tbody>
         </table>

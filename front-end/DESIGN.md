@@ -292,12 +292,12 @@ components:
   pagination-page-current:
     backgroundColor: "{colors.g10}"
     textColor: "{colors.paper}"
-  share-track:
+  flow-track:
     backgroundColor: "{colors.g2}"
-    height: "6px"
-  share-fill:
-    backgroundColor: "{colors.volt}"
-    height: "6px"
+    height: "8px"
+  flow-segment:
+    backgroundColor: "status colour (currentColor of .status--<state>)"
+    height: "8px"
   store-button:
     backgroundColor: "{colors.volt}"
     textColor: "{colors.paper}"
@@ -449,7 +449,7 @@ The home, the product catalog and the category index carry this system, approved
 The pinned MercadoExpress greens, stretched into a fixed ramp, with four state hues held in reserve.
 
 ### Primary
-- **Garden Action Green** (`volt`, #2e7d50): every primary button, the focus outline, the caret, the share-bar fill, and the "up" variation marker. If a staff member can click it to act, it is this green.
+- **Garden Action Green** (`volt`, #2e7d50): every primary button, the focus outline, the caret, and the "up" variation marker. If a staff member can click it to act, it is this green.
 - **Deep Garden Green** (`volt-deep`, #22623e): primary button hover, links, sheet links ("Ver todos"), hover text on secondary buttons and crumbs.
 - **Mint Wash** (`volt-soft`, #e2f1e5): the 3px focus ring on fields, the ghost-button hover fill, the soft outline on the focused global search.
 
@@ -465,7 +465,7 @@ The pinned MercadoExpress greens, stretched into a fixed ramp, with four state h
 - **Lichen** (`g5`, #8ea996): rail group names and rail counts, on forest only.
 - **Control Border Sage** (`g4`, #b5cbb9): borders of inputs, selects, the global search and secondary buttons; rail footer links.
 - **Hairline Sage** (`g3`, #d3e2d5): the structural hairline around sheets, the figure strip, the filter bar and the top bar; pagination tile borders; rail link text.
-- **Inner Rule Mint** (`g2`, #e6efe6): rules inside a sheet (row dividers, fact and total rows, the variation column's left rule), plain chip fill, share-bar track.
+- **Inner Rule Mint** (`g2`, #e6efe6): rules inside a sheet (row dividers, fact and total rows, the variation column's left rule), plain chip fill, order-flow bar track.
 - **Mint Canvas** (`g1`, #f3f8f2): the workspace background behind the sheets (also `--canvas`).
 - **Row Hover Mist** (`g0`, #f7faf6): ledger row hover, filter tab hover.
 - **Sheet White** (`paper`, #ffffff): sheets, the figure strip, the top bar, fields, secondary buttons.
@@ -540,7 +540,7 @@ Archivo is loaded as a variable font (width 62-125, weight 400-800) only on pane
 
 The panel body is a two-column grid: a 232px forest rail and a fluid column holding a sticky 60px white top bar and the workspace (padding 22px 28px 64px, on the g1 canvas). The rail is sticky at full viewport height, with the brand, the grouped navigation (Operación, Catálogo) with live counts, and a footer pushed to the bottom. The top bar holds the global search (up to 620px wide, `/` shortcut hint) and the date and role at the right.
 
-Each page opens with a page head: optional crumbs, then title, a status chip or meta line, and actions pushed to the right on one row. Below it, the dashboard sets one figure strip (auto-fit columns, minimum 180px, the lead figure spanning two) and then sheets in a grid: 1.55fr / 1fr on the dashboard, even halves where two lists compare, or content plus a 340px aside on record pages (order, product form). Sheets in a column stack inside a grid with a 20px gap. Inside a sheet the rhythm is tight: head 12px 16px, body 14px 16px, ledger cells 8px 12px, action rows 8px apart. List pages put a filter bar and, for orders, a strip of status tabs above a single full-width ledger, with pagination joined to its bottom edge.
+Each page opens with a page head: optional crumbs, then title, a status chip or meta line, and actions pushed to the right on one row. Below it, the dashboard sets one figure strip (lead figure 1.6fr plus three equal columns down to 701px, two per row on phones), then two groups under a caps label ruled out to the edge: "Operación" (the order-flow sheet: one stacked bar in status colours plus a column per status in lifecycle order; then orders to attend and low stock, 1.55fr / 1fr) and "Ventas" (best sellers and regions, even halves down to 901px). Other pages use sheets in a grid: 1.55fr / 1fr, even halves where two lists compare, or content plus a 340px aside on record pages (order, product form). Sheets in a column stack inside a grid with a 20px gap. Inside a sheet the rhythm is tight: head 12px 16px, body 14px 16px, ledger cells 8px 12px, action rows 8px apart. List pages put a filter bar and, for orders, a strip of status tabs above a single full-width ledger, with pagination joined to its bottom edge.
 
 Responsive behaviour, measured from the build:
 - **≤1100px:** sheet grids collapse to one column; the lead figure stops spanning two.

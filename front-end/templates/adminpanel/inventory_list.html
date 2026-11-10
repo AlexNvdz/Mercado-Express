@@ -12,16 +12,15 @@
 {% include "partials/product_filters.html" with show_stock=True show_estado=True %}
 
 {% if rows %}
-<section class="sheet">
-    <table class="ledger">
+<section class="sheet sheet__scroll">
+    <table class="ledger ledger--dense">
         <thead>
-            <tr><th>SKU</th><th>Producto</th><th class="num">En bodega</th><th class="num">Reservado</th><th class="num">Disponible</th><th class="vcol" title="Disponible menos el nivel de reorden">Variación</th><th>Ajustar stock</th><th>Nivel de reorden</th></tr>
+            <tr><th>Producto</th><th class="num">En bodega</th><th class="num">Reservado</th><th class="num">Disponible</th><th class="vcol" title="Disponible menos el nivel de reorden">Variación</th><th>Ajustar stock</th><th>Nivel de reorden</th></tr>
         </thead>
         <tbody>
             {% for row in rows %}
             <tr>
-                <td class="lead"><a class="code" href="{% url 'adminpanel:inventory_history' row.product.id %}" title="Historial de stock">{{ row.product.sku }}</a></td>
-                <td class="name" data-label="Producto">{{ row.product.name }}{% if not row.product.is_active %} <span class="chip chip--off">Inactivo</span>{% endif %}{% if row.availability and row.availability.quantity_available <= 0 %} <span class="chip chip--off">Agotado</span>{% endif %}<span class="sub"><a href="{% url 'adminpanel:inventory_history' row.product.id %}">Historial</a></span></td>
+                <td class="lead name"><a class="code" href="{% url 'adminpanel:inventory_history' row.product.id %}" title="Historial de stock">{{ row.product.sku }}</a>{% if not row.product.is_active %} <span class="chip chip--off">Inactivo</span>{% endif %}{% if row.availability and row.availability.quantity_available <= 0 %} <span class="chip chip--off">Agotado</span>{% endif %}<span class="sub">{{ row.product.name }} · <a href="{% url 'adminpanel:inventory_history' row.product.id %}">Historial</a></span></td>
                 {% if row.availability %}
                 <td class="num" data-label="En bodega">{{ row.availability.quantity_on_hand }}</td>
                 <td class="num" data-label="Reservado">{{ row.availability.quantity_reserved }}</td>

@@ -10,16 +10,19 @@
 .figure:first-child { border-left: 0; }
 .figure--lead { grid-column: span 2; }
 .figure__label { display: block; font-size: 11px; color: var(--g7); }
-.figure__value { display: block; margin: 6px 0 4px; font-size: 1.85rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: var(--g10); }
+.figure__value { display: block; margin: 6px 0 4px; font-size: clamp(1.4rem, 0.9rem + 1.1vw, 1.85rem); overflow-wrap: anywhere; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: var(--g10); }
 .figure__note { display: block; font-size: 12.5px; color: var(--g7); }
 .figure__note a { font-weight: 600; }
 @media (max-width: 1100px) { .figure--lead { grid-column: auto; } }
+/* Dashboard strip: the lead figure wider, all four on one line down to 701px. */
+.figures--lead { grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); }
+.figures--lead .figure--lead { grid-column: auto; }
 @media (max-width: 700px) {
-    .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .figures, .figures--lead { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .figure { border-left: 0; border-top: var(--hair); }
     .figure:nth-child(even) { border-left: var(--hair); }
     .figure:nth-child(-n + 2) { border-top: 0; }
-    .figure--lead { grid-column: 1 / -1; border-left: 0; }
+    .figure--lead, .figures--lead .figure--lead { grid-column: 1 / -1; border-left: 0; }
     .figure--lead ~ .figure:nth-child(even) { border-left: 0; }
     .figure--lead ~ .figure:nth-child(odd) { border-left: var(--hair); }
     .figure--lead ~ .figure:nth-child(2) { border-top: var(--hair); }
@@ -43,7 +46,9 @@
 .sheets { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; align-items: start; margin-bottom: 20px; }
 .sheets--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .sheets--aside { grid-template-columns: minmax(0, 1fr) 340px; }
-@media (max-width: 1100px) { .sheets, .sheets--even, .sheets--aside { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) { .sheets, .sheets--aside { grid-template-columns: minmax(0, 1fr); } }
+/* Two short ledgers (best sellers, regions) still fit side by side on a tablet. */
+@media (max-width: 900px) { .sheets--even { grid-template-columns: minmax(0, 1fr); } }
 .stack-sheets { display: grid; gap: 20px; align-content: start; min-width: 0; }
 
 .sheet { min-width: 0; background: var(--paper); border: var(--hair); }
@@ -57,15 +62,23 @@
 .sheet__body > p:only-child { margin: 0; color: var(--g7); }
 .sheet__foot { padding: 10px 16px; border-top: var(--hair-soft); color: var(--g7); font-size: 13px; }
 .sheet__scroll { overflow-x: auto; }
+/* Inventory: seven columns with two forms can't fit a tablet. Below 720px
+   of sheet it scrolls inside the sheet (never the page) instead of crushing
+   SKUs into one letter per line; phones get the stacked rows below. */
+@media (min-width: 701px) { .ledger--dense { min-width: 720px; } }
 
 /* --- Ledger tables ------------------------------------------------------- */
 .ledger { width: 100%; border-collapse: collapse; }
-.ledger th { padding: 8px 12px; border-bottom: var(--hair); text-align: left; font-size: 11px; color: var(--g7); font-variation-settings: var(--cond); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; white-space: nowrap; }
+.ledger th { padding: 8px 12px; border-bottom: var(--hair); text-align: left; font-size: 11px; color: var(--g7); font-variation-settings: var(--cond); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 .ledger td { padding: 8px 12px; border-bottom: var(--hair-soft); vertical-align: middle; }
 .ledger tbody tr:last-child td { border-bottom: 0; }
 .ledger tbody tr:hover td { background: var(--g0); }
 .ledger .num { text-align: right; white-space: nowrap; }
-.ledger .code { font-weight: 650; color: var(--g10); white-space: nowrap; }
+/* anywhere (not break-word) also lowers the cell's min-content, so a long
+   SKU or Olist order number wraps instead of pushing the table past its sheet. */
+.ledger .code { font-weight: 650; color: var(--g10); overflow-wrap: anywhere; }
+/* Dashboard: one line per code, the full value in the title attribute. */
+.ledger .code--clip { display: inline-block; max-width: 18ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .ledger a.code:hover { color: var(--volt-deep); }
 .ledger .sub { display: block; font-size: 12.5px; color: var(--g7); }
 .ledger td.name { min-width: 22ch; }
@@ -108,10 +121,21 @@
 .chip--off { background: var(--rose-soft); color: var(--rose); }
 .chip--warn { background: var(--amber-soft); color: var(--amber); }
 
-/* --- Status distribution: a ruled share bar per row ----------------------- */
-.share { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: center; gap: 10px; }
-.share__bar { height: 6px; background: var(--g2); }
-.share__fill { display: block; height: 100%; background: var(--volt); }
+/* --- Dashboard groups: a caps label ruled out to the edge ----------------- */
+.group-label { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; font-size: 11px; color: var(--g7); }
+.group-label::after { content: ""; flex: 1; border-top: var(--hair); }
+
+/* --- Order flow: one stacked bar plus a column per status, lifecycle order - */
+.flow { margin-bottom: 20px; }
+.flow__bar { display: flex; gap: 2px; height: 8px; margin: 16px 16px 0; background: var(--g2); }
+.flow .flow__seg { min-width: 3px; background: currentColor; }
+.flow__stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); row-gap: 12px; margin: 0; padding: 14px 0 16px; list-style: none; }
+.flow__stage { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 0 14px; border-left: var(--hair-soft); }
+.flow__stage:first-child { border-left: 0; }
+.flow__stage a:hover { text-decoration: none; }
+.flow .status { white-space: normal; }
+.flow__count { font-size: 1.35rem; font-weight: 700; line-height: 1.1; color: var(--g10); }
+.flow__share { font-size: 12.5px; color: var(--g7); }
 
 /* --- Empty state inside a sheet ------------------------------------------- */
 .sheet-empty { padding: 28px 16px; text-align: center; }

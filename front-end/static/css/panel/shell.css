@@ -112,7 +112,8 @@
 /* --- Phones and tablets: the rail becomes a forest band over the content,
    every section visible at once (no hidden menu, no sideways scroll). --- */
 @media (max-width: 1024px) {
-    .panel-app { grid-template-columns: minmax(0, 1fr); }
+    /* Rail, top bar, workspace: only the workspace takes the slack. */
+    .panel-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
     .rail { grid-row: auto; position: static; height: auto; padding: 12px 0 0; overflow: visible; }
     .rail__brand { padding: 0 16px 10px; }
     .rail__group { display: none; }
