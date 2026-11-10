@@ -40,10 +40,17 @@
 .gap-top { margin-top: 12px; }
 .field-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
 .field-row > * { margin: 0; }
-.cell-form { display: flex; align-items: center; gap: 6px; }
-.cell-form input { width: 112px; height: 32px; padding: 4px 8px; border: 1px solid var(--g4); border-radius: 4px; font: inherit; text-align: right; }
-.cell-form input[type="text"] { width: 124px; text-align: left; }
+/* Wraps inside its cell when the table is tight (inventory at 701-1440px). */
+.cell-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cell-form input { width: 84px; height: 32px; padding: 4px 8px; border: 1px solid var(--g4); border-radius: 4px; font: inherit; text-align: right; }
+.cell-form input[type="text"] { width: 104px; text-align: left; }
 .cell-form input[name$="reorder_level"] { width: 76px; }
+/* Wide screens: inputs on one line, button below at worst. Narrower, the
+   table needs that room, so the form stacks instead. */
+@media (min-width: 1200px) {
+    .cell-form:has(input[type="text"]) { min-width: 194px; }
+    .cell-form:has(input[name$="reorder_level"]) { min-width: 158px; }
+}
 @media (max-width: 700px) {
     .cell-form { flex-wrap: wrap; justify-content: flex-end; }
     /* Touch targets: 44px on phones (PRODUCT.md, accessibility). */
