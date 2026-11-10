@@ -1,5 +1,9 @@
 /* ==========================================================================
    Buttons
+   Hover colours sit behind (hover: hover) so a tap on a phone does not leave
+   a button stuck in its hover fill; the press is a 0.96 scale, never on a
+   disabled button and only when the visitor allows motion. The panel
+   cancels the press in panel/records.css.
    ========================================================================== */
 .btn {
     display: inline-flex;
@@ -17,25 +21,28 @@
     line-height: 1;
     white-space: nowrap;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, scale 0.15s ease-out;
 }
-.btn:hover { background: var(--volt-deep); color: #fff; text-decoration: none; }
-.btn:active { transform: translateY(1px); }
-.btn:disabled, .btn[aria-disabled="true"] { background: var(--line); color: var(--text-3); cursor: not-allowed; transform: none; }
+.btn:hover { text-decoration: none; }
 .btn--secondary { background: var(--paper); color: var(--text); border-color: var(--line-2); }
-.btn--secondary:hover { background: var(--paper-2); color: var(--text); border-color: var(--text-3); }
 .btn--soft { background: var(--volt-soft); color: var(--volt-deep); }
-.btn--soft:hover { background: #d1e8d6; color: var(--volt-deep); }
 .btn--signal { background: var(--signal); color: var(--ink); }
-.btn--signal:hover { background: var(--signal-deep); color: var(--ink); }
 .btn--accent { background: var(--ink-2); }
-.btn--accent:hover { background: var(--ink); }
 .btn--danger { background: var(--paper); color: var(--rose); border-color: #efc0c7; }
-.btn--danger:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
 .btn--danger-solid { background: var(--rose); color: #fff; }
-.btn--danger-solid:hover { background: #a92c3e; color: #fff; }
 .btn--ghost { background: transparent; color: var(--volt-deep); }
-.btn--ghost:hover { background: var(--volt-soft); color: var(--volt-deep); }
+@media (hover: hover) {
+    .btn:hover { background: var(--volt-deep); color: #fff; }
+    .btn--secondary:hover { background: var(--paper-2); color: var(--text); border-color: var(--text-3); }
+    .btn--soft:hover { background: #d1e8d6; color: var(--volt-deep); }
+    .btn--signal:hover { background: var(--signal-deep); color: var(--ink); }
+    .btn--accent:hover { background: var(--ink); }
+    .btn--danger:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+    .btn--danger-solid:hover { background: #a92c3e; color: #fff; }
+    .btn--ghost:hover { background: var(--volt-soft); color: var(--volt-deep); }
+}
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--line); color: var(--text-3); cursor: not-allowed; }
 .btn--sm { min-height: 34px; padding: 0 12px; font-size: 0.84rem; }
 .btn--lg { min-height: 50px; padding: 0 26px; font-size: 1rem; }
 .btn--full { width: 100%; }
@@ -51,8 +58,14 @@
     background: var(--paper);
     color: var(--text-2);
     cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, scale 0.15s ease-out;
 }
-.icon-btn:hover { color: var(--volt-deep); border-color: var(--volt); }
+@media (hover: hover) { .icon-btn:hover { color: var(--volt-deep); border-color: var(--volt); } }
 .icon-btn.is-active { color: var(--rose); border-color: #efc0c7; background: var(--rose-soft); }
 .icon-btn.btn--icon { width: 42px; height: 42px; }
+
+@media (prefers-reduced-motion: no-preference) {
+    .btn:active:not(:where(:disabled, [aria-disabled="true"])),
+    .icon-btn:active:not(:disabled) { scale: 0.96; }
+}

@@ -1,22 +1,40 @@
 /* ==========================================================================
-   Account area + staff console
+   Account area ("Mi cuenta"): the catalog's category list as the side
+   navigation, white 14px rows for addresses, and the profile form.
    ========================================================================== */
 .side-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
 .side-layout__sidebar { position: sticky; top: calc(var(--header-h) + 16px); }
-.side-layout__user { padding: 16px; margin-bottom: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); }
-.side-layout__nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); }
-.side-layout__nav-link { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-sm); font-size: 0.92rem; font-weight: 500; color: var(--text-2); }
+.side-layout__nav { display: grid; gap: 2px; padding: 16px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); }
+.side-layout__title { padding: 0 8px 10px; font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; }
+.side-layout__nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-sm); font-size: 0.92rem; color: var(--text-2); -webkit-tap-highlight-color: transparent; transition: background-color 0.15s ease, color 0.15s ease; }
 .side-layout__nav-link svg { flex-shrink: 0; color: var(--text-3); }
-.side-layout__nav-link:hover { background: var(--paper-2); color: var(--text); text-decoration: none; }
+@media (hover: hover) { .side-layout__nav-link:hover { background: var(--paper-2); color: var(--text); text-decoration: none; } }
 .side-layout__nav-link.is-active { background: var(--volt-soft); color: var(--volt-deep); font-weight: 600; }
 .side-layout__nav-link.is-active svg { color: var(--volt-deep); }
 .side-layout__content { min-width: 0; }
+/* Phones: the four links wrap in one strip above the page; the 5px inset
+   keeps the links' 8px corners concentric with the strip's 14px. */
 @media (max-width: 900px) {
-    .side-layout { grid-template-columns: minmax(0, 1fr); }
+    .side-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
     .side-layout__sidebar { position: static; }
-    .side-layout__user { display: none; }
-    .side-layout__nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
-    .side-layout__nav-link { padding: 8px 12px; }
+    .side-layout__nav { display: flex; flex-wrap: wrap; padding: 5px; }
+    .side-layout__title { display: none; }
+    .side-layout__nav-link { min-height: 44px; padding: 0 12px; }
+}
+
+.form-card--center { margin-inline: auto; }
+.form-card .page-title { margin-bottom: 4px; }
+
+/* Saved addresses: one white row each, 8px apart, like the category rows. */
+.address-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.address-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; min-height: 64px; padding: 14px 16px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); }
+.address-row .address-block { min-width: 0; }
+.address-row__line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+@media (max-width: 760px) {
+    .address-row .actions { width: 100%; }
+    .address-row .actions form { flex: 1 1 auto; }
+    .address-row .btn { width: 100%; min-height: 44px; }
+    .section-head > .btn { min-height: 44px; }
 }
 
 /* Phones: collapsed grids must not grow to their widest child (a 1fr track

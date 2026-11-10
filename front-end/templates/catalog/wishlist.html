@@ -5,8 +5,11 @@
 {% block content %}
 <div class="section-head">
     <div>
-        <h1 class="section-title">Mis favoritos</h1>
-        <p class="section-sub">Los productos que guardaste para comprar después.</p>
+        <div class="title-row">
+            <h1 class="page-title">Mis favoritos</h1>
+            {% if products %}<span class="count-chip">{{ products|length }} producto{{ products|length|pluralize }}</span>{% endif %}
+        </div>
+        <p class="page-lead">Los productos que guardaste para comprar después.</p>
     </div>
 </div>
 

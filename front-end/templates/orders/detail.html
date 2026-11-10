@@ -13,49 +13,48 @@
 
 <div class="order-head">
     <div>
-        <h1 class="section-title">Pedido {{ order.order_number }}</h1>
-        <p class="order-head__meta">Realizado el {{ order.created_at|api_date }}</p>
-    </div>
-    <span class="status status--{{ order.status }}">{{ order.status|order_status_label }}</span>
-</div>
-
-{% if tracker_steps %}
-<div class="order-tracker">
-    {% for step in tracker_steps %}
-    <div class="order-tracker__step is-{{ step.state }}">
-        <div class="order-tracker__dot">{% if step.state == "done" %}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>{% else %}{{ forloop.counter }}{% endif %}</div>
-        <div class="order-tracker__label">{{ step.label }}</div>
-    </div>
-    {% endfor %}
-</div>
-{% elif order.status == "cancelled" %}
-<div class="notice notice--danger"><strong>Este pedido fue cancelado.</strong> Las unidades reservadas volvieron al inventario.</div>
-{% elif order.status == "refunded" %}
-<div class="notice notice--info"><strong>Este pedido fue reembolsado.</strong></div>
-{% endif %}
-
-<div class="buy-layout mt-md">
-    <div class="stack">
-        <div class="table-card">
-        <table class="table">
-            <thead>
-                <tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Subtotal</th></tr>
-            </thead>
-            <tbody>
-                {% for item in order.items %}
-                <tr>
-                    <td class="cell-title">{{ item.product_name }}</td>
-                    <td class="num">{{ item.quantity }}</td>
-                    <td class="num">${{ item.unit_price|money }}</td>
-                    <td class="num"><strong>${{ item.line_total|money }}</strong></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="title-row">
+            <h1 class="page-title">Pedido {{ order.order_number }}</h1>
+            <span class="status status--{{ order.status }}">{{ order.status|order_status_label }}</span>
         </div>
+        <p class="page-lead">Realizado el {{ order.created_at|api_date }}</p>
+    </div>
+</div>
+
+<div class="buy-layout">
+    <div class="buy-layout__main">
+        {% if tracker_steps %}
+        <ol class="order-tracker" aria-label="Seguimiento del pedido">
+            {% for step in tracker_steps %}
+            <li class="order-tracker__step order-tracker__step--{{ step.key }} is-{{ step.state }}"{% if step.state == "current" %} aria-current="step"{% endif %}>
+                <span class="order-tracker__bar"></span>
+                <span class="order-tracker__label">{% if step.state == "done" %}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endif %}{{ step.label }}</span>
+            </li>
+            {% endfor %}
+        </ol>
+        {% elif order.status == "cancelled" %}
+        <div class="notice notice--danger"><span><strong>Este pedido fue cancelado.</strong> Las unidades reservadas volvieron al inventario.</span></div>
+        {% elif order.status == "refunded" %}
+        <div class="notice notice--info"><strong>Este pedido fue reembolsado.</strong></div>
+        {% endif %}
+
+        <section class="card">
+            <h2 class="card__title">Productos</h2>
+            <ul class="line-items">
+                {% for item in order.items %}
+                <li class="line-item">
+                    <span class="line-item__info">
+                        <span class="line-item__name">{{ item.product_name }}</span>
+                        <span class="line-item__qty">{{ item.quantity }} × ${{ item.unit_price|money }}</span>
+                    </span>
+                    <span class="line-item__total">${{ item.line_total|money }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
 
         <div class="info-grid">
-            <div class="card">
+            <section class="card">
                 <h2 class="card__title">Dirección de envío</h2>
                 {% if order.shipping_address %}
                 <address class="address-block">
@@ -66,8 +65,8 @@
                 {% else %}
                 <p class="muted">Este pedido no tiene una dirección de envío asociada.</p>
                 {% endif %}
-            </div>
-            <div class="card">
+            </section>
+            <section class="card">
                 <h2 class="card__title">Envío</h2>
                 {% if shipment.status == "cancelled" %}
                 <p class="muted">El envío se canceló junto con el pedido.</p>
@@ -79,8 +78,8 @@
                 {% else %}
                 <p class="muted">Tu pedido aún no ha sido despachado. Verás aquí la guía cuando salga.</p>
                 {% endif %}
-            </div>
-            <div class="card">
+            </section>
+            <section class="card">
                 <h2 class="card__title">Pago</h2>
                 {% if payments %}
                 <div class="stack">
@@ -95,7 +94,7 @@
                 {% else %}
                 <p class="muted">Sin pagos registrados todavía.</p>
                 {% endif %}
-            </div>
+            </section>
         </div>
     </div>
 
@@ -110,12 +109,12 @@
             <button type="submit" class="btn btn--full">Repetir pedido</button>
         </form>
         {% if cancellable %}
-        <form method="post" action="{% url 'orders:cancel' order.id %}" data-confirm="Liberamos los productos reservados. No se puede deshacer." data-confirm-title="¿Cancelar el pedido {{ order.order_number }}?" data-confirm-ok="Cancelar pedido" data-confirm-cancel="Mantener pedido" data-confirm-tone="danger" class="mt-sm">
+        <form method="post" action="{% url 'orders:cancel' order.id %}" data-confirm="Liberamos los productos reservados. No se puede deshacer." data-confirm-title="¿Cancelar el pedido {{ order.order_number }}?" data-confirm-ok="Cancelar pedido" data-confirm-cancel="Mantener pedido" data-confirm-tone="danger">
             {% csrf_token %}
             <button type="submit" class="btn btn--danger btn--full">Cancelar pedido</button>
         </form>
         {% endif %}
-        <a class="btn btn--ghost btn--full mt-sm" href="{% url 'orders:list' %}">Volver a mis pedidos</a>
+        <a class="btn btn--ghost btn--full" href="{% url 'orders:list' %}">Volver a mis pedidos</a>
     </aside>
 </div>
 {% endblock %}

@@ -8,7 +8,7 @@
 .panel-app .btn--sm { min-height: 32px; padding: 5px 12px; font-size: 13px; }
 .panel-app .btn--secondary { background: var(--paper); border-color: var(--g4); color: var(--g10); }
 .panel-app .btn--secondary:hover { border-color: var(--volt); color: var(--volt-deep); background: var(--paper); }
-.panel-app .btn:active { transform: none; }
+.panel-app .btn:active, .panel-app .icon-btn:active { transform: none; scale: none; }
 
 /* --- Filter bar ------------------------------------------------------------ */
 .panel-app .list-filters { gap: 8px; margin-bottom: 16px; padding: 12px; background: var(--paper); border: var(--hair); }

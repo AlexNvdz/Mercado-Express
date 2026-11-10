@@ -135,11 +135,3 @@ The `-f` order matters — Compose resolves relative build-context paths against
 On this Windows host, hit services via `127.0.0.1:<port>`, not `localhost` — `localhost` resolves to IPv6 and the request hangs (Docker Desktop only binds IPv4). `127.0.0.1:8000/health` and `127.0.0.1:8080/` are the smoke-test URLs.
 
 Staff-only actions (creating categories/products, adjusting inventory, managing shipments) need an `employee`/`admin` account — there's no self-service way to get one; use `seed_admin.py` (see above) to provision one for local testing. Once logged in as staff, products and their images are managed at `/catalogo/admin/`; everything else (dashboard, orders and shipments, categories, inventory, customers) is at `/panel/`.
-
-## Pending work (next session)
-
-The user requested this on 2026-10-23. Keep the approved design in `front-end/DESIGN.md` (the "price bulletin" panel and the storefront home/catalog system). Refine it; do not start a new design direction. Remove this section once it is done. The panel visual fixes and the "Resumen" reorganization (items 1-2 of the original list) shipped on 2026-11-10.
-
-1. **Bring the storefront design to the routes that still wear the earlier "fresh market" styling** (DESIGN.md, "Pages not yet restyled"). PRs #12/#13 left these templates untouched: `catalog/detail.html`, `catalog/wishlist.html`, `cart/detail.html`, `orders/checkout.html`, `orders/detail.html`, `accounts/login.html`, `accounts/register.html`, `dashboard/_layout.html`, `dashboard/profile.html`, `dashboard/addresses.html`, `dashboard/address_form.html`, `404.html`, `500.html` and `partials/footer.html`. Keep login → cart → checkout → order detail working with the demo customer, and check phones at 390px with no horizontal scroll.
-
-Workflow: use a separate worktree and branch from `main`. Do not commit until the user has seen and approved the change. After the merge, rebuild the `frontend` container.

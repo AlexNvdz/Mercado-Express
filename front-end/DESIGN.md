@@ -432,7 +432,7 @@ The panel scopes its own world under the `panel-app` body class and restyles the
 
 The storefront sits under a market stall's canvas. A scalloped hem of action green and lime stripes runs under the header on every customer page, and the home hero stands on wide stripes of pale canvas. A few real product photos drift slowly over those stripes, and a light card plays an example order through its five real states, from cart to delivered. Everything below is honest stock: square white product cards that state the units in the warehouse, a lime chip counting the products of every category, and only the categories and products that exist today. Bricolage Grotesque, narrowed and heavy, sets the headings and prices; Figtree sets the text at 15px. Corners are round (8, 14 and 22px, and pills), and a soft green-tinted shadow lifts a card on hover.
 
-The home, the product catalog and the category index carry this system, approved on 2026-10-23. Pages not yet restyled (cart, checkout, account, order detail) still wear the earlier "fresh market" styling on the same tokens. The user rejected the "mercado campesino" storefront trial (slate green, kraft-paper tags, scalable section index, its animated hero) on 2026-10-22; it stays out of both worlds. The motion the home does have, the example-order loop and the drifting photos, is what the user asked for afterwards.
+The home, the product catalog and the category index carry this system, approved on 2026-10-23; product detail, favorites, cart, checkout, order detail, sign-in, registration, the account pages, 404, 500 and the footer were brought into it on 2026-11-10. The user rejected the "mercado campesino" storefront trial (slate green, kraft-paper tags, scalable section index, its animated hero) on 2026-10-22; it stays out of both worlds. The motion the home does have, the example-order loop and the drifting photos, is what the user asked for afterwards.
 
 **Key Characteristics:**
 - Ruled sheets, not cards: a 1px g3 hairline around and between modules, g2 inside them, square corners.
@@ -665,7 +665,7 @@ References in use: stock vs reorder level, time since the last status change ("E
 - **Share bar:** a 6px g2 track with a volt fill and the percentage on the right, for the order-status distribution.
 
 ### Storefront components
-The storefront's own styling lives in `static/css/storefront/` (`header.css`, `home.css`, `catalog.css`) on top of the shared defaults in `static/css/components/`. Storefront buttons are the shared ones: 42px, 8px corners, Figtree 600 at 0.92rem, volt with a white label (volt-deep on hover), a 1px press offset; the soft variant (volt-soft fill, volt-deep text) adds to the cart, and the secondary one is white with a line border.
+The storefront's own styling lives in `static/css/storefront/` (`header.css`, `home.css`, `catalog.css`) on top of the shared defaults in `static/css/components/`. Storefront buttons are the shared ones: 42px, 8px corners, Figtree 600 at 0.92rem, volt with a white label (volt-deep on hover), a 0.96 press scale; the soft variant (volt-soft fill, volt-deep text) adds to the cart, and the secondary one is white with a line border.
 
 ### Header and awning (storefront)
 - **Top row:** white. The brand (mark plus "MercadoExpress" in Bricolage 700, 1.18rem); the header search (pill, canvas fill, 1px line border, 46px, a round volt submit button; on focus it turns white with a volt border and a 4px volt-soft halo); account links (0.9rem/500 in `--text-2`, "Crear cuenta" as a volt pill); two 42px round icon links (wishlist, cart) with lime count badges ringed in white.
@@ -704,8 +704,26 @@ Each step ends with a caption: the numbered step in bold, then one plain line. U
 ### Floating photos
 Up to three real product photos taken from the shelves below, in 96, 76 and 68px tiles with 20px corners and a 4px white frame, at 0.85, 0.7 and 0.6 opacity, tilted between -8° and 9°, drifting 8-12px over 6, 7 and 8s. They are ambient: `aria-hidden`, empty `alt`, no link, no caption. Under reduced motion they stand still.
 
-### Pages not yet restyled
-Cart, checkout, account and order detail still use the earlier "fresh market" styling (`sections.css`, `cart-checkout.css`, `account.css`, `auth.css`) on the same tokens, for example stock pills in leaf, amber and rose and checkout steps numbered in volt circles. This is current state, not a pattern for new work: new storefront screens follow the home and catalog above.
+### Page head (storefront pages)
+`.page-title` sets each page's H1 like "Todas las categorías" (Bricolage 800, width 82, clamp 1.8-2.4rem). A lime count chip ("3 productos") or the order's status chip sits beside it in a `.title-row`, never above it; a `.page-lead` line in `--text-2` follows.
+
+### Product detail
+One 22px sheet: the photo contained in the cards' `paper-2` well (thumbnails below it switch the photo, `static/js/modules/product-gallery.js`), the heart on a white disc in the well's top-right corner, and the buy box: name as a page title, SKU, price in Bricolage 600, the stock line ("**46** en bodega", or "Agotado" in rose), the reservation note on a canvas tile, then the quantity stepper (50px) beside "Añadir al carrito".
+
+### Cart, checkout and order detail (`cart-checkout.css`)
+- **Rows:** a white 14px panel; each product with its photo in a 76px `paper-2` well (16px corners), name, unit price, stepper, subtotal in Bricolage 600 and a round remove button (rose on hover). Order lines drop the photo and read "2 × $6.500".
+- **Summary:** a white 14px aside, sticky on desktop: title at 750, label/value rows, the total on a canvas tile (Bricolage 800, 1.6rem, like the example order's "Total"), then the buttons.
+- **Checkout steps:** white 14px sections titled "1. ¿A dónde lo enviamos?", the number in volt at 800 (no circle). A selected address turns volt-soft with a 2px volt edge.
+- **Order tracker:** the example order's track with real states: five 8px pills, filled up to the current step in the stage hue (sky for preparing, violet for shipped, action green otherwise); done labels carry a check, the current one is bold.
+
+### Account and sign-in
+- **Mi cuenta:** the catalog category list as side navigation (240px, "Mi cuenta" title, current link volt-soft); on phones a wrapping strip of 44px links. Addresses are white 64px rows, 8px apart, with a "Predeterminada" tag.
+- **Sign-in / registration:** a 22px sheet whose left half stands on the hero's canvas stripes, with the pitch set like the hero title; phones keep only the form.
+- **404 / 500:** the code in Bricolage 800 (width 75) on a striped canvas tile; 500 is standalone and copies the token values inline.
+- **Footer:** the mint strip of the sub-navigation, the header's brand mark, Bricolage 800 column heads, 44px links on phones.
+
+### Polish (all storefront pages)
+Hover colours sit behind `@media (hover: hover)`; buttons and icon buttons press to `scale: 0.96` over 150ms ease-out, never when disabled and only under `prefers-reduced-motion: no-preference` (the panel cancels it in `panel/records.css`).
 
 ## Do's and Don'ts
 
@@ -739,4 +757,4 @@ Cart, checkout, account and order detail still use the earlier "fresh market" st
 - **Don't** put a banner carousel or a wall of category icons on the home, or invent delivery times, reviews or best sellers.
 - **Don't** add a second search field to the home; the hero's search replaces the header's there.
 - **Don't** fill a card, a section or the primary action with lime.
-- **Don't** extend the earlier "fresh market" styling of the cart, checkout, account and order pages to new screens.
+- **Don't** bring back the earlier "fresh market" pieces: stock pills in leaf, amber and rose, steps numbered in volt circles, the dashed empty state.
