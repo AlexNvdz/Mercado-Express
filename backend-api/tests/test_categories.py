@@ -34,7 +34,7 @@ async def test_delete_category_with_products_conflicts(admin_client: AsyncClient
     category_id = created.json()["id"]
     product = await admin_client.post(
         "/api/v1/products",
-        json={"sku": "SKU-CAT-DEL", "name": "Kept", "category_id": category_id, "price": "1.00"},
+        json={"sku": "SKU-CAT-DEL", "name": "Kept", "category_id": category_id, "price": "6000.00"},
     )
     assert product.status_code == 201
 
@@ -73,7 +73,12 @@ async def _category_with_products(
     for n in range(active + inactive):
         product = await admin_client.post(
             "/api/v1/products",
-            json={"sku": f"{name}-{n}", "name": f"{name} {n}", "category_id": category_id, "price": "1.00"},
+            json={
+                "sku": f"{name}-{n}",
+                "name": f"{name} {n}",
+                "category_id": category_id,
+                "price": "6000.00",
+            },
         )
         if n >= active:
             await admin_client.patch(f"/api/v1/products/{product.json()['id']}", json={"is_active": False})

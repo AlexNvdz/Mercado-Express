@@ -113,12 +113,24 @@ def test_staff_can_create_product(client):
             "name": "Producto nuevo",
             "description": "",
             "category_id": CATEGORY_ID,
-            "price": "12.50",
+            "price": "12500.00",
             "is_active": "on",
         },
     )
     assert response.status_code == 302
     assert any(p["sku"] == "NEW-SKU-001" for p in mock_data.MOCK_PRODUCTS)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("price", ["0", "5899.99"])
+def test_product_form_rejects_price_below_minimum(client, price):
+    _login_as_staff(client)
+    response = client.post(
+        reverse("catalog:admin_create"),
+        {"sku": "LOW-001", "name": "Barato", "description": "", "category_id": CATEGORY_ID, "price": price},
+    )
+    assert response.status_code == 200
+    assert not any(p["sku"] == "LOW-001" for p in mock_data.MOCK_PRODUCTS)
 
 
 @pytest.mark.django_db

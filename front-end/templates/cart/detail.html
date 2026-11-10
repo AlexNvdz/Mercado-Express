@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load money %}
+{% load money catalog_extras %}
 
 {% block title %}Carrito - MercadoExpress{% endblock %}
 
@@ -26,7 +26,7 @@
             <div class="cart-item__info">
                 <a class="cart-item__name" href="{% url 'catalog:detail' item.product.id %}">{{ item.product.name }}</a>
                 <span class="cart-item__unit">${{ item.unit_price|money }} por unidad</span>
-                {% if item.product.is_active is False %}<span class="product-card__stock is-out">Ya no disponible</span>{% endif %}
+                {% if not item.product|purchasable %}<span class="product-card__stock is-out">Ya no disponible</span>{% endif %}
             </div>
             <div class="cart-item__controls">
                 <form method="post" action="{% url 'cart:update' item.product.id %}" onchange="this.requestSubmit()">

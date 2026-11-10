@@ -136,7 +136,7 @@ async def test_report_summary_is_cached_for_report_cache_seconds(
 ) -> None:
     monkeypatch.setattr(report_service, "_cache", {})
     monkeypatch.setattr(settings, "REPORT_CACHE_SECONDS", 60)
-    product_id = await _make_stocked_product(admin_client, "SRCH-RPT", stock=10, price="10.00")
+    product_id = await _make_stocked_product(admin_client, "SRCH-RPT", stock=10, price="10000.00")
 
     before = (await admin_client.get("/api/v1/reports/summary")).json()
     await customer_client.post(
@@ -147,5 +147,5 @@ async def test_report_summary_is_cached_for_report_cache_seconds(
 
     monkeypatch.setattr(settings, "REPORT_CACHE_SECONDS", 0)
     fresh = (await admin_client.get("/api/v1/reports/summary")).json()
-    assert fresh["net_revenue"] == "10.00"
+    assert fresh["net_revenue"] == "10000.00"
     assert fresh["generated_at"] > before["generated_at"]

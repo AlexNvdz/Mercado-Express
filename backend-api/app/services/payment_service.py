@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.exceptions import InvalidStateTransitionError, NotFoundError
+from app.exceptions import InvalidStateTransitionError, NotFoundError, ValidationAppError
 from app.models.enums import OrderStatus, OrderStatusChangeSource, PaymentStatus, SaleKind
 from app.models.payment import Payment
 from app.models.sale import Sale
@@ -53,6 +53,8 @@ class PaymentService:
             raise InvalidStateTransitionError(
                 f"Order in status '{order.status}' cannot accept a new payment."
             )
+        if order.total_amount <= 0:
+            raise ValidationAppError("An order with a zero total cannot be paid.")
 
         payment = await self.payments.create(
             {

@@ -37,6 +37,7 @@ from app.repositories.sale_repository import SaleRepository
 from app.repositories.shipment_repository import ShipmentRepository
 from app.schemas.order import OrderCheckout, OrderCreate
 from app.schemas.payment import PaymentCreate
+from app.schemas.product import MIN_PRODUCT_PRICE
 from app.services.payment_service import PaymentService
 
 # Manual-override targets for PATCH /orders/{id}/status (staff corrections).
@@ -97,6 +98,11 @@ class OrderService:
             if product is None or not product.is_active:
                 raise NotFoundError(f"Product {requested_item.product_id} not found or inactive.")
             unit_price = Decimal(str(product.price))
+            if unit_price < MIN_PRODUCT_PRICE:
+                # Rows priced before the minimum existed (e.g. $0) are not for sale.
+                raise ValidationAppError(
+                    f"Product {product.id} is priced below the minimum of {MIN_PRODUCT_PRICE}."
+                )
             line_total = _money(unit_price * requested_item.quantity)
             subtotal += line_total
             line_items.append(

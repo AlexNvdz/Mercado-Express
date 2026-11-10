@@ -73,7 +73,7 @@
                     <input type="number" name="quantity" value="1" min="1" {% if availability %}max="{{ availability.quantity_available }}"{% endif %} aria-label="Cantidad">
                     <button type="button" data-step="1" aria-label="Sumar una unidad">&plus;</button>
                 </div>
-                {% if product.is_active is False %}
+                {% if not product|purchasable %}
                 <button type="submit" class="btn btn--lg" disabled>No disponible</button>
                 {% else %}
                 <button type="submit" class="btn btn--lg" {% if availability and availability.quantity_available <= 0 %}disabled{% endif %}>Añadir al carrito</button>

@@ -10,7 +10,7 @@ async def _make_product(admin_client: AsyncClient, sku: str) -> str:
     category_id = category.json()["id"]
     product = await admin_client.post(
         "/api/v1/products",
-        json={"sku": sku, "name": f"Product {sku}", "category_id": category_id, "price": "10.00"},
+        json={"sku": sku, "name": f"Product {sku}", "category_id": category_id, "price": "10000.00"},
     )
     return product.json()["id"]
 

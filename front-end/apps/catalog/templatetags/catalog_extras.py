@@ -1,5 +1,7 @@
 from django import template
 
+from services.products import is_purchasable
+
 register = template.Library()
 
 
@@ -9,3 +11,9 @@ def in_wishlist(product_id, wishlist):
     if wishlist is None:
         return False
     return wishlist.contains(product_id)
+
+
+@register.filter(name="purchasable")
+def purchasable(product):
+    """Usage: {% if product|purchasable %} -- active and priced at or above the minimum."""
+    return is_purchasable(product)

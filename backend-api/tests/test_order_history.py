@@ -8,7 +8,7 @@ async def _paid_order(admin_client: AsyncClient, customer_client: AsyncClient, s
     category = await admin_client.post("/api/v1/categories", json={"name": f"Cat-{sku}"})
     product = await admin_client.post(
         "/api/v1/products",
-        json={"sku": sku, "name": sku, "category_id": category.json()["id"], "price": "12.00"},
+        json={"sku": sku, "name": sku, "category_id": category.json()["id"], "price": "12000.00"},
     )
     product_id = product.json()["id"]
     await admin_client.post(f"/api/v1/inventory/{product_id}/adjust", json={"delta": 5})
@@ -86,7 +86,7 @@ async def test_customer_cancel_is_recorded_with_the_customer_as_actor(
     category = await admin_client.post("/api/v1/categories", json={"name": "Cat-HIST-003"})
     product = await admin_client.post(
         "/api/v1/products",
-        json={"sku": "HIST-003", "name": "x", "category_id": category.json()["id"], "price": "1.00"},
+        json={"sku": "HIST-003", "name": "x", "category_id": category.json()["id"], "price": "6000.00"},
     )
     await admin_client.post(f"/api/v1/inventory/{product.json()['id']}/adjust", json={"delta": 1})
     order = await customer_client.post(
