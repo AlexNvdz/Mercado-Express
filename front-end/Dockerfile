@@ -31,4 +31,4 @@ RUN uv run manage.py collectstatic --noinput || true
 # config/settings/base.py. It must run at container start, not build time:
 # the sqlite file lives on a volume (see docker-compose.override.yml) that
 # doesn't exist yet during `docker build`.
-CMD ["sh", "-c", "uv run manage.py migrate --noinput && uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "uv run manage.py migrate --noinput && uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4"]
