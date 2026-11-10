@@ -11,13 +11,13 @@
 </nav>
 
 <div class="section-head">
-    <h1 class="section-title">Confirmar compra</h1>
+    <h1 class="page-title">Confirmar compra</h1>
 </div>
 
 <div class="checkout-layout">
     <div class="checkout-layout__main">
-        <div class="card">
-            <h2 class="checkout-section-title"><span class="checkout-section-title__num">1</span>¿A dónde lo enviamos?</h2>
+        <section class="checkout-step">
+            <h2 class="checkout-step__title"><span class="checkout-step__num">1.</span>¿A dónde lo enviamos?</h2>
             <div class="address-options">
                 {% for address in addresses %}
                 <label class="address-option">
@@ -31,15 +31,15 @@
                 {% endfor %}
             </div>
             <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:address_add' %}?next={% url 'orders:checkout' %}">Añadir otra dirección</a>
-        </div>
+        </section>
 
-        <div class="card">
-            <h2 class="checkout-section-title"><span class="checkout-section-title__num">2</span>Indicaciones para la entrega</h2>
+        <section class="checkout-step">
+            <h2 class="checkout-step__title"><span class="checkout-step__num">2.</span>Indicaciones para la entrega</h2>
             <textarea form="checkout-form" name="notes" rows="3" placeholder="Opcional. Ej.: dejar en portería, tocar el timbre" class="checkout-notes" aria-label="Indicaciones para la entrega"></textarea>
-        </div>
+        </section>
 
-        <div class="card">
-            <h2 class="checkout-section-title"><span class="checkout-section-title__num">3</span>Revisa tus productos</h2>
+        <section class="checkout-step">
+            <h2 class="checkout-step__title"><span class="checkout-step__num">3.</span>Revisa tus productos</h2>
             <div class="cart-list cart-list--plain">
                 {% for item in items %}
                 <div class="cart-item">
@@ -52,13 +52,13 @@
                     </div>
                     <div class="cart-item__info">
                         <span class="cart-item__name">{{ item.product.name }}</span>
-                        <span class="subtle">{{ item.quantity }} unidad{{ item.quantity|pluralize:"es" }}</span>
+                        <span class="cart-item__unit">{{ item.quantity }} unidad{{ item.quantity|pluralize:"es" }}</span>
                     </div>
                     <div class="cart-item__subtotal">${{ item.subtotal|money }}</div>
                 </div>
                 {% endfor %}
             </div>
-        </div>
+        </section>
     </div>
 
     <form id="checkout-form" method="post" class="cart-summary checkout-summary">

@@ -36,7 +36,7 @@ def test_product_detail_loads(client):
 def test_product_detail_shows_availability(client):
     url = reverse("catalog:detail", kwargs={"product_id": ARROZ_ID})
     response = client.get(url)
-    assert "En stock".encode() in response.content
+    assert b"en bodega" in response.content
 
 
 @pytest.mark.django_db

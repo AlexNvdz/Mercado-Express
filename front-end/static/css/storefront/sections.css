@@ -14,7 +14,23 @@
 .section-link { font-size: 0.9rem; font-weight: 600; color: var(--volt-deep); }
 .section { margin-top: clamp(36px, 5vw, 56px); }
 
-.breadcrumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 16px; font-size: 0.85rem; color: var(--text-3); }
+/* Page titles of the storefront's own pages (cart, checkout, order, account,
+   sign-in): Bricolage narrowed and heavy, like "Todas las categorías". A
+   count or a status sits beside the title, never above it. */
+.page-title {
+    font-family: var(--font-display);
+    line-height: 1.1;
+    font-variation-settings: "wdth" 82;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 1.4rem + 1.6vw, 2.4rem);
+    letter-spacing: -0.025em;
+    overflow-wrap: anywhere;
+}
+.title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
+.page-lead { margin: 6px 0 0; max-width: 52ch; color: var(--text-2); }
+.page-lead strong { color: var(--text); }
+
+.breadcrumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 16px; font-size: 0.85rem; color: var(--text-2); }
 .breadcrumbs a { color: var(--text-2); }
 .breadcrumbs .sep { color: var(--line-2); }
 .breadcrumbs .current { color: var(--text); font-weight: 500; }

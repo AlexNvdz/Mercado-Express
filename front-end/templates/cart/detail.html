@@ -5,13 +5,15 @@
 
 {% block content %}
 <div class="section-head">
-    <h1 class="section-title">Tu carrito</h1>
-    {% if items %}<span class="muted">{{ items|length }} producto{{ items|length|pluralize }}</span>{% endif %}
+    <div class="title-row">
+        <h1 class="page-title">Tu carrito</h1>
+        {% if items %}<span class="count-chip">{{ items|length }} producto{{ items|length|pluralize }}</span>{% endif %}
+    </div>
 </div>
 
 {% if items %}
 <div class="buy-layout">
-    <div class="table-card cart-list">
+    <div class="cart-list">
         {% for item in items %}
         <div class="cart-item">
             <a class="cart-item__media" href="{% url 'catalog:detail' item.product.id %}" tabindex="-1" aria-hidden="true">
@@ -23,8 +25,8 @@
             </a>
             <div class="cart-item__info">
                 <a class="cart-item__name" href="{% url 'catalog:detail' item.product.id %}">{{ item.product.name }}</a>
-                {% if item.product.is_active is False %}<span class="status status--cancelled">Ya no disponible</span>{% endif %}
-                <span class="subtle">${{ item.unit_price|money }} por unidad</span>
+                <span class="cart-item__unit">${{ item.unit_price|money }} por unidad</span>
+                {% if item.product.is_active is False %}<span class="product-card__stock is-out">Ya no disponible</span>{% endif %}
             </div>
             <div class="cart-item__controls">
                 <form method="post" action="{% url 'cart:update' item.product.id %}" onchange="this.requestSubmit()">
@@ -38,7 +40,7 @@
                 <div class="cart-item__subtotal">${{ item.subtotal|money }}</div>
                 <form method="post" action="{% url 'cart:remove' item.product.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="icon-btn" aria-label="Quitar {{ item.product.name }}">
+                    <button type="submit" class="icon-btn cart-item__remove" aria-label="Quitar {{ item.product.name }}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                 </form>
@@ -50,7 +52,7 @@
     <aside class="cart-summary">
         <h2 class="cart-summary__title">Resumen de compra</h2>
         <div class="cart-summary__row"><span>Productos</span><span>${{ total|money }}</span></div>
-        <div class="cart-summary__row"><span>Envío e impuestos</span><span>Se calculan al confirmar</span></div>
+        <div class="cart-summary__row cart-summary__row--note"><span>Envío e impuestos</span><span>Se calculan al confirmar</span></div>
         <div class="cart-summary__total"><span>Total</span><span>${{ total|money }}</span></div>
         <a class="btn btn--lg btn--full" href="{% url 'orders:checkout' %}">Continuar compra</a>
         <a class="btn btn--ghost btn--full" href="{% url 'catalog:list' %}">Seguir comprando</a>
