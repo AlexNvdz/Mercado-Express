@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from services import mock_data
 from services import orders as orders_service
-from services.exceptions import ApiConflictError, ApiError
+from services.exceptions import ApiConflictError, ApiError, ApiResponseError
 
 ORDER_ID = mock_data.MOCK_ORDERS[0]["id"]
 CATEGORY_ID = mock_data.MOCK_CATEGORIES[0]["id"]
@@ -841,3 +841,32 @@ def test_search_groups_results_in_mock_mode(client):
     content = client.get(reverse("adminpanel:search"), {"q": "arroz"}).content.decode()
     assert "Arroz blanco" in content
     assert "Sin coincidencias en pedidos." in content
+
+
+@pytest.mark.django_db
+def test_staff_generates_envia_label_and_syncs_it(client):
+    _login_as_staff(client)
+    order = _order_in_status("paid")
+    detail_url = reverse("adminpanel:order_detail", kwargs={"order_id": order["id"]})
+    assert "Generar guía con Envia" in client.get(detail_url).content.decode()
+
+    response = client.post(reverse("adminpanel:shipment_envia", kwargs={"order_id": order["id"]}), follow=True)
+    content = response.content.decode()
+    assert "Guía INTESBX000001 generada con interRapidisimo." in content
+    assert "Guía (PDF)" in content
+    assert "Guardar datos del envío" not in content  # an Envia label isn't edited by hand
+
+    synced = client.post(reverse("adminpanel:shipment_sync", kwargs={"order_id": order["id"]}), follow=True)
+    assert "La transportadora reporta «Created». Sin cambios." in synced.content.decode()
+
+
+@pytest.mark.django_db
+def test_envia_failure_shows_the_backend_reason(client, monkeypatch):
+    def fail(*args, **kwargs):
+        raise ApiResponseError("502", status_code=502, payload={"detail": "Ninguna transportadora cotizó este envío."})
+
+    monkeypatch.setattr("apps.adminpanel.views.shipments_service.create_envia_shipment", fail)
+    _login_as_staff(client)
+    order = _order_in_status("paid")
+    response = client.post(reverse("adminpanel:shipment_envia", kwargs={"order_id": order["id"]}), follow=True)
+    assert "No se pudo generar la guía: Ninguna transportadora cotizó este envío." in response.content.decode()

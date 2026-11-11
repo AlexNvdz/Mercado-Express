@@ -10,6 +10,7 @@ admin, and CSRF/auth machinery.
 See services/api_client.py for the HTTP layer that talks to the backend API.
 """
 
+from decimal import Decimal
 from pathlib import Path
 
 import environ
@@ -143,6 +144,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # what API_CONTRACT.md tells Django to configure.
 API_BASE_URL = env("MERCADOEXPRESS_API_BASE_URL", default="http://localhost:8000")
 API_TIMEOUT_SECONDS = env.float("API_TIMEOUT_SECONDS", default=5.0)
+
+# Flat shipping fee per order shown at checkout. Mirrors backend-api's
+# FLAT_SHIPPING_FEE (the backend is what actually charges it): keep both equal.
+SHIPPING_FEE = Decimal(env.str("SHIPPING_FEE", default="20000"))
 
 # The backend contract is final (API_CONTRACT.md), but a live FastAPI+Postgres
 # might not be running in every environment (e.g. this project's own test

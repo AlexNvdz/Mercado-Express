@@ -30,7 +30,8 @@ def test_create_order_computes_totals_from_catalog():
     assert order["status"] == "pending"
     assert order["shipping_address_id"] == ADDRESS_ID
     assert order["subtotal"] == "13000.00"
-    assert order["total_amount"] == "13000.00"
+    assert order["shipping_amount"] == "20000.00"  # settings.SHIPPING_FEE
+    assert order["total_amount"] == "33000.00"
     assert order["items"][0]["product_id"] == ARROZ_ID
     assert order["items"][0]["line_total"] == "13000.00"
 

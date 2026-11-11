@@ -64,7 +64,8 @@
     <form id="checkout-form" method="post" class="cart-summary checkout-summary">
         {% csrf_token %}
         <h2 class="cart-summary__title">Resumen de compra</h2>
-        <div class="cart-summary__row"><span>Productos</span><span>${{ total|money }}</span></div>
+        <div class="cart-summary__row"><span>Productos</span><span>${{ subtotal|money }}</span></div>
+        <div class="cart-summary__row"><span>Envío</span><span>${{ shipping|money }}</span></div>
         <div class="cart-summary__total"><span>Total</span><span>${{ total|money }}</span></div>
         <button type="submit" class="btn btn--lg btn--full">Confirmar y pagar</button>
         <p class="checkout-security"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/></svg>El pago se procesa de forma segura</p>

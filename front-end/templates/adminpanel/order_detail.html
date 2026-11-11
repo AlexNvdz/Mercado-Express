@@ -43,7 +43,7 @@
                         <td class="lead">{{ entry.created_at|api_datetime }}</td>
                         <td data-label="Cambio">{% if entry.from_status %}<span class="status status--{{ entry.from_status }}">{{ entry.from_status|order_status_label }}</span><span class="to" aria-hidden="true"></span><span class="visually-hidden"> a </span>{% endif %}<span class="status status--{{ entry.to_status }}">{{ entry.to_status|order_status_label }}</span></td>
                         <td data-label="Origen">{{ entry.source|order_status_source_label }}</td>
-                        <td data-label="Quién">{% if entry.actor %}{{ entry.actor.full_name }}<span class="sub">{{ entry.actor.email }} · {{ entry.actor.role|user_role_label }}</span>{% else %}Usuario eliminado{% endif %}</td>
+                        <td data-label="Quién">{% if entry.actor %}{{ entry.actor.full_name }}<span class="sub">{{ entry.actor.email }} · {{ entry.actor.role|user_role_label }}</span>{% elif entry.source == "shipment_created" %}Automático (Envia){% else %}Usuario eliminado{% endif %}</td>
                         <td class="vcol" data-label="Tras">{% if entry.elapsed %}<span class="var var--flat">{{ entry.elapsed }}</span>{% else %}Inicio{% endif %}</td>
                     </tr>
                     {% endfor %}
@@ -113,6 +113,11 @@
                 <dl class="facts">
                     <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
                     <dt>Guía</dt><dd>{% if shipment.tracking_number %}{{ shipment.tracking_number }}{% elif can_edit_shipment %}Sin asignar (se genera al despachar si la dejas vacía){% else %}Sin asignar{% endif %}</dd>
+                    {% if shipment.label_url %}
+                    <dt>Servicio</dt><dd>{{ shipment.service }} · Envia</dd>
+                    <dt>Costo de la guía</dt><dd>${{ shipment.shipping_cost|money }}</dd>
+                    <dt>Documentos</dt><dd><a href="{{ shipment.label_url }}" target="_blank" rel="noopener">Guía (PDF)</a>{% if shipment.tracking_url %} · <a href="{{ shipment.tracking_url }}" target="_blank" rel="noopener">Rastreo</a>{% endif %}</dd>
+                    {% endif %}
                     {% if shipment.shipped_at %}<dt>Despachado</dt><dd>{{ shipment.shipped_at|api_datetime }}</dd>{% endif %}
                     {% if shipment.delivered_at %}<dt>Entregado</dt><dd>{{ shipment.delivered_at|api_datetime }}</dd>{% endif %}
                 </dl>
@@ -126,20 +131,34 @@
                 </form>
                 {% endif %}
                 {% elif can_create_shipment %}
-                <p>Todavía no tiene un envío. La transportadora y la guía se pueden corregir hasta que se despache.</p>
-                <form method="post" action="{% url 'adminpanel:shipment_create' order.id %}" class="gap-top">
+                <p>Todavía no tiene un envío. La guía de Envia se genera sola al pagarse el pedido; si falló (sin teléfono, sin cobertura), genérala aquí con la transportadora más económica.</p>
+                <form method="post" action="{% url 'adminpanel:shipment_envia' order.id %}" class="gap-top" data-confirm="Se compra la guía más económica con el saldo de Envia." data-confirm-title="¿Generar la guía con Envia?" data-confirm-ok="Generar guía">
                     {% csrf_token %}
-                    {% for field in shipment_form %}
-                    <div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
-                    {% endfor %}
-                    <button type="submit" class="btn btn--sm">Crear envío</button>
+                    <button type="submit" class="btn btn--sm">Generar guía con Envia</button>
                 </form>
+                <details class="gap-top">
+                    <summary>Crear envío manual</summary>
+                    <p>La transportadora y la guía se pueden corregir hasta que se despache.</p>
+                    <form method="post" action="{% url 'adminpanel:shipment_create' order.id %}" class="gap-top">
+                        {% csrf_token %}
+                        {% for field in shipment_form %}
+                        <div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn--secondary btn--sm">Crear envío</button>
+                    </form>
+                </details>
                 {% else %}
                 <p>Todavía no tiene un envío. Se puede crear cuando el pedido está pagado o en preparación.</p>
                 {% endif %}
 
-                {% if can_ship or can_deliver %}
+                {% if can_ship or can_deliver or can_sync %}
                 <div class="sheet__actions">
+                    {% if can_sync %}
+                    <form method="post" action="{% url 'adminpanel:shipment_sync' order.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--secondary btn--sm">Sincronizar rastreo</button>
+                    </form>
+                    {% endif %}
                     {% if can_ship %}
                     <form method="post" action="{% url 'adminpanel:shipment_ship' order.id %}" data-confirm="Se descuenta el stock y el pedido pasa a «Enviado». Después ya no se puede editar la guía." data-confirm-title="¿Marcar el envío como despachado?" data-confirm-ok="Marcar despachado">
                         {% csrf_token %}
@@ -172,6 +191,7 @@
                     <dt>Dirección</dt><dd>{{ order.shipping_address.line1 }}{% if order.shipping_address.line2 %}, {{ order.shipping_address.line2 }}{% endif %}</dd>
                     <dt>Ciudad</dt><dd>{{ order.shipping_address.city }}, {{ order.shipping_address.state }}</dd>
                     <dt>Código postal</dt><dd>{{ order.shipping_address.postal_code }} · {{ order.shipping_address.country }}</dd>
+                    {% if order.shipping_address.phone %}<dt>Recibe</dt><dd>{{ order.shipping_address.phone }}</dd>{% endif %}
                     {% else %}
                     <dt>Dirección</dt><dd>Sin dirección de envío</dd>
                     {% endif %}

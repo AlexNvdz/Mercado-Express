@@ -9,3 +9,4 @@ import "./modules/confirm-dialog.js";
 import "./modules/catalog-filter.js";
 import "./modules/product-gallery.js";
 import "./modules/support-chat.js";
+import "./modules/address-form.js";

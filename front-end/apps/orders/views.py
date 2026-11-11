@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.contrib import messages
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
@@ -189,9 +190,12 @@ def checkout(request):
         return redirect("cart:detail")
 
     if request.method != "POST":
+        subtotal = request.cart.get_total()
         context = {
             "items": list(request.cart),
-            "total": request.cart.get_total(),
+            "subtotal": subtotal,
+            "shipping": settings.SHIPPING_FEE,
+            "total": subtotal + settings.SHIPPING_FEE,
             "addresses": addresses,
         }
         return render(request, "orders/checkout.html", context)

@@ -1,10 +1,12 @@
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 from apps.accounts.decorators import api_login_required
 from services import auth as auth_service
 from services import customers as customers_service
-from services.exceptions import ApiError
+from services import locations as locations_service
+from services.exceptions import ApiError, ApiValidationError
 
 from .forms import AddressForm, ProfileForm
 
@@ -46,10 +48,19 @@ def address_list(request):
 @api_login_required
 def address_add(request):
     token = auth_service.get_access_token(request)
-    form = AddressForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    try:
+        states = locations_service.list_states()
+    except ApiError:
+        states = []
+    form = AddressForm(request.POST or None, states=states)
+    if not states:
+        form.add_error(None, "No pudimos cargar los departamentos. Intenta más tarde.")
+    elif request.method == "POST" and form.is_valid():
         try:
-            customers_service.add_address(token, form.cleaned_data)
+            customers_service.add_address(token, form.to_api())
+        except ApiValidationError as exc:
+            # e.g. "La ciudad 'X' no existe en el departamento 'Y'."
+            form.add_error("city", exc.detail)
         except ApiError:
             form.add_error(None, "No fue posible guardar la dirección. Intenta más tarde.")
         else:
@@ -58,6 +69,15 @@ def address_add(request):
             return redirect(next_url)
 
     return render(request, "dashboard/address_form.html", {"form": form})
+
+
+def address_cities(request):
+    """JSON list for the address form's city suggestions (public data)."""
+    try:
+        cities = locations_service.list_cities(request.GET.get("departamento", ""))
+    except ApiError:
+        cities = []
+    return JsonResponse(cities, safe=False)
 
 
 @api_login_required

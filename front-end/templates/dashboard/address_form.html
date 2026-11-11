@@ -13,7 +13,7 @@
     </ul>
     {% endif %}
 
-    <form method="post">
+    <form method="post" data-address-form data-cities-url="{% url 'dashboard:address_cities' %}">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.GET.next }}">
         {% for field in form %}
@@ -23,6 +23,7 @@
             {% for error in field.errors %}<span class="form-errors">{{ error }}</span>{% endfor %}
         </div>
         {% endfor %}
+        <datalist id="city-options"></datalist>
         <button type="submit" class="btn btn--lg btn--full">Guardar dirección</button>
     </form>
 </div>
