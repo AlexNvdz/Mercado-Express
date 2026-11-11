@@ -8,7 +8,14 @@ from app.dependencies import get_current_user, require_staff
 from app.exceptions import NotFoundError
 from app.models.enums import UserRole
 from app.models.user import User
-from app.schemas.shipment import ShipmentCreate, ShipmentOut, ShipmentSyncOut, ShipmentUpdate
+from app.schemas.shipment import (
+    EnviaRetryFailure,
+    EnviaRetryOut,
+    ShipmentCreate,
+    ShipmentOut,
+    ShipmentSyncOut,
+    ShipmentUpdate,
+)
 from app.services.order_service import OrderService
 from app.services.shipment_service import ShipmentService
 
@@ -39,6 +46,19 @@ async def create_envia_shipment(
     on its own after a payment, for when that failed. 502 if Envia fails."""
     shipment = await ShipmentService(db).create_envia_shipment(order_id, actor_id=current_user.id)
     return ShipmentOut.model_validate(shipment)
+
+
+@router.post("/envia/retry", response_model=EnviaRetryOut, dependencies=[Depends(require_staff)])
+async def retry_envia_shipments(db: AsyncSession = Depends(get_db)) -> EnviaRetryOut:
+    """Staff/admin only: buy the Envia label for up to 10 `paid` Colombian
+    orders whose automatic label failed, each on its own; one failing
+    doesn't stop the rest. Call again while `remaining` > 0 and it helps."""
+    created, failed, remaining = await ShipmentService(db).retry_envia_shipments()
+    return EnviaRetryOut(
+        created=created,
+        failed=[EnviaRetryFailure(order_id=i, order_number=n, detail=d) for i, n, d in failed],
+        remaining=remaining,
+    )
 
 
 @router.post("/{shipment_id}/sync", response_model=ShipmentSyncOut)

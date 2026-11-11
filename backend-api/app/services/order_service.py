@@ -17,11 +17,12 @@ from datetime import UTC, date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
-from sqlalchemy import or_, select, union
+from sqlalchemy import func, or_, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.exceptions import InvalidStateTransitionError, NotFoundError, ValidationAppError
+from app.models.address import Address
 from app.models.enums import OrderStatus, OrderStatusChangeSource, SaleKind, ShipmentStatus
 from app.models.order import Order
 from app.models.order_item import OrderItem
@@ -194,12 +195,13 @@ class OrderService:
         search: str | None = None,
         created_from: date | None = None,
         created_to: date | None = None,
+        country: str | None = None,
     ) -> tuple[list[Order], int]:
         """`customer_id=None` lists every customer's orders (staff); an empty
         or None `statuses` means any status. `search` matches the order
         number or the customer's email/full name (case-insensitive);
-        `created_from`/`created_to` are inclusive UTC dates. `total` counts
-        the same filters."""
+        `created_from`/`created_to` are inclusive UTC dates; `country` is the
+        shipping address's ISO code. `total` counts the same filters."""
         filters: list[Any] = []
         if customer_id is not None:
             filters.append(Order.customer_id == customer_id)
@@ -221,6 +223,9 @@ class OrderService:
         if created_to is not None:
             next_day = datetime.combine(created_to + timedelta(days=1), time.min, tzinfo=UTC)
             filters.append(Order.created_at < next_day)
+        if country:
+            in_country = select(Address.id).where(func.upper(Address.country) == country.upper())
+            filters.append(Order.shipping_address_id.in_(in_country))
         items = await self.orders.list_filtered(filters=filters, offset=offset, limit=limit)
         total = await self.orders.count(filters=filters)
         return items, total

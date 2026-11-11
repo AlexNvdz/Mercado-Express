@@ -109,19 +109,33 @@ def fake_geocodes(request: httpx.Request) -> httpx.Response | None:
 @pytest.fixture(autouse=True)
 def _offline_envia() -> Generator[None]:
     """No test reaches Envia.com: geocodes is faked, any other call fails,
-    and labels stay off (ENVIA_API_KEY unset) unless a test turns them on
+    and labels and the tracking webhook stay off (ENVIA_API_KEY and
+    ENVIA_WEBHOOK_TOKEN/_SECRET unset) unless a test turns them on
     (tests/test_envia.py). FLAT_SHIPPING_FEE is 0 too: the totals the tests
     assert don't include whatever fee .env sets."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         return fake_geocodes(request) or httpx.Response(500, text=f"Envia not mocked: {request.url}")
 
-    originals = (settings.ENVIA_API_KEY, settings.FLAT_SHIPPING_FEE, envia_client.transport)
-    settings.ENVIA_API_KEY, settings.FLAT_SHIPPING_FEE = None, 0.0
+    originals = (
+        settings.ENVIA_API_KEY,
+        settings.ENVIA_WEBHOOK_TOKEN,
+        settings.ENVIA_WEBHOOK_SECRET,
+        settings.FLAT_SHIPPING_FEE,
+        envia_client.transport,
+    )
+    settings.ENVIA_API_KEY, settings.ENVIA_WEBHOOK_TOKEN, settings.ENVIA_WEBHOOK_SECRET = None, None, None
+    settings.FLAT_SHIPPING_FEE = 0.0
     envia_client.transport = httpx.MockTransport(handler)
     envia_client._geo_cache.clear()
     yield
-    settings.ENVIA_API_KEY, settings.FLAT_SHIPPING_FEE, envia_client.transport = originals
+    (
+        settings.ENVIA_API_KEY,
+        settings.ENVIA_WEBHOOK_TOKEN,
+        settings.ENVIA_WEBHOOK_SECRET,
+        settings.FLAT_SHIPPING_FEE,
+        envia_client.transport,
+    ) = originals
     envia_client._geo_cache.clear()
 
 

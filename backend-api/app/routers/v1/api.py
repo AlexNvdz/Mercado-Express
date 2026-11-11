@@ -15,6 +15,7 @@ from app.routers.v1 import (
     reports,
     shipments,
     support,
+    webhooks,
 )
 
 api_router = APIRouter()
@@ -29,3 +30,4 @@ api_router.include_router(shipments.router)
 api_router.include_router(reports.router)
 api_router.include_router(support.router)
 api_router.include_router(locations.router)
+api_router.include_router(webhooks.router)

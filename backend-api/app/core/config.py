@@ -94,6 +94,14 @@ class Settings(BaseSettings):
     ENVIA_BASE_URL: str = "https://api-test.envia.com"  # production: https://api.envia.com
     ENVIA_GEOCODES_URL: str = "https://geocodes.envia.com"
     ENVIA_TIMEOUT_SECONDS: float = 30
+    # Secret in the tracking webhook's URL (POST /webhooks/envia?token=...,
+    # registered with app/scripts/envia_webhook.py). Unset = webhook off (404).
+    ENVIA_WEBHOOK_TOKEN: str | None = None
+    # The webhook's `auth_token` in Envia (printed by envia_webhook.py). Set:
+    # a delivery carrying X-Webhook-Signature must match it. Envia's test call
+    # (/ship/webhooktest/) is never signed, so the token above still guards.
+    ENVIA_WEBHOOK_SECRET: str | None = None
+    ENVIA_QUERIES_URL: str = "https://queries.test.envia.com"  # production: https://queries.envia.com
     # Quoted on every automatic label; the cheapest service wins.
     ENVIA_CARRIERS: list[str] = ["interRapidisimo"]
     # Never picked: they deliver to a carrier office, not the customer's door

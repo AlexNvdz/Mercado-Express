@@ -67,6 +67,9 @@ async def list_orders(
     created_to: date | None = Query(
         default=None, description="Created on or before this date (UTC), inclusive."
     ),
+    country: str | None = Query(
+        default=None, min_length=2, max_length=2, description="Shipping address country (ISO code, e.g. CO)."
+    ),
     pagination: PaginationParams = Depends(pagination_params),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -82,6 +85,7 @@ async def list_orders(
         search=search,
         created_from=created_from,
         created_to=created_to,
+        country=country,
     )
     pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
     return Page(
