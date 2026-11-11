@@ -87,6 +87,30 @@ class Settings(BaseSettings):
     # Generous: the first call after Ollama starts also loads the model.
     OLLAMA_TIMEOUT_SECONDS: float = 60
 
+    # --- Envia.com shipping (app/services/envia_client.py) ---
+    # Unset key = no shipping-label calls: shipments stay manual. The
+    # geocodes host (address validation, /locations) is public and keyless.
+    ENVIA_API_KEY: str | None = None
+    ENVIA_BASE_URL: str = "https://api-test.envia.com"  # production: https://api.envia.com
+    ENVIA_GEOCODES_URL: str = "https://geocodes.envia.com"
+    ENVIA_TIMEOUT_SECONDS: float = 30
+    # Quoted on every automatic label; the cheapest service wins.
+    ENVIA_CARRIERS: list[str] = ["interRapidisimo"]
+    # Never picked: they deliver to a carrier office, not the customer's door
+    # (cash-on-delivery "*_cod" services are always skipped too).
+    ENVIA_EXCLUDED_SERVICES: list[str] = ["mensajeria_do", "mensajeria_oo"]
+    # Warehouse the packages leave from (city/state resolved like any address).
+    ENVIA_ORIGIN_NAME: str = "MercadoExpress"
+    ENVIA_ORIGIN_PHONE: str = "3001234567"
+    ENVIA_ORIGIN_STREET: str = "Calle 10 # 5-20"
+    ENVIA_ORIGIN_CITY: str = "Bogotá"
+    ENVIA_ORIGIN_STATE: str = "DC"
+    # One box per order, nobody weighs it: products carry no weight.
+    ENVIA_PACKAGE_WEIGHT_KG: float = 2
+    ENVIA_PACKAGE_LENGTH_CM: float = 30
+    ENVIA_PACKAGE_WIDTH_CM: float = 20
+    ENVIA_PACKAGE_HEIGHT_CM: float = 15
+
     # --- Product images (local disk; see app/services/storage_service.py) ---
     # MEDIA_ROOT: where files are written, relative to the process's working
     # directory unless given as an absolute path.

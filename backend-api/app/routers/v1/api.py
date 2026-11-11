@@ -8,6 +8,7 @@ from app.routers.v1 import (
     categories,
     customers,
     inventory,
+    locations,
     orders,
     payments,
     products,
@@ -27,3 +28,4 @@ api_router.include_router(payments.router)
 api_router.include_router(shipments.router)
 api_router.include_router(reports.router)
 api_router.include_router(support.router)
+api_router.include_router(locations.router)

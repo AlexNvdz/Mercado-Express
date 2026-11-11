@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, Field
@@ -39,9 +40,19 @@ class ShipmentOut(BaseModel):
     status: ShipmentStatus
     carrier: str | None
     tracking_number: str | None
+    # Set only for labels bought through Envia. label_url and shipping_cost
+    # are staff-only: the customer's GET returns them as null.
+    service: str | None = None
+    label_url: str | None = None
+    tracking_url: str | None = None
+    shipping_cost: Decimal | None = None
     shipped_at: datetime | None
     delivered_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ShipmentSyncOut(ShipmentOut):
+    carrier_status: str = Field(description="Envia's status name, e.g. 'Created', 'Picked Up', 'Delivered'.")

@@ -158,11 +158,13 @@ frontend integrates against.
   changes (adjust, set levels) are appended to `inventory_history` with the
   values before/after and the reason. Multi-warehouse support would extend
   this table, not replace it.
-- **Payments/Shipments**: both sit behind a small provider abstraction
-  (`PaymentGateway`, `ShipmentCarrier`) with a manual/placeholder
-  implementation — no real gateway or carrier is wired up yet, by design
-  (see the task's Fase 5 scope). Staff enter the carrier and tracking
-  number when creating the shipment (order `paid` or `preparing`) and can
-  edit them until dispatch.
+- **Payments/Shipments**: payments sit behind `PaymentGateway` with only a
+  manual gateway (no real payment provider, by design). Shipments use
+  Envia.com when `ENVIA_API_KEY` is set (sandbox by default, see
+  `.env.example`): after each payment the API buys the cheapest label in the
+  background (`app/services/envia_client.py`, `ShipmentService`), and staff
+  can retry it or sync its tracking from the panel. Without a key, staff
+  enter the carrier and tracking number when creating the shipment (order
+  `paid` or `preparing`) and can edit them until dispatch.
 - **Product images**: stored behind an `ImageStorage` port; only local disk
   storage (`MEDIA_ROOT`) is implemented.

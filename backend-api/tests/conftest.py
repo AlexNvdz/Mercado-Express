@@ -17,6 +17,7 @@ import uuid
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 
+import httpx
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -31,6 +32,7 @@ from app.db.session import get_db
 from app.main import app
 from app.models.enums import UserRole
 from app.models.user import User
+from app.services import envia_client
 
 apply_windows_event_loop_policy()
 
@@ -88,6 +90,39 @@ def _no_report_cache() -> Generator[None]:
     settings.REPORT_CACHE_SECONDS = 0
     yield
     settings.REPORT_CACHE_SECONDS = original
+
+
+# Envia geocodes as the tests see it: every city exists (at Medellín's
+# codes) except "NoExiste".
+FAKE_PLACE = [{"zip_codes": [{"zip_code": "050001", "info": {"stat_8digit": "05001000"}}]}]
+
+
+def fake_geocodes(request: httpx.Request) -> httpx.Response | None:
+    path = request.url.path
+    if path.startswith("/list/localities/CO/"):
+        return httpx.Response(200, json=[{"name": "Medellín"}, {"name": "Envigado"}, {"name": "Abejorral"}])
+    if path.startswith("/locate/CO/"):
+        return httpx.Response(200, json=[] if path.endswith("/NoExiste") else FAKE_PLACE)
+    return None
+
+
+@pytest.fixture(autouse=True)
+def _offline_envia() -> Generator[None]:
+    """No test reaches Envia.com: geocodes is faked, any other call fails,
+    and labels stay off (ENVIA_API_KEY unset) unless a test turns them on
+    (tests/test_envia.py). FLAT_SHIPPING_FEE is 0 too: the totals the tests
+    assert don't include whatever fee .env sets."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return fake_geocodes(request) or httpx.Response(500, text=f"Envia not mocked: {request.url}")
+
+    originals = (settings.ENVIA_API_KEY, settings.FLAT_SHIPPING_FEE, envia_client.transport)
+    settings.ENVIA_API_KEY, settings.FLAT_SHIPPING_FEE = None, 0.0
+    envia_client.transport = httpx.MockTransport(handler)
+    envia_client._geo_cache.clear()
+    yield
+    settings.ENVIA_API_KEY, settings.FLAT_SHIPPING_FEE, envia_client.transport = originals
+    envia_client._geo_cache.clear()
 
 
 @pytest_asyncio.fixture

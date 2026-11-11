@@ -11,11 +11,13 @@ class AddressBase(BaseModel):
     state: str = Field(..., min_length=1, max_length=120)
     postal_code: str = Field(..., min_length=1, max_length=20)
     country: str = Field(..., min_length=2, max_length=2, description="ISO 3166-1 alpha-2")
+    phone: str | None = Field(default=None, max_length=30, description="Who receives the package.")
     is_default: bool = False
 
 
 class AddressCreate(AddressBase):
-    pass
+    # Optional for Colombia: AddressService fills it from the city.
+    postal_code: str | None = Field(default=None, max_length=20)  # type: ignore[assignment]
 
 
 class AddressUpdate(BaseModel):
@@ -25,6 +27,7 @@ class AddressUpdate(BaseModel):
     state: str | None = Field(default=None, max_length=120)
     postal_code: str | None = Field(default=None, max_length=20)
     country: str | None = Field(default=None, min_length=2, max_length=2)
+    phone: str | None = Field(default=None, max_length=30)
     is_default: bool | None = None
 
 

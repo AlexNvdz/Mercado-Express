@@ -36,3 +36,7 @@ class AuthorizationError(AppError):
 
 class InvalidStateTransitionError(AppError):
     """Attempted an invalid lifecycle transition (order/payment/shipment)."""
+
+
+class ExternalServiceError(AppError):
+    """A third-party provider (Envia.com) failed or refused the request."""

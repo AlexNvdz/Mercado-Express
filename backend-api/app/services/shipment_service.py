@@ -11,15 +11,33 @@ becomes `cancelled` if its order is cancelled/refunded (OrderService).
 Every method that changes an order's status locks the order row first (see
 OrderRepository.get_with_items), so concurrent requests on the same order
 are serialized.
+
+Envia.com (app/services/envia_client.py), when ENVIA_API_KEY is set: once a
+payment commits, a background task buys the cheapest label among
+ENVIA_CARRIERS and creates the shipment with it (create_envia_shipment, also
+the panel's "Generar guía"); sync_envia_tracking moves the shipment along
+what the carrier reports; a cancelled order's unused label is voided.
 """
 
 import abc
+import logging
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.exceptions import ConflictError, InvalidStateTransitionError, NotFoundError
+from app.core.config import settings
+from app.db.session import AsyncSessionLocal
+from app.exceptions import (
+    AppError,
+    ConflictError,
+    ExternalServiceError,
+    InvalidStateTransitionError,
+    NotFoundError,
+    ValidationAppError,
+)
 from app.models.enums import OrderStatus, OrderStatusChangeSource, ShipmentStatus
 from app.models.order import Order
 from app.models.shipment import Shipment
@@ -28,13 +46,21 @@ from app.repositories.inventory_repository import InventoryRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.order_status_change_repository import OrderStatusChangeRepository
 from app.repositories.shipment_repository import ShipmentRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.shipment import ShipmentCreate, ShipmentUpdate
+from app.services import envia_client
+
+logger = logging.getLogger(__name__)
 
 # Order statuses in which a shipment can be created. Staff may have moved
 # the order to `preparing` by hand before creating it.
 _SHIPMENT_CREATABLE_ORDER_STATUSES = {OrderStatus.PAID, OrderStatus.PREPARING}
 # Shipment statuses before dispatch, in which carrier/tracking can be edited.
 _EDITABLE_SHIPMENT_STATUSES = {ShipmentStatus.PENDING, ShipmentStatus.PREPARING}
+# Envia tracking statuses (its catalog names) that mean the carrier has the
+# package; "Delivered" closes it. Anything else leaves the shipment alone.
+_ENVIA_IN_TRANSIT = {"Picked Up", "Shipped", "Out for Delivery"}
+_ENVIA_DELIVERED = "Delivered"
 
 
 class ShipmentCarrier(abc.ABC):
@@ -58,6 +84,7 @@ class ShipmentService:
         self.addresses = AddressRepository(db)
         self.inventory = InventoryRepository(db)
         self.status_changes = OrderStatusChangeRepository(db)
+        self.users = UserRepository(db)
         self.carrier = carrier or ManualShipmentCarrier()
 
     async def _move_order(
@@ -80,12 +107,7 @@ class ShipmentService:
         self, order_id: uuid.UUID, data: ShipmentCreate, *, actor_id: uuid.UUID | None
     ) -> Shipment:
         order = await self._get_order_locked(order_id)
-        if order.status not in _SHIPMENT_CREATABLE_ORDER_STATUSES:
-            raise InvalidStateTransitionError(
-                f"Order must be 'paid' or 'preparing' to create a shipment (currently '{order.status}')."
-            )
-        if await self.shipments.get_by_order_id(order.id) is not None:
-            raise ConflictError(f"Order {order_id} already has a shipment.")
+        await self._check_shipment_creatable(order)
         address = await self.addresses.get(data.address_id)
         if address is None:
             raise NotFoundError(f"Address {data.address_id} not found.")
@@ -106,9 +128,100 @@ class ShipmentService:
         await self.db.flush()
         return shipment
 
-    async def update_shipment(self, shipment_id: uuid.UUID, data: ShipmentUpdate) -> Shipment:
-        """Edit carrier/tracking number; only before dispatch."""
+    async def _check_shipment_creatable(self, order: Order) -> None:
+        if order.status not in _SHIPMENT_CREATABLE_ORDER_STATUSES:
+            raise InvalidStateTransitionError(
+                f"Order must be 'paid' or 'preparing' to create a shipment (currently '{order.status}')."
+            )
+        if await self.shipments.get_by_order_id(order.id) is not None:
+            raise ConflictError(f"Order {order.id} already has a shipment.")
+
+    async def create_envia_shipment(self, order_id: uuid.UUID, *, actor_id: uuid.UUID | None) -> Shipment:
+        """Quotes every ENVIA_CARRIERS service for the order's shipping
+        address, buys the cheapest label and creates the shipment with it
+        (order -> `preparing`). The order row stays locked during the Envia
+        calls, so two runs can't buy two labels for the same order."""
+        if not envia_client.enabled():
+            raise ValidationAppError("Envia no está configurado (ENVIA_API_KEY).")
+        order = await self._get_order_locked(order_id)
+        await self._check_shipment_creatable(order)
+        address = order.shipping_address
+        if address is None:
+            raise ValidationAppError("El pedido no tiene dirección de envío.")
+        if address.country.upper() != "CO":
+            raise ValidationAppError("Envia solo despacha a direcciones en Colombia.")
+        customer = await self.users.get(order.customer_id)
+        assert customer is not None  # FK
+        phone = address.phone or customer.phone
+        if not phone:
+            raise ValidationAppError("Falta el teléfono de quien recibe el pedido.")
+
+        destination_place = await envia_client.locate(address.state, address.city)
+        if destination_place is None:
+            raise ValidationAppError(f"Envia no reconoce la ciudad '{address.city}' ({address.state}).")
+        origin_place = await envia_client.locate(settings.ENVIA_ORIGIN_STATE, settings.ENVIA_ORIGIN_CITY)
+        if origin_place is None:
+            raise ExternalServiceError("La dirección de origen ENVIA_ORIGIN_* no es válida para Envia.")
+        origin = envia_client.address(
+            settings.ENVIA_ORIGIN_NAME,
+            settings.ENVIA_ORIGIN_PHONE,
+            settings.ENVIA_ORIGIN_STREET,
+            origin_place,
+        )
+        destination = envia_client.address(
+            customer.full_name, phone, address.line1, destination_place, customer.email, address.line2
+        )
+        parcel = envia_client.package(Decimal(order.subtotal))
+
+        rates = await envia_client.rates(origin, destination, parcel)
+        label = await envia_client.generate(
+            origin, destination, parcel, min(rates, key=lambda r: r.total_price)
+        )
+        shipment = await self.shipments.create(
+            {
+                "order_id": order.id,
+                "address_id": address.id,
+                "carrier": label.carrier,
+                "service": label.service,
+                "tracking_number": label.tracking_number,
+                "tracking_url": label.tracking_url,
+                "label_url": label.label_url,
+                "shipping_cost": label.total_price,
+                "status": ShipmentStatus.PREPARING,
+            }
+        )
+        await self._move_order(
+            order, OrderStatus.PREPARING, OrderStatusChangeSource.SHIPMENT_CREATED, actor_id
+        )
+        await self.db.flush()
+        return shipment
+
+    async def sync_envia_tracking(
+        self, shipment_id: uuid.UUID, *, actor_id: uuid.UUID | None
+    ) -> tuple[Shipment, str]:
+        """Asks Envia where the package is and moves the shipment to match:
+        picked up/in transit -> mark_shipped, delivered -> mark_delivered
+        (both, in order, if it was delivered before anyone synced). Returns
+        the shipment and Envia's status name."""
         shipment = await self._get(shipment_id)
+        if not shipment.label_url or not shipment.tracking_number:
+            raise ValidationAppError("Este envío no tiene guía de Envia.")
+        if not envia_client.enabled():
+            raise ValidationAppError("Envia no está configurado (ENVIA_API_KEY).")
+        carrier_status = await envia_client.track(shipment.tracking_number)
+        moved = carrier_status in _ENVIA_IN_TRANSIT or carrier_status == _ENVIA_DELIVERED
+        if moved and shipment.status == ShipmentStatus.PREPARING:
+            shipment = await self.mark_shipped(shipment_id, actor_id=actor_id)
+        if carrier_status == _ENVIA_DELIVERED and shipment.status == ShipmentStatus.IN_TRANSIT:
+            shipment = await self.mark_delivered(shipment_id, actor_id=actor_id)
+        return shipment, carrier_status
+
+    async def update_shipment(self, shipment_id: uuid.UUID, data: ShipmentUpdate) -> Shipment:
+        """Edit carrier/tracking number; only before dispatch, and never on an
+        Envia label (it would stop matching what Envia has)."""
+        shipment = await self._get(shipment_id)
+        if shipment.label_url:
+            raise ConflictError("El envío tiene guía de Envia: la transportadora y la guía no se editan.")
         if shipment.status not in _EDITABLE_SHIPMENT_STATUSES:
             raise InvalidStateTransitionError(
                 f"Shipment can only be edited before dispatch (currently '{shipment.status}')."
@@ -184,3 +297,49 @@ class ShipmentService:
         if shipment is None:
             raise NotFoundError(f"No shipment for order {order_id}.")
         return shipment
+
+
+async def schedule_envia_label(
+    db: AsyncSession, background_tasks: BackgroundTasks, order_id: uuid.UUID
+) -> None:
+    """After a completed payment: commit now and buy the label once the
+    response is out (FastAPI commits get_db only after background tasks have
+    run, so the task's own session would not see the order otherwise)."""
+    if not envia_client.enabled():
+        return
+    await db.commit()
+    background_tasks.add_task(auto_create_envia_shipment, order_id)
+
+
+async def auto_create_envia_shipment(order_id: uuid.UUID) -> None:
+    """Background task, own session. A failure only logs: the order stays
+    `paid` and staff retry from the panel (POST /shipments/order/{id}/envia)."""
+    async with AsyncSessionLocal() as db:
+        try:
+            await ShipmentService(db).create_envia_shipment(order_id, actor_id=None)
+            await db.commit()
+        except AppError as exc:
+            await db.rollback()
+            logger.warning("Automatic Envia label for order %s failed: %s", order_id, exc.detail)
+        except Exception:
+            await db.rollback()
+            logger.exception("Automatic Envia label for order %s failed", order_id)
+
+
+async def schedule_envia_cancel(
+    db: AsyncSession, background_tasks: BackgroundTasks, order_id: uuid.UUID
+) -> None:
+    """After an order was cancelled/refunded: void its undispatched Envia
+    label once the cancellation is committed."""
+    shipment = await ShipmentRepository(db).get_by_order_id(order_id)
+    if (
+        shipment is None
+        or shipment.status != ShipmentStatus.CANCELLED
+        or not shipment.label_url
+        or not shipment.carrier
+        or not shipment.tracking_number
+        or not envia_client.enabled()
+    ):
+        return
+    await db.commit()
+    background_tasks.add_task(envia_client.cancel_quietly, shipment.carrier, shipment.tracking_number)
