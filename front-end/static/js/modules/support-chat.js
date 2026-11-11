@@ -25,6 +25,8 @@ if (root) {
       hint: "No pudimos resolverlo automáticamente. Cuéntanos qué pasó y pide el reembolso de forma explícita para intentarlo de nuevo.",
     },
   };
+  // Fetch chains below are fire-and-forget (`void`): network errors already
+  // turn into an error bubble, and `finally` always re-enables the form.
   var FAILED = "No pudimos procesar tu reclamo. Intenta de nuevo.";
   var NO_ORDERS = "No tienes pedidos entregados para reclamar";
 
@@ -104,7 +106,7 @@ if (root) {
     if (!btn) return;
     opener = btn;
     setOpen(true, text);
-    loadOrders().then(function () {
+    void loadOrders().then(function () {
       var id = btn.dataset.claimOpen;
       if (!select.querySelector('option[value="' + id + '"]')) {
         if (!select.value) select.replaceChildren(); // drop the "no orders" placeholder
@@ -138,7 +140,7 @@ if (root) {
     send.disabled = select.disabled = true;
     send.textContent = "Analizando…";
 
-    fetch(form.action, { method: "POST", body: body, headers: { Accept: "application/json" } })
+    void fetch(form.action, { method: "POST", body: body, headers: { Accept: "application/json" } })
       .then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (data) { return { ok: r.ok, data: data }; });
       })
