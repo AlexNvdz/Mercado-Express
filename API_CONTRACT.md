@@ -295,7 +295,7 @@ release, dispatch) are not recorded here, only manual staff changes.
 |---|---|---|---|
 | POST | `/orders` | customer | Create an order: validates products, reserves stock, computes totals. |
 | POST | `/orders/checkout` | customer | `POST /orders` + `POST /payments` in one transaction (see below). |
-| GET | `/orders?status=&search=&created_from=&created_to=&page=&page_size=` | any user | Customers see only their own orders; staff see all. Newest first. Optional `status`, repeatable (`?status=paid&status=preparing`); unknown status = `422`. Since 2026-10-22: `search` (case-insensitive match on order number, customer email or customer full name) and `created_from` / `created_to` (`YYYY-MM-DD`, inclusive, UTC days: `created_to=2026-10-22` includes everything up to 23:59:59 UTC that day; another format = `422`). All filters combine (AND); `total`/`pages` count them. |
+| GET | `/orders?status=&search=&created_from=&created_to=&page=&page_size=` | any user | Customers see only their own orders; staff see all. Newest first. Optional `status`, repeatable (`?status=paid&status=preparing`); unknown status = `422`. Since 2026-10-22: `search` (case-insensitive match on order number, customer email or customer full name) and `created_from` / `created_to` (`YYYY-MM-DD`, inclusive, UTC days: `created_to=2026-10-22` includes everything up to 23:59:59 UTC that day; another format = `422`). Since 2026-11-11: `country` (2-letter ISO code of the shipping address, case-insensitive, e.g. `CO`; `status=paid&country=CO` is the panel's "paid without a label" list). All filters combine (AND); `total`/`pages` count them. |
 | GET | `/orders/{order_id}` | any user | Get one (customers: only their own, else `404`). |
 | GET | `/orders/{order_id}/history` | staff | Every status change of the order, oldest first (flat list, not paginated). |
 | POST | `/orders/{order_id}/cancel` | any user | Cancel (only while `pending`); releases reserved stock. |
@@ -463,7 +463,10 @@ Two ways to get a shipment:
   and creates the shipment with it. The order moves to `preparing`, with an
   `order_status_history` row `source=shipment_created` and no actor. If that
   fails (no phone, no coverage, Envia down), the order stays `paid` and
-  staff retry with `POST /shipments/order/{order_id}/envia`.
+  staff retry with `POST /shipments/order/{order_id}/envia`, or all of
+  them at once with `POST /shipments/envia/retry`. Once the label exists,
+  Envia's tracking webhook (`POST /webhooks/envia`, below) dispatches and
+  delivers the shipment on its own.
   Cash-on-delivery services (`*_cod`) and the to-office ones in
   `ENVIA_EXCLUDED_SERVICES` are never picked.
 - **Manual**: staff enter the carrier and tracking number; if no tracking
@@ -474,7 +477,8 @@ Two ways to get a shipment:
 |---|---|---|---|
 | POST | `/shipments/order/{order_id}` | staff | Create the shipment (order must be `paid` or `preparing`); order → `preparing`. |
 | POST | `/shipments/order/{order_id}/envia` | staff | Buy the cheapest Envia label for the order's shipping address and create the shipment with it (same rules as above). No body. `201` shipment; `409` not `paid`/`preparing` or already has a shipment; `422` no address, not in Colombia, unknown city, no phone or Envia not configured; `502` Envia failed (`detail` says why). |
-| POST | `/shipments/{shipment_id}/sync` | staff | Read the Envia label's tracking: `Picked Up`/`Shipped`/`Out for Delivery` dispatch it (same as `/ship`), `Delivered` delivers it (dispatching first if needed); any other status changes nothing. Returns the shipment plus `carrier_status` (Envia's status name, e.g. `"Created"`). `422` if the shipment has no Envia label. |
+| POST | `/shipments/envia/retry` | staff | Buy the Envia label of up to 10 `paid` orders with a Colombian address (a paid order never has a shipment), newest first, each on its own: one failing doesn't undo the others. No body. `200` `{"created": 1, "failed": [{"order_id", "order_number", "detail"}], "remaining": 1}`; `remaining` counts the paid CO orders still without a label (failures included). `422` if Envia is not configured. |
+| POST | `/shipments/{shipment_id}/sync` | staff | Read the Envia label's tracking: `Picked Up`/`Shipped`/`In Transit`/`Out for Delivery` dispatch it (same as `/ship`), `Delivered` delivers it (dispatching first if needed); any other status changes nothing. Returns the shipment plus `carrier_status` (Envia's status name, e.g. `"Created"`). `422` if the shipment has no Envia label. |
 | PATCH | `/shipments/{shipment_id}` | staff | Edit `carrier` / `tracking_number`; only before dispatch, and never on an Envia label (`409`). |
 | POST | `/shipments/{shipment_id}/ship` | staff | Mark dispatched; decrements real stock, order → `shipped`. |
 | POST | `/shipments/{shipment_id}/deliver` | staff | Mark delivered; order → `delivered`. |
@@ -546,6 +550,14 @@ string, what Envia charged the store). The customer's
 Cancelling or refunding an order whose undispatched shipment has an Envia
 label also voids the label at Envia (in the background, after the change
 commits; a failure there only logs, the order stays cancelled).
+
+## `/api/v1/webhooks`
+
+Inbound calls from third parties: no JWT, each guarded by its own secret.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/webhooks/envia?token=` | `token` = `ENVIA_WEBHOOK_TOKEN`, plus the signature when sent | Envia's tracking webhook (type 3 `simpleTracking`). Two bodies, both seen from the sandbox on 2026-11-11: real deliveries `{"type": "tracking.simple", "created_at": "...", "data": {"shipment_id": 187528, "tracking_number": "INTESBX893874", "status": "Created", "carrier_name": "interRapidisimo"}}` (one arrives when the label is bought), and Envia's test call (`POST /ship/webhooktest/`) a flat `{"carrier", "tracking_number", "shipment_status": "Picked Up"}`. The status moves the shipment exactly like `/sync` (case, spaces and `_` ignored), with no actor in the history; repeats and statuses already passed change nothing. Always `200` `{"applied": true|false}` once authenticated: `true` when it's one of our Envia labels (even if nothing moved), `false` for an unknown tracking number, a non-tracking event or a transition that can't apply, so Envia doesn't retry. `401` wrong token, or (with `ENVIA_WEBHOOK_SECRET` set) a wrong `X-Webhook-Signature`: real deliveries carry `X-Webhook-Signature: v1=<hex HMAC-SHA256(auth_token, "<X-Webhook-Timestamp>.<X-Webhook-Event>.<raw body>")>`, `auth_token` being the webhook's own field in `GET queries.../webhooks`; the test call is unsigned and passes on the token alone. `404` while `ENVIA_WEBHOOK_TOKEN` is unset. Register/repoint the URL with `uv run python -m app.scripts.envia_webhook https://<public-host>` (prints the `auth_token`). |
 
 ## `/api/v1/reports`
 
