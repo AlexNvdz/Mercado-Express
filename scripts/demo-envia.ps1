@@ -39,6 +39,14 @@ function Wait-Url([string]$url, [int]$seconds) {
     return $false
 }
 
+# PowerShell 5.1 turns any stderr line of a native command into an error, and
+# "Stop" makes that fatal (uv prints "Building ..." there). Exit codes are
+# checked by hand instead.
+function Invoke-Native([scriptblock]$command) {
+    $ErrorActionPreference = "Continue"
+    & $command
+}
+
 function Test-Port([int]$port) {
     [bool](Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
 }
@@ -50,17 +58,17 @@ function Start-Window([string]$title, [string]$dir, [string]$command) {
 
 # 1. Postgres in Docker
 Write-Host "1/5 Base de datos ($Db)..."
-docker info *> $null
+Invoke-Native { docker info } *> $null
 if ($LASTEXITCODE -ne 0) { throw "Docker no responde: abre Docker Desktop y vuelve a correr el script." }
-docker start backend-api-db-1 | Out-Null
+Invoke-Native { docker start backend-api-db-1 } *> $null
 $ready = $false
 foreach ($i in 1..30) {
-    docker exec backend-api-db-1 pg_isready -q *> $null
+    Invoke-Native { docker exec backend-api-db-1 pg_isready -q } *> $null
     if ($LASTEXITCODE -eq 0) { $ready = $true; break }
     Start-Sleep -Seconds 1
 }
 if (-not $ready) { throw "Postgres (backend-api-db-1) no arranco." }
-$exists = docker exec backend-api-db-1 psql -U mercadoexpress -d postgres -Atc "select 1 from pg_database where datname='$Db'"
+$exists = Invoke-Native { docker exec backend-api-db-1 psql -U mercadoexpress -d postgres -Atc "select 1 from pg_database where datname='$Db'" 2>$null }
 if ($exists -ne "1") { throw "La base '$Db' no existe en backend-api-db-1." }
 
 # 2. backend-api (--reload: psycopg async needs it on Windows)
@@ -116,7 +124,7 @@ if ($NoTunnel) {
     Write-Host "5/5 Registrando el webhook en Envia..."
     Push-Location $api
     try {
-        $out = uv run python -m app.scripts.envia_webhook $public 2>$null
+        $out = Invoke-Native { uv run python -m app.scripts.envia_webhook $public 2>$null }
         if ($LASTEXITCODE -ne 0) { throw "No se pudo registrar el webhook en Envia." }
         $out | Where-Object { $_ -notmatch "^ENVIA_WEBHOOK_SECRET=" } | ForEach-Object { Write-Host "    $_" }
         $secret = ($out | Where-Object { $_ -match "^ENVIA_WEBHOOK_SECRET=" }) -replace "^ENVIA_WEBHOOK_SECRET=", ""
