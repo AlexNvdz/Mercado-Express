@@ -1,11 +1,12 @@
-"""Shipment model. Provider-agnostic (`carrier` is free text) so a real
-logistics integration can be added later without a schema change."""
+"""Shipment model. Provider-agnostic (`carrier` is free text); the
+`service`/`label_url`/`tracking_url`/`shipping_cost` columns are filled only
+when the label was bought through Envia.com (ShipmentService)."""
 
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, String
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -56,6 +57,11 @@ class Shipment(UUIDPKMixin, TimestampMixin, Base):
     )
     carrier: Mapped[str | None] = mapped_column(String(100), nullable=True)
     tracking_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    service: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    label_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    tracking_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # What Envia charged the store for the label (the customer pays the flat fee).
+    shipping_cost: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

@@ -156,9 +156,22 @@ MOCK_ADDRESSES = [
         "state": "Bogotá D.C.",
         "postal_code": "110111",
         "country": "CO",
+        "phone": "3001234567",
         "is_default": True,
     },
 ]
+
+# GET /api/v1/locations/co/states and .../{state}/cities (read-only).
+MOCK_STATES = [
+    {"code": "AN", "name": "Antioquia"},
+    {"code": "DC", "name": "Bogotá"},
+    {"code": "VC", "name": "Valle del Cauca"},
+]
+MOCK_CITIES = {
+    "Antioquia": ["Envigado", "Medellín"],
+    "Bogotá": ["Bogotá"],
+    "Valle del Cauca": ["Cali", "Palmira"],
+}
 
 MOCK_ORDERS = [
     {

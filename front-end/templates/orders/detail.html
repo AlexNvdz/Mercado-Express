@@ -75,6 +75,9 @@
                     <dt>Transportadora</dt><dd>{{ shipment.carrier|default:"Sin asignar" }}</dd>
                     <dt>Guía</dt><dd>{{ shipment.tracking_number|default:"Sin asignar" }}</dd>
                 </dl>
+                {% if shipment.tracking_url %}
+                <a class="btn btn--secondary btn--sm gap-top" href="{{ shipment.tracking_url }}" target="_blank" rel="noopener">Rastrear envío</a>
+                {% endif %}
                 {% else %}
                 <p class="muted">Tu pedido aún no ha sido despachado. Verás aquí la guía cuando salga.</p>
                 {% endif %}

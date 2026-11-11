@@ -28,7 +28,13 @@ from services import orders as orders_service
 from services import products as products_service
 from services import reports as reports_service
 from services import shipments as shipments_service
-from services.exceptions import ApiConflictError, ApiError, ApiNotFoundError, ApiValidationError
+from services.exceptions import (
+    ApiConflictError,
+    ApiError,
+    ApiNotFoundError,
+    ApiResponseError,
+    ApiValidationError,
+)
 
 from .forms import (
     CategoryForm,
@@ -205,6 +211,7 @@ def order_detail(request, order_id):
         "shipment_update_form": shipment_update_form,
         "can_ship": shipment is not None and shipment["status"] == "preparing" and order["status"] == "preparing",
         "can_deliver": shipment is not None and shipment["status"] == "in_transit",
+        "can_sync": shipment is not None and shipments_service.can_sync(shipment),
         "status_history": status_history,
         "active_nav": "orders",
     }
@@ -261,6 +268,45 @@ def shipment_create(request, order_id):
             messages.success(request, "Envío creado.")
     else:
         messages.error(request, "Revisa la transportadora y el número de guía.")
+    return redirect("adminpanel:order_detail", order_id=order_id)
+
+
+@api_staff_required
+@require_POST
+def shipment_envia(request, order_id):
+    """Buys the cheapest Envia label: the panel's retry for when the
+    automatic one after the payment failed (no phone, no coverage...)."""
+    token = auth_service.get_access_token(request)
+    try:
+        shipment = shipments_service.create_envia_shipment(token, str(order_id))
+    except ApiConflictError:
+        messages.error(request, "No se pudo generar la guía: el pedido debe estar pagado y sin envío.")
+    except (ApiValidationError, ApiResponseError) as exc:
+        # 422 (address/phone) or 502 (Envia): the backend's reason is readable.
+        messages.error(request, f"No se pudo generar la guía: {exc.detail}")
+    except ApiError:
+        messages.error(request, "No fue posible generar la guía. Intenta de nuevo.")
+    else:
+        messages.success(request, f"Guía {shipment['tracking_number']} generada con {shipment['carrier']}.")
+    return redirect("adminpanel:order_detail", order_id=order_id)
+
+
+@api_staff_required
+@require_POST
+def shipment_sync(request, order_id):
+    token = auth_service.get_access_token(request)
+    shipment = shipments_service.get_shipment_for_order(token, str(order_id))
+    if shipment is None:
+        raise Http404("Envío no encontrado")
+    try:
+        synced = shipments_service.sync_shipment(token, shipment["id"], str(order_id))
+    except ApiError as exc:
+        messages.error(request, f"No se pudo consultar el rastreo: {exc.detail}")
+    else:
+        if synced["status"] == shipment["status"]:
+            messages.info(request, f"La transportadora reporta «{synced['carrier_status']}». Sin cambios.")
+        else:
+            messages.success(request, f"La transportadora reporta «{synced['carrier_status']}». Envío actualizado.")
     return redirect("adminpanel:order_detail", order_id=order_id)
 
 

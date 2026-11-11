@@ -24,6 +24,7 @@ from app.exceptions import (
     AuthenticationError,
     AuthorizationError,
     ConflictError,
+    ExternalServiceError,
     InsufficientStockError,
     InvalidStateTransitionError,
     NotFoundError,
@@ -46,6 +47,7 @@ _ERROR_STATUS_MAP: dict[type[AppError], int] = {
     AuthenticationError: status.HTTP_401_UNAUTHORIZED,
     AuthorizationError: status.HTTP_403_FORBIDDEN,
     InvalidStateTransitionError: status.HTTP_409_CONFLICT,
+    ExternalServiceError: status.HTTP_502_BAD_GATEWAY,
 }
 
 

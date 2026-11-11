@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -17,6 +17,7 @@ from app.schemas.order import (
     OrderStatusUpdate,
 )
 from app.services.order_service import OrderService
+from app.services.shipment_service import schedule_envia_cancel, schedule_envia_label
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -36,14 +37,18 @@ async def create_order(
 @router.post("/checkout", response_model=OrderOut, status_code=status.HTTP_201_CREATED)
 async def checkout(
     data: OrderCheckout,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrderOut:
     """POST /orders and POST /payments in one transaction: order, items,
     stock reservation, payment and sales-ledger entry are all saved or none
-    is -- see OrderService.checkout."""
+    is -- see OrderService.checkout. With Envia configured, the shipping
+    label is bought right after, in the background."""
     order = await OrderService(db).checkout(current_user.id, data)
-    return OrderOut.model_validate(order)
+    out = OrderOut.model_validate(order)
+    await schedule_envia_label(db, background_tasks, order.id)
+    return out
 
 
 @router.get("", response_model=Page[OrderOut])
@@ -130,6 +135,7 @@ async def cancel_order(
 async def update_order_status(
     order_id: uuid.UUID,
     data: OrderStatusUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_staff),
     db: AsyncSession = Depends(get_db),
 ) -> OrderOut:
@@ -137,4 +143,7 @@ async def update_order_status(
     refund), checked against OrderService's _ALLOWED_TRANSITIONS. Payment,
     dispatch and delivery go through /payments and /shipments instead."""
     order = await OrderService(db).transition_status(order_id, data.status, actor_id=current_user.id)
-    return OrderOut.model_validate(order)
+    out = OrderOut.model_validate(order)
+    if data.status in (OrderStatus.CANCELLED, OrderStatus.REFUNDED):
+        await schedule_envia_cancel(db, background_tasks, order_id)
+    return out

@@ -71,6 +71,8 @@ def test_checkout_shows_address_choices(client):
     response = client.get(reverse("orders:checkout"))
     assert response.status_code == 200
     assert b"Bogot" in response.content
+    assert response.context["shipping"] == 20000
+    assert response.context["total"] == response.context["subtotal"] + 20000
 
 
 @pytest.mark.django_db
@@ -279,3 +281,13 @@ def test_order_list_filters_server_side_and_paginates(client, api_calls, setting
     orders_call = next(kwargs for _, path, kwargs in api_calls if path == "/api/v1/orders")
     assert orders_call["params"] == {"page": 2, "page_size": 10, "status": "paid"}
     assert "Página 2 de 3" in content
+
+
+@pytest.mark.django_db
+def test_order_detail_links_to_envia_tracking(client):
+    _login(client)
+    order_id = mock_data.MOCK_ORDERS[0]["id"]
+    mock_data.MOCK_SHIPMENTS[order_id]["tracking_url"] = "https://envia.com/rastreo?label=X1"
+    content = client.get(reverse("orders:detail", kwargs={"order_id": order_id})).content.decode()
+    assert "Rastrear envío" in content
+    assert "https://envia.com/rastreo?label=X1" in content

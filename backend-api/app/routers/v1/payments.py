@@ -1,16 +1,17 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.dependencies import get_current_user
 from app.exceptions import NotFoundError
-from app.models.enums import UserRole
+from app.models.enums import PaymentStatus, UserRole
 from app.models.user import User
 from app.schemas.payment import PaymentCreate, PaymentOut
 from app.services.order_service import OrderService
 from app.services.payment_service import PaymentService
+from app.services.shipment_service import schedule_envia_label
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 @router.post("", response_model=PaymentOut, status_code=status.HTTP_201_CREATED)
 async def create_payment(
     data: PaymentCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> PaymentOut:
@@ -29,7 +31,10 @@ async def create_payment(
         if order.customer_id != current_user.id:
             raise NotFoundError(f"Order {data.order_id} not found.")
     payment = await PaymentService(db).create_payment(data, actor_id=current_user.id)
-    return PaymentOut.model_validate(payment)
+    out = PaymentOut.model_validate(payment)
+    if payment.status == PaymentStatus.COMPLETED:
+        await schedule_envia_label(db, background_tasks, payment.order_id)
+    return out
 
 
 @router.get("/{payment_id}", response_model=PaymentOut)

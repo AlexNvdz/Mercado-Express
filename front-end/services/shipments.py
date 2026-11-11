@@ -5,7 +5,18 @@ Shipment tracking. See ../API_CONTRACT.md#apiv1shipments.
     PATCH /api/v1/shipments/{shipment_id}         staff, {"carrier", "tracking_number"} -> edit before dispatch
     POST  /api/v1/shipments/{shipment_id}/ship     staff, no body -> dispatched
     POST  /api/v1/shipments/{shipment_id}/deliver  staff, no body -> delivered
+    POST  /api/v1/shipments/order/{order_id}/envia staff, no body -> cheapest Envia label + shipment
+    POST  /api/v1/shipments/{shipment_id}/sync     staff, no body -> shipment + "carrier_status"
     GET   /api/v1/shipments/order/{order_id}
+
+Envia.com: with it configured, the backend buys the cheapest label on its
+own right after the payment; `/envia` is the panel's retry when that failed
+(502 when Envia fails, 422 when the address/phone isn't usable, 409 if the
+order already has a shipment). `/sync` reads the carrier's tracking and
+dispatches/delivers the shipment if the carrier says so. An Envia shipment
+also has `service`, `label_url`, `tracking_url` and `shipping_cost` (null
+otherwise; the customer's GET gets `label_url`/`shipping_cost` as null), and
+its carrier/tracking number can't be edited (409).
 
 A shipment can be created while the order is `paid` or `preparing` (staff
 may have moved it to `preparing` by hand first; 409 otherwise, or if it
@@ -27,7 +38,7 @@ from __future__ import annotations
 from django.conf import settings
 
 from . import mock_data
-from .api_client import api_client
+from .api_client import ApiClient, api_client
 from .exceptions import ApiConflictError, ApiNotFoundError
 
 # Mirrors backend-api's ShipmentStatus enum (app/models/enums.py) -- its own
@@ -48,6 +59,9 @@ SHIPMENT_STATUS_LABELS = {
 # statuses in which carrier/tracking number can still be edited (i.e. not
 # dispatched yet). Mirror backend-api's ShipmentService checks.
 SHIPMENT_CREATABLE_ORDER_STATUSES = ("paid", "preparing")
+
+# The backend gives each Envia call up to 30 s (ENVIA_TIMEOUT_SECONDS).
+_envia_client = ApiClient(timeout=65)
 SHIPMENT_EDITABLE_STATUSES = ("pending", "preparing")
 
 
@@ -56,7 +70,12 @@ def can_create_shipment(order_status: str) -> bool:
 
 
 def is_editable(shipment: dict) -> bool:
-    return shipment["status"] in SHIPMENT_EDITABLE_STATUSES
+    return shipment["status"] in SHIPMENT_EDITABLE_STATUSES and not shipment.get("label_url")
+
+
+def can_sync(shipment: dict) -> bool:
+    """An Envia label still on its way."""
+    return bool(shipment.get("label_url")) and shipment["status"] in ("preparing", "in_transit")
 
 
 def get_shipment_for_order(token: str, order_id: str) -> dict | None:
@@ -147,6 +166,44 @@ def deliver_shipment(token: str, shipment_id: str, order_id: str) -> dict:
         _mock_order(order_id)["status"] = "delivered"
         return shipment
     return api_client.post(f"/api/v1/shipments/{shipment_id}/deliver", token=token)
+
+
+def create_envia_shipment(token: str, order_id: str) -> dict:
+    """Staff only: buy the cheapest Envia label for the order and create its
+    shipment. Waits on two Envia calls, so it gets a longer timeout."""
+    if settings.API_USE_MOCKS:
+        order = _mock_order(order_id)
+        if not can_create_shipment(order["status"]) or str(order_id) in mock_data.MOCK_SHIPMENTS:
+            raise ApiConflictError("Shipment cannot be created for this order.", status_code=409)
+        shipment = {
+            "id": f"mock-ship-{order_id}",
+            "order_id": str(order_id),
+            "address_id": order["shipping_address_id"],
+            "status": "preparing",
+            "carrier": "interRapidisimo",
+            "service": "ground",
+            "tracking_number": "INTESBX000001",
+            "tracking_url": "https://envia.com/rastreo?label=INTESBX000001",
+            "label_url": "https://example.com/guia-INTESBX000001.pdf",
+            "shipping_cost": "8500.00",
+            "shipped_at": None,
+            "delivered_at": None,
+        }
+        mock_data.MOCK_SHIPMENTS[str(order_id)] = shipment
+        order["status"] = "preparing"
+        return shipment
+    return _envia_client.post(f"/api/v1/shipments/order/{order_id}/envia", token=token)
+
+
+def sync_shipment(token: str, shipment_id: str, order_id: str) -> dict:
+    """Staff only: the shipment after reading Envia's tracking, plus
+    `carrier_status` (Envia's own status name, e.g. "Created")."""
+    if settings.API_USE_MOCKS:
+        shipment = mock_data.MOCK_SHIPMENTS.get(str(order_id))
+        if shipment is None:
+            raise ApiNotFoundError("Shipment not found.", status_code=404)
+        return {**shipment, "carrier_status": "Created"}
+    return _envia_client.post(f"/api/v1/shipments/{shipment_id}/sync", token=token)
 
 
 def _mock_order(order_id: str) -> dict:

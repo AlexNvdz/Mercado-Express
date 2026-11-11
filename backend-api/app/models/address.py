@@ -25,6 +25,8 @@ class Address(UUIDPKMixin, TimestampMixin, Base):
     state: Mapped[str] = mapped_column(String(120), nullable=False)
     postal_code: Mapped[str] = mapped_column(String(20), nullable=False)
     country: Mapped[str] = mapped_column(String(2), nullable=False, doc="ISO 3166-1 alpha-2")
+    # Who receives the package; carriers require one (falls back to the user's).
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     user: Mapped["User"] = relationship(back_populates="addresses")

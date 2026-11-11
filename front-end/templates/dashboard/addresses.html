@@ -18,6 +18,7 @@
         <address class="address-block">
             <span class="address-row__line"><strong>{{ address.line1 }}{% if address.line2 %}, {{ address.line2 }}{% endif %}</strong>{% if address.is_default %}<span class="badge badge--soft">Predeterminada</span>{% endif %}</span>
             <span class="muted">{{ address.city }}, {{ address.state }}, {{ address.country }}, {{ address.postal_code }}</span>
+            {% if address.phone %}<span class="muted">Recibe: {{ address.phone }}</span>{% endif %}
         </address>
         <div class="actions">
             {% if not address.is_default %}
