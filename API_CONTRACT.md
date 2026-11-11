@@ -279,7 +279,9 @@ release, dispatch) are not recorded here, only manual staff changes.
 `alembic/versions/6bf0432e1cd9_*`; a failed payment now leaves the order
 `pending`, which was already retryable). Lifecycle: `pending → paid →
 preparing → shipped → delivered`, with `cancelled` reachable from
-`pending`/`paid`/`preparing`, and `refunded` reachable from `paid`.
+`pending`/`paid`/`preparing`, and `refunded` reachable from `paid` (and,
+since 2026-11-10, from `delivered` only through an approved support claim,
+see `/api/v1/soporte`).
 
 Who moves the order through the normal flow:
 - `pending → paid`: a completed `POST /payments`.
@@ -384,7 +386,8 @@ insufficient stock, `422` product priced below the minimum). `POST /orders` and 
 `source` is one of `order_created` (POST /orders), `payment` (completed
 POST /payments), `manual` (PATCH /orders/{id}/status), `customer_cancel`
 (POST /orders/{id}/cancel), `shipment_created`, `shipment_dispatched`,
-`shipment_delivered`. The history is append-only.
+`shipment_delivered`, `support_claim` (refund approved by POST
+/soporte/procesar-reclamo, actor = the customer). The history is append-only.
 - A rejected transition (`409`) leaves no entry.
 - Creating a shipment for an order that staff already moved to
   `preparing` changes no status, so it leaves no entry either.
@@ -565,6 +568,42 @@ later cancelled or refunded.
 
 ---
 
+## `/api/v1/soporte`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/soporte/procesar-reclamo` | any user | Free-text claim. A local LLM (Ollama, `OLLAMA_MODEL`, default `qwen2.5:7b`) extracts the intent; fixed rules then decide. |
+
+```jsonc
+// request
+{ "mensaje": "el pedido 3F2B8C1E-9D4A-4E7B-A6C2-1F0E9D8C7B6A llegó roto, devuélvanme la plata" }  // 10..2000 chars
+// response, always 200 (401 without login, 422 for a bad body)
+{
+  "decision": "aprobado",          // aprobado | rechazado | revision_manual
+  "motivo": "Reembolso aprobado.", // Spanish, shown to the customer
+  "order_id": "3f2b8c1e-...",      // null when no order was looked at
+  "order_status": "refunded"       // the order's status after the decision, or null
+}
+```
+Rules, in order (the first that applies wins):
+1. LLM down, timed out or invalid answer: `revision_manual`.
+2. Extracted UUID not literally in `mensaje` (case-insensitive): `revision_manual`.
+3. Action is not `reembolso` (`cancelacion`, `estado_pedido`, `otro`): `revision_manual`.
+4. LLM confidence `<= 0.85`: `revision_manual`.
+5. No UUID in the message: `revision_manual`.
+6. Order missing or not the caller's: `rechazado` ("Pedido no encontrado.", same answer for both).
+7. Order not `delivered`: `rechazado`.
+8. Shipment has no `delivered_at`: `revision_manual`.
+9. More than 30 days since `delivered_at`: `rechazado`.
+10. Otherwise `aprobado`: the order goes `delivered -> refunded`, a `reversal` is
+    appended to the ledger and the history gets a `support_claim` entry. Stock,
+    payment (`completed`) and shipment (`delivered`) are not changed.
+
+`delivered -> refunded` is not a `PATCH /orders/{id}/status` target: only this
+endpoint can do it. Added 2026-11-10.
+
+---
+
 ## What Django needs to configure
 
 - `MERCADOEXPRESS_API_BASE_URL` — see Base URL table above.
@@ -609,4 +648,4 @@ exercised without any manual setup:
 - Multi-warehouse inventory (currently single stock pool per product).
 
 ---
-_Maintained by the backend-api service. Last updated: 2026-10-23 (`sales_by_region` on `GET /reports/summary`). Previous update 2026-10-07 (`GET /orders?status=` filter; staff-only `include_inactive` on `GET /products` and `GET /inventory`, which now hides inactive products' rows by default; append-only `GET /orders/{id}/history` and `GET /inventory/{id}/history`; `PUT /inventory` takes `reason` and returns `409` below reserved stock). Previous update 2026-10-06 (net revenue: sales ledger gets `reversal` entries, `GET /reports/summary` returns `net_revenue`/`gross_revenue`/`refunded_amount`/`reversal_count` instead of `total_revenue`; shipment flow: create from `paid` or `preparing` with `carrier`/`tracking_number`, new `PATCH /shipments/{id}`, new shipment status `cancelled`, `shipped`/`delivered` no longer manual order targets, refund releases reserved stock). Previous update 2026-09-12: added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes._
+_Maintained by the backend-api service. Last updated: 2026-11-10 (`POST /soporte/procesar-reclamo`, `support_claim` history source, `delivered -> refunded` through a support claim). Previous update 2026-10-23 (`sales_by_region` on `GET /reports/summary`). Previous update 2026-10-07 (`GET /orders?status=` filter; staff-only `include_inactive` on `GET /products` and `GET /inventory`, which now hides inactive products' rows by default; append-only `GET /orders/{id}/history` and `GET /inventory/{id}/history`; `PUT /inventory` takes `reason` and returns `409` below reserved stock). Previous update 2026-10-06 (net revenue: sales ledger gets `reversal` entries, `GET /reports/summary` returns `net_revenue`/`gross_revenue`/`refunded_amount`/`reversal_count` instead of `total_revenue`; shipment flow: create from `paid` or `preparing` with `carrier`/`tracking_number`, new `PATCH /shipments/{id}`, new shipment status `cancelled`, `shipped`/`delivered` no longer manual order targets, refund releases reserved stock). Previous update 2026-09-12: added `GET /reports/summary` and `GET /inventory` batched/low-stock list; documented inventory adjust/set payload shapes._

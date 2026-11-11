@@ -54,6 +54,7 @@ class OrderStatusChangeSource(StrEnum):
     SHIPMENT_CREATED = "shipment_created"  # POST /shipments/order/{id}
     SHIPMENT_DISPATCHED = "shipment_dispatched"  # POST /shipments/{id}/ship
     SHIPMENT_DELIVERED = "shipment_delivered"  # POST /shipments/{id}/deliver
+    SUPPORT_CLAIM = "support_claim"  # approved refund, POST /soporte/procesar-reclamo
 
 
 class InventoryChangeKind(StrEnum):

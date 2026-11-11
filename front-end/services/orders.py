@@ -84,6 +84,7 @@ ORDER_STATUS_SOURCE_LABELS = {
     "shipment_created": "Envío creado",
     "shipment_dispatched": "Envío despachado",
     "shipment_delivered": "Envío entregado",
+    "support_claim": "Reclamo de soporte",
 }
 
 
