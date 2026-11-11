@@ -8,3 +8,4 @@ import "./modules/qty-stepper.js";
 import "./modules/confirm-dialog.js";
 import "./modules/catalog-filter.js";
 import "./modules/product-gallery.js";
+import "./modules/support-chat.js";

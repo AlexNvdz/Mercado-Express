@@ -17,12 +17,37 @@ tomadas del lado del frontend.
 | `services/payments.py` | `/payments` (POST), `/payments/order/{id}` |
 | `services/shipments.py` | `/shipments/order/{id}` (GET/POST), `/shipments/{id}` (PATCH), `/shipments/{id}/ship`, `/shipments/{id}/deliver` |
 | `services/reports.py` | `/reports/summary` (staff) + `/inventory?low_stock=true` + `/orders?status=` por etapa para el resumen del panel |
+| `services/support.py` | `/soporte/procesar-reclamo` (timeout propio de 65 s: el backend espera hasta 60 s al LLM) |
 
 `services/mock_data.py` sigue existiendo solo para que la suite de pruebas de
 este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=True` en todos los tests). En desarrollo/staging/producción
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
+
+## Cambios 2026-11-10: reclamos de reembolso con IA
+
+- Widget flotante abajo a la derecha (`templates/partials/support_chat.html`,
+  `static/js/modules/support-chat.js`), solo para clientes con sesión; en
+  pantallas de menos de 640 px es una hoja inferior. El detalle de un pedido
+  `delivered` tiene "Solicitar reembolso", que abre el widget con ese pedido.
+- El cliente nunca ve UUIDs, pero el backend solo actúa sobre uno escrito en el
+  texto: el widget elige el pedido de una lista (`GET /orders?status=delivered`,
+  20 más recientes) y `services/support.py::build_message` antepone
+  `Pedido <uuid>: ` al mensaje.
+- Dos vistas JSON en `apps/orders` (`orders:claim`, `orders:claim_orders`)
+  responden 401 en JSON en vez de redirigir al login, porque las llama `fetch()`.
+- Un mensaje, una decisión: el hilo vive solo en la página y no se guarda.
+  `revision_manual` no promete revisión humana, porque el backend no guarda
+  nada; el widget pide reintentar con el reembolso explícito.
+- La regla de 30 días no se repite en Django: decide el backend.
+- Verificado contra el backend real con Ollama (`qwen2.5:7b`): la primera
+  llamada tardó 7,5 s (modelo en frío), más que los 5 s del cliente general;
+  la siguiente, 1,3 s. Solo se probaron casos sin escritura (`revision_manual`
+  y `rechazado` sobre un pedido cancelado).
+- Pendiente del backend: el `motivo` de "pedido no entregado" incluye el estado
+  en inglés (`estado: 'cancelled'`). Con la lista de pedidos entregados casi
+  no aparece, pero se muestra tal cual.
 
 ## Cambios 2026-11-10: precio mínimo $5.900
 

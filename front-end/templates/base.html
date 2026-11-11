@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="{% static 'css/components/surfaces.css' %}">
     <link rel="stylesheet" href="{% static 'css/storefront/account.css' %}">
     <link rel="stylesheet" href="{% static 'css/components/dialog.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components/support-chat.css' %}">
     {% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
@@ -47,6 +48,7 @@
     </main>
 
     {% block footer %}{% include "partials/footer.html" %}{% endblock %}
+    {% if is_api_authenticated and not is_api_staff %}{% include "partials/support_chat.html" %}{% endif %}
     {% endblock %}
     {% include "partials/confirm_dialog.html" %}
     <script type="module" src="{% static 'js/app.js' %}"></script>
