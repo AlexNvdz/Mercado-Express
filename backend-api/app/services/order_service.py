@@ -38,7 +38,12 @@ from app.repositories.shipment_repository import ShipmentRepository
 from app.schemas.order import OrderCheckout, OrderCreate
 from app.schemas.payment import PaymentCreate
 from app.schemas.product import MIN_PRODUCT_PRICE
+from app.schemas.support import AccionSolicitada, DecisionReclamo, IntencionIAOutput, ReclamoResultadoOut
 from app.services.payment_service import PaymentService
+
+# Support-claim refund policy (OrderService.procesar_reclamo).
+CLAIM_MIN_CONFIDENCE = 0.85  # strictly above it to act
+REFUND_WINDOW = timedelta(days=30)  # since shipment.delivered_at, inclusive
 
 # Manual-override targets for PATCH /orders/{id}/status (staff corrections).
 # The normal flow is driven by other resources: PaymentService moves
@@ -311,3 +316,67 @@ class OrderService:
             actor_id=actor_id,
             source=OrderStatusChangeSource.CUSTOMER_CANCEL,
         )
+
+    async def procesar_reclamo(
+        self, intencion: IntencionIAOutput, *, customer_id: uuid.UUID
+    ) -> ReclamoResultadoOut:
+        """Deterministic half of POST /soporte/procesar-reclamo: applies the
+        refund policy to an already-parsed intent. Knows no natural language.
+
+        Refunds a `delivered` order of this customer whose shipment was
+        delivered at most REFUND_WINDOW ago. Unlike the `paid -> refunded`
+        manual target, the stock was already fulfilled on dispatch and stays
+        with the customer, so nothing is released; the shipment stays
+        `delivered` and the payment `completed`, only the ledger gets its
+        reversal. Not in _ALLOWED_TRANSITIONS: staff still can't do it by hand.
+        """
+        if intencion.accion_solicitada != AccionSolicitada.REEMBOLSO:
+            return _manual("Solo los reembolsos se procesan automáticamente.")
+        if intencion.nivel_confianza <= CLAIM_MIN_CONFIDENCE:
+            return _manual("No se entendió el reclamo con suficiente seguridad.")
+        if intencion.order_uuid is None:
+            return _manual("No se encontró el número de pedido en el mensaje.")
+
+        order = await self.orders.get_with_items(intencion.order_uuid, for_update=True)
+        # Someone else's order looks exactly like a missing one: no leak.
+        if order is None or order.customer_id != customer_id:
+            return ReclamoResultadoOut(decision=DecisionReclamo.RECHAZADO, motivo="Pedido no encontrado.")
+        if order.status != OrderStatus.DELIVERED:
+            return _rejected(order, f"Solo se reembolsan pedidos entregados (estado: '{order.status}').")
+        shipment = await self.shipments.get_by_order_id(order.id)
+        if shipment is None or shipment.delivered_at is None:
+            return _manual("El pedido no tiene fecha de entrega registrada.", order)
+        if datetime.now(UTC) - shipment.delivered_at > REFUND_WINDOW:
+            return _rejected(order, f"Pasaron más de {REFUND_WINDOW.days} días desde la entrega.")
+
+        await self.record_reversal(order)
+        await self.status_changes.record(
+            order_id=order.id,
+            from_status=order.status,
+            to_status=OrderStatus.REFUNDED,
+            source=OrderStatusChangeSource.SUPPORT_CLAIM,
+            actor_id=customer_id,
+        )
+        order.status = OrderStatus.REFUNDED
+        await self.db.flush()
+        return ReclamoResultadoOut(
+            decision=DecisionReclamo.APROBADO,
+            motivo="Reembolso aprobado.",
+            order_id=order.id,
+            order_status=order.status,
+        )
+
+
+def _manual(motivo: str, order: Order | None = None) -> ReclamoResultadoOut:
+    return ReclamoResultadoOut(
+        decision=DecisionReclamo.REVISION_MANUAL,
+        motivo=motivo,
+        order_id=order.id if order else None,
+        order_status=order.status if order else None,
+    )
+
+
+def _rejected(order: Order, motivo: str) -> ReclamoResultadoOut:
+    return ReclamoResultadoOut(
+        decision=DecisionReclamo.RECHAZADO, motivo=motivo, order_id=order.id, order_status=order.status
+    )

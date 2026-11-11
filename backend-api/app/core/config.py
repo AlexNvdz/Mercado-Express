@@ -79,6 +79,14 @@ class Settings(BaseSettings):
     # recomputed): it aggregates the whole ledger, ~150 ms on the Olist data.
     REPORT_CACHE_SECONDS: int = 10
 
+    # --- Support claims (app/services/ai_service.py): local Ollama LLM ---
+    # Inside Docker, 127.0.0.1 is the container itself: docker-compose.yml
+    # points the api service at host.docker.internal instead.
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
+    OLLAMA_MODEL: str = "qwen2.5:7b"
+    # Generous: the first call after Ollama starts also loads the model.
+    OLLAMA_TIMEOUT_SECONDS: float = 60
+
     # --- Product images (local disk; see app/services/storage_service.py) ---
     # MEDIA_ROOT: where files are written, relative to the process's working
     # directory unless given as an absolute path.

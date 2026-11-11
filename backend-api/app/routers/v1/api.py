@@ -13,6 +13,7 @@ from app.routers.v1 import (
     products,
     reports,
     shipments,
+    support,
 )
 
 api_router = APIRouter()
@@ -25,3 +26,4 @@ api_router.include_router(orders.router)
 api_router.include_router(payments.router)
 api_router.include_router(shipments.router)
 api_router.include_router(reports.router)
+api_router.include_router(support.router)
