@@ -1,0 +1,170 @@
+/* ==========================================================================
+   Refund-claim widget (templates/partials/support_chat.html + support-chat.js)
+   A pill launcher pinned bottom-right opens a 380px panel above it; under
+   640px the panel is a full-width bottom sheet over a forest scrim and the
+   launcher shrinks to a 56px round button. The panel's 22px corners are
+   concentric with the 8px controls 14px inside it. Movement and blur run
+   only when the visitor allows motion; otherwise everything cross-fades.
+   ========================================================================== */
+.claim {
+    --claim-gap: 20px;
+    --claim-launcher: 52px;
+    --claim-kb: 0px; /* on-screen keyboard height, set by the script */
+}
+
+/* --- Launcher (a .btn: colours, hover and the 0.96 press come from there) */
+.claim__launcher {
+    position: fixed;
+    right: var(--claim-gap);
+    bottom: var(--claim-gap);
+    z-index: 90;
+    min-height: var(--claim-launcher);
+    padding: 0 20px 0 18px; /* 2px less on the icon side */
+    border-radius: var(--r-pill);
+    box-shadow: var(--lift);
+    font-size: 0.95rem;
+}
+.claim__icons { display: grid; width: 22px; height: 22px; }
+.claim__icon {
+    grid-area: 1 / 1;
+    transition-property: opacity, scale, filter;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+.claim__icon--close, .claim.is-open .claim__icon--chat { opacity: 0; }
+.claim.is-open .claim__icon--close { opacity: 1; }
+.claim__launcher-label--close, .claim.is-open .claim__launcher-label--open { display: none; }
+.claim.is-open .claim__launcher-label--close { display: inline; }
+
+/* --- Panel ------------------------------------------------------------ */
+.claim__panel {
+    position: fixed;
+    right: var(--claim-gap);
+    bottom: calc(var(--claim-gap) + var(--claim-launcher) + 12px);
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    width: min(380px, calc(100vw - 2 * var(--claim-gap)));
+    max-height: min(620px, calc(100dvh - var(--claim-gap) * 2 - var(--claim-launcher) - 12px));
+    overflow: hidden;
+    border: 1px solid transparent; /* keeps an edge in forced-colors mode */
+    border-radius: var(--r-lg);
+    background: var(--paper);
+    box-shadow: 0 0 0 1px var(--ink-line), var(--lift-lg);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 150ms ease-out, translate 150ms ease-out, filter 150ms ease-out, visibility 0s linear 150ms;
+}
+.claim.is-open .claim__panel {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 300ms ease-out, translate 300ms ease-out, filter 300ms ease-out, visibility 0s;
+}
+
+.claim__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--line);
+}
+.claim__title { margin: 0; font-size: 1.1rem; line-height: 1.2; }
+.claim__sub { margin: 4px 0 0; color: var(--text-2); font-size: 0.84rem; line-height: 1.4; text-wrap: pretty; }
+.claim__close { flex: none; margin: -4px -6px 0 0; }
+
+/* --- Thread ----------------------------------------------------------- */
+.claim__thread {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 120px;
+    margin: 0;
+    padding: 16px 18px;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--paper-2);
+}
+.claim-msg {
+    max-width: 88%;
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.claim-msg--bot { align-self: flex-start; border: 1px solid var(--line); border-bottom-left-radius: var(--r-xs); background: var(--paper); }
+.claim-msg--user { align-self: flex-end; border-bottom-right-radius: var(--r-xs); background: var(--volt); color: #fff; white-space: pre-wrap; }
+.claim-msg__order { display: block; margin-bottom: 2px; font-size: 0.76rem; font-weight: 600; opacity: 0.85; white-space: normal; }
+.claim-msg .status { margin-bottom: 6px; }
+.claim-msg__motivo { margin: 0; font-weight: 600; }
+.claim-msg__hint { margin: 4px 0 0; color: var(--text-2); font-size: 0.84rem; }
+.claim-msg__link { display: inline-block; margin-top: 8px; font-weight: 600; color: var(--volt-deep); }
+.claim-msg--pending { display: flex; align-items: center; gap: 10px; color: var(--text-2); }
+.claim-dots { display: inline-flex; gap: 4px; }
+.claim-dots i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.4; }
+
+/* --- Composer --------------------------------------------------------- */
+.claim__form { display: grid; gap: 10px; padding: 14px; border-top: 1px solid var(--line); }
+.claim__field { margin-bottom: 0; }
+.claim__field label { font-size: 0.8rem; color: var(--text-2); }
+.claim__compose { flex-direction: row; align-items: flex-end; gap: 8px; }
+.form-field.claim__compose textarea { min-height: 44px; max-height: 140px; resize: none; field-sizing: content; }
+.claim__send { flex: none; min-height: 44px; }
+
+/* --- Motion (only when allowed) ---------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+    .claim__icon--close, .claim.is-open .claim__icon--chat { scale: 0.25; filter: blur(4px); }
+    .claim.is-open .claim__icon--close { scale: 1; filter: none; }
+    .claim__panel { translate: 0 12px; filter: blur(4px); }
+    .claim.is-open .claim__panel { translate: none; filter: none; }
+    .claim-msg.is-new { animation: claim-msg-in 300ms ease-out both; }
+    .claim-dots i { animation: claim-dot 1s ease-in-out infinite both; }
+    .claim-dots i:nth-child(2) { animation-delay: 0.15s; }
+    .claim-dots i:nth-child(3) { animation-delay: 0.3s; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .claim-msg.is-new { animation: claim-msg-fade 300ms ease-out both; }
+}
+@keyframes claim-msg-in { from { opacity: 0; translate: 0 12px; filter: blur(4px); } }
+@keyframes claim-msg-fade { from { opacity: 0; } }
+@keyframes claim-dot { 0%, 80%, 100% { opacity: 0.25; translate: 0 0; } 40% { opacity: 1; translate: 0 -3px; } }
+
+/* --- Phones: bottom sheet ---------------------------------------------- */
+@media (max-width: 639px) {
+    .claim { --claim-gap: 16px; --claim-launcher: 56px; }
+    .claim__launcher { width: var(--claim-launcher); padding: 0; }
+    .claim__launcher-label {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap;
+    }
+    .claim.is-open .claim__launcher { visibility: hidden; }
+
+    .claim::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 89;
+        background: rgba(23, 56, 42, 0.42);
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 150ms ease-out, visibility 0s linear 150ms;
+    }
+    .claim.is-open::before { visibility: visible; opacity: 1; transition: opacity 300ms ease-out, visibility 0s; }
+
+    .claim__panel {
+        inset: auto 0 var(--claim-kb) 0;
+        width: auto;
+        max-height: calc(100dvh - var(--claim-kb) - 40px);
+        padding-bottom: env(safe-area-inset-bottom);
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+    }
+    .claim__field select, .form-field.claim__compose textarea { font-size: 1rem; } /* under 16px iOS zooms on focus */
+}
+@media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+    /* A sheet slides all the way: where it goes back to is the point. */
+    .claim__panel { translate: 0 100%; filter: none; }
+    .claim.is-open .claim__panel { translate: none; }
+}

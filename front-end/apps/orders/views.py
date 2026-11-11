@@ -1,16 +1,27 @@
+import uuid
+
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.decorators import api_login_required
+from apps.core.templatetags.money import api_date
 from services import auth as auth_service
 from services import customers as customers_service
 from services import orders as orders_service
 from services import payments as payments_service
 from services import products as products_service
 from services import shipments as shipments_service
-from services.exceptions import ApiConflictError, ApiError, ApiValidationError
+from services import support as support_service
+from services.exceptions import (
+    ApiAuthenticationError,
+    ApiConflictError,
+    ApiError,
+    ApiTimeoutError,
+    ApiValidationError,
+)
 
 
 @api_login_required
@@ -214,3 +225,64 @@ def checkout(request):
     request.cart.clear()
     messages.success(request, "¡Pedido creado con éxito!")
     return redirect("orders:detail", order_id=order["id"])
+
+
+# --- Refund claims (floating widget, templates/partials/support_chat.html) ---
+# JSON for the widget's fetch(): a login redirect would hand it an HTML page.
+CLAIM_MESSAGE_MIN = 10  # backend's min_length, counted on the customer's own words
+CLAIM_MESSAGE_MAX = 1900  # backend allows 2000, the "Pedido <uuid>: " prefix takes 45
+_SESSION_EXPIRED = "Tu sesión expiró. Inicia sesión de nuevo."
+
+
+def _claim_error(message: str, status: int) -> JsonResponse:
+    return JsonResponse({"error": message}, status=status)
+
+
+@require_GET
+def claim_orders(request):
+    """The customer's delivered orders, the only ones a claim can refund."""
+    token = auth_service.get_access_token(request)
+    if not token:
+        return _claim_error(_SESSION_EXPIRED, 401)
+    try:
+        page = orders_service.list_orders(token, status="delivered", page_size=20)
+    except ApiAuthenticationError:
+        return _claim_error(_SESSION_EXPIRED, 401)
+    except ApiError:
+        return _claim_error("No pudimos cargar tus pedidos.", 502)
+    orders = [
+        {"id": o["id"], "order_number": o["order_number"], "created": api_date(o["created_at"])}
+        for o in page["items"]
+    ]
+    return JsonResponse({"orders": orders})
+
+
+@require_POST
+def claim_submit(request):
+    token = auth_service.get_access_token(request)
+    if not token:
+        return _claim_error(_SESSION_EXPIRED, 401)
+    try:
+        order_id = str(uuid.UUID(request.POST.get("order_id", "")))
+    except ValueError:
+        return _claim_error("Elige el pedido de tu reclamo.", 400)
+    mensaje = request.POST.get("mensaje", "").strip()
+    if not CLAIM_MESSAGE_MIN <= len(mensaje) <= CLAIM_MESSAGE_MAX:
+        return _claim_error(f"Escribe entre {CLAIM_MESSAGE_MIN} y {CLAIM_MESSAGE_MAX} caracteres.", 400)
+
+    try:
+        result = support_service.procesar_reclamo(token, order_id, mensaje)
+    except ApiAuthenticationError:
+        return _claim_error(_SESSION_EXPIRED, 401)
+    except ApiTimeoutError:
+        return _claim_error("El asistente tardó demasiado. Intenta de nuevo.", 504)
+    except ApiError:
+        return _claim_error("No pudimos procesar tu reclamo. Intenta de nuevo.", 502)
+
+    status = result.get("order_status")
+    return JsonResponse({
+        "decision": result["decision"],
+        "motivo": result["motivo"],
+        "order_status_label": orders_service.ORDER_STATUS_LABELS.get(status, status) if status else None,
+        "order_url": reverse("orders:detail", kwargs={"order_id": result["order_id"]}) if result.get("order_id") else None,
+    })

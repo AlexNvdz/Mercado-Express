@@ -123,7 +123,7 @@ def test_status_history_request(api_calls):
 def test_every_history_source_has_a_label():
     sources = {e["source"] for entries in mock_data.MOCK_ORDER_HISTORY.values() for e in entries}
     assert sources <= set(orders.ORDER_STATUS_SOURCE_LABELS)
-    assert len(orders.ORDER_STATUS_SOURCE_LABELS) == 7
+    assert len(orders.ORDER_STATUS_SOURCE_LABELS) == 8  # incl. support_claim
 
 
 def test_checkout_returns_paid_order_with_its_payment():

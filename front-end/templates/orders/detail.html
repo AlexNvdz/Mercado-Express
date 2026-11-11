@@ -108,6 +108,10 @@
             {% csrf_token %}
             <button type="submit" class="btn btn--full">Repetir pedido</button>
         </form>
+        {% if order.status == "delivered" %}
+        {# Opens the refund widget (partials/support_chat.html) on this order; shown by its script. #}
+        <button type="button" class="btn btn--secondary btn--full" data-claim-open="{{ order.id }}" data-claim-number="{{ order.order_number }}" hidden>Solicitar reembolso</button>
+        {% endif %}
         {% if cancellable %}
         <form method="post" action="{% url 'orders:cancel' order.id %}" data-confirm="Liberamos los productos reservados. No se puede deshacer." data-confirm-title="¿Cancelar el pedido {{ order.order_number }}?" data-confirm-ok="Cancelar pedido" data-confirm-cancel="Mantener pedido" data-confirm-tone="danger">
             {% csrf_token %}
