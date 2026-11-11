@@ -11,6 +11,9 @@ Run from the repo root:
   powershell -ExecutionPolicy Bypass -File scripts\demo-envia.ps1
   powershell -ExecutionPolicy Bypass -File scripts\demo-envia.ps1 -NoTunnel   # no ngrok/webhook
   powershell -ExecutionPolicy Bypass -File scripts\demo-envia.ps1 -Db mercadoexpress
+  # Docker stack already up (docker compose ... up): reuse it, only tunnel + webhook
+  powershell -ExecutionPolicy Bypass -File scripts\demo-envia.ps1 -ApiPort 8000 -WebPort 8080 -Db mercadoexpress
+Ports already listening are reused as they are, never restarted.
 
 Needs: Docker Desktop, uv, ngrok with its authtoken (ngrok config
 add-authtoken ...), backend-api/.env with ENVIA_API_KEY and ENVIA_WEBHOOK_TOKEN

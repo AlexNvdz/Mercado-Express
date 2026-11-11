@@ -27,6 +27,25 @@ docker compose -f backend-api/docker-compose.yml -f front-end/docker-compose.ove
 
 En Windows usa `127.0.0.1` y no `localhost`. PostgreSQL queda publicado en el puerto `5433` del equipo.
 
+## Envíos con Envia.com y el webhook de rastreo
+
+Con `ENVIA_API_KEY` en `backend-api/.env` (sandbox de Envia), al pagar un pedido el backend compra la guía más barata y el pedido pasa a "En preparación". Si falla (sin teléfono, ciudad sin cobertura), el panel lo muestra en "Pedidos pagados sin guía" con el botón "Reintentar guías". Envia avisa los cambios de la transportadora por un webhook (`POST /api/v1/webhooks/envia?token=...`): recogido pasa el pedido a "Enviado" y entregado a "Entregado", sin que nadie toque el panel.
+
+Envia está en internet y el backend en tu equipo, así que el webhook necesita un túnel público con [ngrok](https://ngrok.com) (una vez: `winget install Ngrok.Ngrok`, `ngrok update` y `ngrok config add-authtoken <tu_token>`). La URL de ngrok cambia en cada arranque; el script `scripts\demo-envia.ps1` abre el túnel y le avisa a Envia la URL nueva:
+
+```powershell
+# Con el stack de Docker ya encendido (comando de arriba): solo túnel + webhook
+powershell -ExecutionPolicy Bypass -File scripts\demo-envia.ps1 -ApiPort 8000 -WebPort 8080 -Db mercadoexpress
+
+# Sin Docker para la app: levanta la API en 8001 y Django en 8081 contra la base de prueba migcheck_envia
+powershell -ExecutionPolicy Bypass -File scripts\demo-envia.ps1
+
+# Sin internet o sin ngrok: todo menos el túnel (los botones manuales del panel siguen funcionando)
+powershell -ExecutionPolicy Bypass -File scripts\demo-envia.ps1 -NoTunnel
+```
+
+Requisitos en `backend-api/.env`: `ENVIA_API_KEY`, `ENVIA_WEBHOOK_TOKEN` (cualquier texto largo y aleatorio) y, para verificar la firma de Envia, `ENVIA_WEBHOOK_SECRET` (lo imprime `uv run python -m app.scripts.envia_webhook <url>`). En el sandbox la guía nunca avanza sola: para la demo se dispara el aviso con el probador de Envia (`POST https://api-test.envia.com/ship/webhooktest/`) o con los botones "Despachar" y "Marcar entregado" del panel. Cierra la ventana de ngrok al terminar: mientras está abierta, la API se puede alcanzar desde internet.
+
 ## Cargar el dataset Olist
 
 El script lleva los CSV de Olist (Kaggle, `olistbr/brazilian-ecommerce`) a las tablas de la app: limpia, valida, guarda y reporta cuántas filas entran, se aceptan y se rechazan, con la causa de cada rechazo. Correrlo dos veces no duplica nada.
