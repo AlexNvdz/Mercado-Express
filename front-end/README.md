@@ -39,7 +39,8 @@ services/          única capa que habla HTTP con el backend
   inventory.py     disponibilidad de stock
   orders.py        pedidos (crear, listar, detalle, cancelar)
   payments.py      pagos (gateway manual del backend)
-  shipments.py     envíos (crear con guía, editar, despachar, entregar)
+  shipments.py     envíos (manual o guía de Envia, rastreo, despachar, entregar)
+  locations.py     departamentos y ciudades de Colombia para el formulario de dirección
   reports.py       datos del resumen del panel (GET /reports/summary)
   mock_data.py     datos usados solo por la suite de tests (ver conftest.py)
 templates/         plantillas Django (base + partials + una carpeta por app)

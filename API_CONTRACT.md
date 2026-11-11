@@ -94,7 +94,9 @@ Standard status codes: `401` (missing/invalid/expired token), `403` (role not
 permitted), `404` (not found / not yours), `409` (conflict — duplicate
 unique field, insufficient stock, invalid status transition), `422`
 (request body failed validation — Pydantic's default FastAPI error shape,
-`{"detail": [...]}` with field-level errors).
+`{"detail": [...]}` with field-level errors), `502` (since 2026-11-11: the
+shipping provider Envia.com failed or refused the request; `detail` is a
+string with its reason).
 
 The services validate before writing, so the database rarely rejects a
 change. When it does (since 2026-10-22, instead of a `500`), the response
@@ -140,15 +142,40 @@ List endpoints accept `page` (default 1) and `page_size` (default 20, max
 Address body:
 ```json
 {
-  "line1": "123 Main St",
-  "line2": null,
-  "city": "Springfield",
-  "state": "IL",
-  "postal_code": "62704",
-  "country": "US",
+  "line1": "Carrera 43A # 1-50",
+  "line2": "Apto 301",
+  "city": "Envigado",
+  "state": "Antioquia",
+  "country": "CO",
+  "phone": "3007654321",
   "is_default": true
 }
 ```
+Since 2026-11-11 (Envia.com shipping):
+- `phone` (optional, max 30) is who receives the package. Carriers require
+  one; an address without it falls back to the customer's profile phone.
+- A Colombian address (`country` `CO`) must name a city Envia knows in that
+  department, else `422` with a Spanish `detail` string ("La ciudad 'X' no
+  existe en el departamento 'Y'."). `state` is the department's name or its
+  code from `GET /locations/co/states`. The backend sets `postal_code` from
+  the city, so it is optional on create (sent or not, it's replaced). If
+  Envia can't be reached, a sent `postal_code` is kept unchecked; without one
+  it's a `502`. A `PATCH` that touches `city`/`state`/`country`/`postal_code`
+  is checked the same way.
+- Outside Colombia `postal_code` stays required (`422` without it).
+
+## `/api/v1/locations`
+
+Since 2026-11-11. Public. What the address form offers.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/locations/co/states` | public | The 33 Colombian departments: `[{"code": "AN", "name": "Antioquia"}, ...]`. |
+| GET | `/locations/co/states/{state}/cities` | public | `["Abejorral", ..., "Medellín", ...]`: every town and vereda Envia knows there, sorted. `state` is a code or a name. `404` unknown department. |
+
+Departments are a fixed table in the backend. Cities come from Envia's
+geocodes and are cached in the API's memory (first call per department
+~1 s, a few hundred to ~1,900 names).
 
 ## `/api/v1/categories`
 
@@ -328,12 +355,12 @@ reachable before dispatch, so the goods never left:
 {
   "id": "...", "order_number": "ORD-A1B2C3D4E5",
   "customer_id": "...", "status": "pending",
-  "subtotal": "79800.00", "tax_amount": "0.00", "shipping_amount": "0.00", "total_amount": "79800.00",
+  "subtotal": "79800.00", "tax_amount": "0.00", "shipping_amount": "20000.00", "total_amount": "99800.00",
   "shipping_address_id": "c4a1...", "notes": "Leave at front door",
   "shipping_address": {
     "id": "c4a1...", "user_id": "...", "line1": "Calle 10 # 20-30", "line2": null,
     "city": "Bogotá", "state": "Bogotá D.C.", "postal_code": "110111", "country": "CO",
-    "is_default": true, "created_at": "...", "updated_at": "..."
+    "phone": "3001234567", "is_default": true, "created_at": "...", "updated_at": "..."
   },
   "items": [
     { "id": "...", "product_id": "b3f2b6f0-...", "product_name": "Wireless Mouse", "product_sku": "ELEC-001",
@@ -342,6 +369,9 @@ reachable before dispatch, so the goods never left:
   "created_at": "2026-09-08T10:00:00Z", "updated_at": "2026-09-08T10:00:00Z"
 }
 ```
+`shipping_amount` is the flat `FLAT_SHIPPING_FEE` per order (since
+2026-11-11 set to `20000.00` COP in `.env`, whatever the items or the city;
+the store pays the real Envia cost, see `shipping_cost` on the shipment).
 `409` if any item is out of stock — no partial reservation is made (all-or-nothing).
 `422` if any product is priced below `5900.00` (a row that predates the
 minimum, e.g. `0.00`): nothing is reserved or saved.
@@ -425,15 +455,27 @@ order; see `/api/v1/reports`).
 
 ## `/api/v1/shipments`
 
-No real carrier is integrated yet. Staff can enter the carrier and tracking
-number; if no tracking number was entered by dispatch time, a placeholder
-(`MANUAL-xxxxxxxxxx`) is generated. Swapping in a real carrier later will
-not change this contract.
+Two ways to get a shipment:
+- **Envia.com** (since 2026-11-11, only with `ENVIA_API_KEY` set and a
+  Colombian shipping address): once a payment completes (`POST
+  /orders/checkout` or `POST /payments`), the backend buys the cheapest
+  label among `ENVIA_CARRIERS` in the background, right after the response,
+  and creates the shipment with it. The order moves to `preparing`, with an
+  `order_status_history` row `source=shipment_created` and no actor. If that
+  fails (no phone, no coverage, Envia down), the order stays `paid` and
+  staff retry with `POST /shipments/order/{order_id}/envia`.
+  Cash-on-delivery services (`*_cod`) and the to-office ones in
+  `ENVIA_EXCLUDED_SERVICES` are never picked.
+- **Manual**: staff enter the carrier and tracking number; if no tracking
+  number was entered by dispatch time, a placeholder (`MANUAL-xxxxxxxxxx`)
+  is generated.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/shipments/order/{order_id}` | staff | Create the shipment (order must be `paid` or `preparing`); order → `preparing`. |
-| PATCH | `/shipments/{shipment_id}` | staff | Edit `carrier` / `tracking_number`; only before dispatch. |
+| POST | `/shipments/order/{order_id}/envia` | staff | Buy the cheapest Envia label for the order's shipping address and create the shipment with it (same rules as above). No body. `201` shipment; `409` not `paid`/`preparing` or already has a shipment; `422` no address, not in Colombia, unknown city, no phone or Envia not configured; `502` Envia failed (`detail` says why). |
+| POST | `/shipments/{shipment_id}/sync` | staff | Read the Envia label's tracking: `Picked Up`/`Shipped`/`Out for Delivery` dispatch it (same as `/ship`), `Delivered` delivers it (dispatching first if needed); any other status changes nothing. Returns the shipment plus `carrier_status` (Envia's status name, e.g. `"Created"`). `422` if the shipment has no Envia label. |
+| PATCH | `/shipments/{shipment_id}` | staff | Edit `carrier` / `tracking_number`; only before dispatch, and never on an Envia label (`409`). |
 | POST | `/shipments/{shipment_id}/ship` | staff | Mark dispatched; decrements real stock, order → `shipped`. |
 | POST | `/shipments/{shipment_id}/deliver` | staff | Mark delivered; order → `delivered`. |
 | GET | `/shipments/order/{order_id}` | any user | Get the shipment for an order. |
@@ -479,6 +521,10 @@ shipment to be `in_transit`.
   "status": "in_transit",
   "carrier": "DHL",
   "tracking_number": "MANUAL-E699658094",
+  "service": null,
+  "label_url": null,
+  "tracking_url": null,
+  "shipping_cost": null,
   "shipped_at": "2026-09-08T11:06:19.263086Z",
   "delivered_at": null,
   "created_at": "2026-09-08T11:06:19.038605Z",
@@ -490,6 +536,16 @@ shipment to be `in_transit`.
 undispatched shipment whose order was cancelled or refunded. It can be
 neither edited nor dispatched. `address_id` and `updated_at` are real
 fields — include them even though earlier notes didn't have them confirmed.
+
+Since 2026-11-11 an Envia shipment also fills `service` (e.g.
+`"mensajeria_od"`), `label_url` (printable PDF hosted by Envia),
+`tracking_url` (Envia's public tracking page) and `shipping_cost` (decimal
+string, what Envia charged the store). The customer's
+`GET /shipments/order/{order_id}` returns `label_url` and `shipping_cost` as
+`null`; staff see them. All four are `null` on manual shipments.
+Cancelling or refunding an order whose undispatched shipment has an Envia
+label also voids the label at Envia (in the background, after the change
+commits; a failure there only logs, the order stays cancelled).
 
 ## `/api/v1/reports`
 

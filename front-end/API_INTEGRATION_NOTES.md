@@ -15,7 +15,8 @@ tomadas del lado del frontend.
 | `services/inventory.py` | `/inventory` (staff, `low_stock=`, `include_inactive=`, `search=`, `product_id=` repetible), `/inventory/{product_id}` (+ `adjust`, PUT, `history`) |
 | `services/orders.py` | `/orders` (POST/GET, `status=`, `search=`, `created_from=`, `created_to=`), `/orders/checkout` (POST), `/orders/{id}`, `/orders/{id}/cancel`, `/orders/{id}/status`, `/orders/{id}/history` |
 | `services/payments.py` | `/payments` (POST), `/payments/order/{id}` |
-| `services/shipments.py` | `/shipments/order/{id}` (GET/POST), `/shipments/{id}` (PATCH), `/shipments/{id}/ship`, `/shipments/{id}/deliver` |
+| `services/shipments.py` | `/shipments/order/{id}` (GET/POST), `/shipments/order/{id}/envia`, `/shipments/{id}` (PATCH), `/shipments/{id}/ship`, `/shipments/{id}/deliver`, `/shipments/{id}/sync` (los de Envia con timeout propio de 65 s) |
+| `services/locations.py` | `/locations/co/states`, `/locations/co/states/{state}/cities` (públicos) |
 | `services/reports.py` | `/reports/summary` (staff) + `/inventory?low_stock=true` + `/orders?status=` por etapa para el resumen del panel |
 | `services/support.py` | `/soporte/procesar-reclamo` (timeout propio de 65 s: el backend espera hasta 60 s al LLM) |
 
@@ -24,6 +25,32 @@ este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=True` en todos los tests). En desarrollo/staging/producción
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
+
+## Cambios 2026-11-11: envíos con Envia.com
+
+- El backend compra la guía sola al pagarse el pedido (la más barata entre
+  `ENVIA_CARRIERS`, en segundo plano). El frontend no hace nada en el
+  checkout: el pedido aparece `paid` y, segundos después, `preparing` con su
+  envío. Si falló, el panel ofrece "Generar guía con Envia" (`POST
+  /shipments/order/{id}/envia`) y muestra el motivo del backend tal cual
+  (`422` dirección o teléfono, `502` Envia).
+- Envío con guía de Envia: el panel muestra servicio, costo, la guía en PDF
+  y "Sincronizar rastreo" (`POST /shipments/{id}/sync`, que devuelve además
+  `carrier_status`). No se edita a mano (`409`), así que el formulario de
+  transportadora/guía no aparece. El cliente ve "Rastrear envío"
+  (`tracking_url`); `label_url` y `shipping_cost` le llegan en `null`.
+- Formulario de dirección solo para Colombia: departamento de
+  `GET /locations/co/states`, ciudad sugerida con `<datalist>` desde
+  `GET /locations/co/states/{depto}/cities` (vía la vista JSON
+  `dashboard:address_cities`) y teléfono de quien recibe (`phone`, campo
+  nuevo de la dirección). Ya no pide código postal ni país: se envía
+  `country: "CO"` y el backend pone el código postal; una ciudad que no
+  existe en el departamento vuelve como `422` con texto en español, que se
+  muestra en el campo ciudad.
+- El checkout muestra el envío fijo (`SHIPPING_FEE`, 20.000) que cobra el
+  backend (`FLAT_SHIPPING_FEE`). Si cambia uno, cambiar el otro.
+- En sandbox el rastreo se queda en "Created": despachar y entregar se
+  siguen haciendo con los botones manuales del panel.
 
 ## Cambios 2026-11-10: reclamos de reembolso con IA
 
