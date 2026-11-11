@@ -56,3 +56,15 @@ class ShipmentOut(BaseModel):
 
 class ShipmentSyncOut(ShipmentOut):
     carrier_status: str = Field(description="Envia's status name, e.g. 'Created', 'Picked Up', 'Delivered'.")
+
+
+class EnviaRetryFailure(BaseModel):
+    order_id: uuid.UUID
+    order_number: str
+    detail: str
+
+
+class EnviaRetryOut(BaseModel):
+    created: int = Field(description="Labels bought in this call.")
+    failed: list[EnviaRetryFailure]
+    remaining: int = Field(description="Paid Colombian orders still without a label after this call.")

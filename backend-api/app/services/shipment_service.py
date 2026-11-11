@@ -24,6 +24,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,6 +50,7 @@ from app.repositories.shipment_repository import ShipmentRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.shipment import ShipmentCreate, ShipmentUpdate
 from app.services import envia_client
+from app.services.order_service import OrderService
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +59,14 @@ logger = logging.getLogger(__name__)
 _SHIPMENT_CREATABLE_ORDER_STATUSES = {OrderStatus.PAID, OrderStatus.PREPARING}
 # Shipment statuses before dispatch, in which carrier/tracking can be edited.
 _EDITABLE_SHIPMENT_STATUSES = {ShipmentStatus.PENDING, ShipmentStatus.PREPARING}
-# Envia tracking statuses (its catalog names) that mean the carrier has the
-# package; "Delivered" closes it. Anything else leaves the shipment alone.
-_ENVIA_IN_TRANSIT = {"Picked Up", "Shipped", "Out for Delivery"}
-_ENVIA_DELIVERED = "Delivered"
+# Envia tracking statuses that mean the carrier has the package; "delivered"
+# closes it. Anything else leaves the shipment alone. Casefolded: generaltrack
+# says "Picked Up", the tracking webhook "picked_up"/"delivered".
+_ENVIA_IN_TRANSIT = {"picked up", "shipped", "in transit", "out for delivery"}
+_ENVIA_DELIVERED = "delivered"
+# Orders POST /shipments/envia/retry handles per call: each one is a few
+# Envia calls, and the panel waits for the whole batch.
+ENVIA_RETRY_BATCH = 10
 
 
 class ShipmentCarrier(abc.ABC):
@@ -209,12 +215,64 @@ class ShipmentService:
         if not envia_client.enabled():
             raise ValidationAppError("Envia no está configurado (ENVIA_API_KEY).")
         carrier_status = await envia_client.track(shipment.tracking_number)
-        moved = carrier_status in _ENVIA_IN_TRANSIT or carrier_status == _ENVIA_DELIVERED
+        return await self.apply_carrier_status(shipment, carrier_status, actor_id=actor_id), carrier_status
+
+    async def apply_carrier_status(
+        self, shipment: Shipment, carrier_status: str, *, actor_id: uuid.UUID | None
+    ) -> Shipment:
+        """Moves the shipment to match what the carrier reports (sync and the
+        Envia webhook): picked up/in transit -> mark_shipped, delivered ->
+        mark_delivered (both, in order, if nobody saw the pickup). A status
+        the shipment already passed changes nothing, so repeats are no-ops."""
+        status = carrier_status.replace("_", " ").casefold().strip()
+        moved = status in _ENVIA_IN_TRANSIT or status == _ENVIA_DELIVERED
         if moved and shipment.status == ShipmentStatus.PREPARING:
-            shipment = await self.mark_shipped(shipment_id, actor_id=actor_id)
-        if carrier_status == _ENVIA_DELIVERED and shipment.status == ShipmentStatus.IN_TRANSIT:
-            shipment = await self.mark_delivered(shipment_id, actor_id=actor_id)
-        return shipment, carrier_status
+            shipment = await self.mark_shipped(shipment.id, actor_id=actor_id)
+        if status == _ENVIA_DELIVERED and shipment.status == ShipmentStatus.IN_TRANSIT:
+            shipment = await self.mark_delivered(shipment.id, actor_id=actor_id)
+        return shipment
+
+    async def handle_envia_webhook(self, payload: Any) -> Shipment | None:
+        """Envia's tracking webhook. Real deliveries (checked 2026-11-11) are
+        `{"type": "tracking.simple", "data": {"tracking_number", "status":
+        "Created", ...}}`; its test call (POST /ship/webhooktest/) sends a flat
+        `{"carrier", "tracking_number", "shipment_status": "Picked Up"}`.
+        Returns None when it's not about one of our labels; Envia gets a 200
+        either way so it doesn't retry."""
+        data = payload.get("data", payload) if isinstance(payload, dict) else None
+        if not isinstance(data, dict):
+            return None
+        tracking_number = data.get("tracking_number")
+        status = data.get("status") or data.get("shipment_status")
+        if not isinstance(tracking_number, str) or not isinstance(status, str):
+            return None
+        shipment = await self.shipments.get_by_tracking_number(tracking_number)
+        if shipment is None or not shipment.label_url:
+            return None
+        return await self.apply_carrier_status(shipment, status, actor_id=None)
+
+    async def retry_envia_shipments(self) -> tuple[int, list[tuple[uuid.UUID, str, str]], int]:
+        """Buys the label for up to ENVIA_RETRY_BATCH `paid` Colombian orders
+        (a paid order has no shipment: creating one moves it to `preparing`),
+        each in its own savepoint so one failure doesn't undo the others.
+        Returns (labels created, (order id, order number, reason) per
+        failure, paid CO orders still left)."""
+        if not envia_client.enabled():
+            raise ValidationAppError("Envia no está configurado (ENVIA_API_KEY).")
+        orders, total = await OrderService(self.db).list_orders(
+            customer_id=None, statuses=[OrderStatus.PAID], country="CO", offset=0, limit=ENVIA_RETRY_BATCH
+        )
+        # Plain values: a rolled-back savepoint expires the order objects.
+        pending = [(o.id, o.order_number) for o in orders]
+        created, failed = 0, []
+        for order_id, order_number in pending:
+            try:
+                async with self.db.begin_nested():
+                    await self.create_envia_shipment(order_id, actor_id=None)
+                created += 1
+            except AppError as exc:
+                failed.append((order_id, order_number, exc.detail))
+        return created, failed, total - created
 
     async def update_shipment(self, shipment_id: uuid.UUID, data: ShipmentUpdate) -> Shipment:
         """Edit carrier/tracking number; only before dispatch, and never on an

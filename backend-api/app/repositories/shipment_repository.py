@@ -14,3 +14,9 @@ class ShipmentRepository(BaseRepository[Shipment]):
     async def get_by_order_id(self, order_id: uuid.UUID) -> Shipment | None:
         result = await self.db.execute(select(Shipment).where(Shipment.order_id == order_id))
         return result.scalar_one_or_none()
+
+    async def get_by_tracking_number(self, tracking_number: str) -> Shipment | None:
+        result = await self.db.execute(
+            select(Shipment).where(Shipment.tracking_number == tracking_number).limit(1)
+        )
+        return result.scalar_one_or_none()

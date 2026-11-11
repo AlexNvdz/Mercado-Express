@@ -26,6 +26,20 @@ este proyecto corra sin un backend real levantado (`conftest.py` fuerza
 `API_USE_MOCKS=False` y `MERCADOEXPRESS_API_BASE_URL` deben apuntar al
 backend real.
 
+## Cambios 2026-11-11: webhook de Envia y reintento de guías
+
+- El backend recibe el webhook de rastreo de Envia (`POST
+  /webhooks/envia?token=`) y despacha/entrega el envío solo, sin actor. El
+  historial del pedido muestra "Automático (Envia)" en toda fila
+  `shipment_*` sin actor (antes solo en `shipment_created`).
+- Resumen del panel: "Pedidos pagados sin guía" lee `GET
+  /orders?status=paid&country=CO&page_size=5` (`country` es filtro nuevo;
+  un pedido pagado nunca tiene envío). Solo aparece si hay alguno. El botón
+  "Reintentar guías" llama `POST /shipments/envia/retry`
+  (`services/shipments.py::retry_envia_shipments`, cliente de 65 s): hasta
+  10 pedidos por llamada, devuelve `created`, `failed` (motivo por pedido,
+  mostrado tal cual) y `remaining`.
+
 ## Cambios 2026-11-11: envíos con Envia.com
 
 - El backend compra la guía sola al pagarse el pedido (la más barata entre

@@ -1,6 +1,8 @@
 """Envia.com integration with a fake Envia (httpx.MockTransport): address
 validation, locations, automatic/panel labels, tracking sync, voiding."""
 
+import hashlib
+import hmac
 import json
 import uuid
 from collections.abc import Generator
@@ -245,3 +247,99 @@ async def test_checkout_schedules_the_automatic_label(
     )
     assert resp.status_code == 201
     assert scheduled == [uuid.UUID(resp.json()["id"])]
+
+
+async def test_tracking_webhook_moves_the_shipment(
+    admin_client: AsyncClient,
+    customer_client: AsyncClient,
+    client: AsyncClient,
+    envia: FakeEnvia,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order_id = await _paid_order(admin_client, customer_client, "ENV-008", phone="3001112233")
+    _labels_on()
+    await admin_client.post(f"/api/v1/shipments/order/{order_id}/envia")
+    url = "/api/v1/webhooks/envia"
+
+    def event(status: str, tracking_number: str = "ENV-123") -> dict[str, Any]:
+        return {"type": "tracking.simple", "data": {"tracking_number": tracking_number, "status": status}}
+
+    assert (await client.post(url, params={"token": "x"}, json=event("delivered"))).status_code == 404
+    monkeypatch.setattr(settings, "ENVIA_WEBHOOK_TOKEN", "s3cret")
+    assert (await client.post(url, params={"token": "x"}, json=event("delivered"))).status_code == 401
+
+    async def send(body: Any) -> bool:
+        resp = await client.post(url, params={"token": "s3cret"}, json=body)
+        assert resp.status_code == 200, resp.text
+        applied: bool = resp.json()["applied"]
+        return applied
+
+    # Not ours, or not a tracking event: 200 so Envia doesn't retry.
+    assert not await send(event("delivered", "OTHER-1"))
+    assert not await send({"type": "surcharge", "data": {"surcharge_id": 1}})
+    assert await send(event("created"))
+    assert (await admin_client.get(f"/api/v1/orders/{order_id}")).json()["status"] == "preparing"
+
+    assert await send(event("picked_up"))
+    assert (await admin_client.get(f"/api/v1/orders/{order_id}")).json()["status"] == "shipped"
+    # The flat shape of Envia's test call, and a repeat changes nothing.
+    assert await send({"carrier": "barato", "tracking_number": "ENV-123", "shipment_status": "Delivered"})
+    assert await send(event("delivered"))
+    history = (await admin_client.get(f"/api/v1/orders/{order_id}/history")).json()
+    assert [(h["to_status"], h["actor"]) for h in history][-2:] == [("shipped", None), ("delivered", None)]
+
+
+async def test_retry_buys_the_missing_labels(
+    admin_client: AsyncClient, customer_client: AsyncClient, envia: FakeEnvia
+) -> None:
+    assert (await admin_client.post("/api/v1/shipments/envia/retry")).status_code == 422  # Envia off
+    no_phone = await _paid_order(admin_client, customer_client, "ENV-009")
+    ok = await _paid_order(admin_client, customer_client, "ENV-010", phone="3001112233")
+    paid_co = await admin_client.get("/api/v1/orders", params={"status": "paid", "country": "co"})
+    assert {o["id"] for o in paid_co.json()["items"]} == {no_phone, ok}
+    assert (await admin_client.get("/api/v1/orders", params={"country": "US"})).json()["total"] == 0
+    _labels_on()
+
+    assert (await customer_client.post("/api/v1/shipments/envia/retry")).status_code == 403
+    resp = await admin_client.post("/api/v1/shipments/envia/retry")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert (body["created"], body["remaining"]) == (1, 1)
+    assert [f["order_id"] for f in body["failed"]] == [no_phone]
+    assert "teléfono" in body["failed"][0]["detail"]
+    assert (await admin_client.get(f"/api/v1/orders/{ok}")).json()["status"] == "preparing"
+    assert (await admin_client.get(f"/api/v1/orders/{no_phone}")).json()["status"] == "paid"
+
+
+async def test_tracking_webhook_checks_envias_signature(
+    admin_client: AsyncClient,
+    customer_client: AsyncClient,
+    client: AsyncClient,
+    envia: FakeEnvia,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order_id = await _paid_order(admin_client, customer_client, "ENV-011", phone="3001112233")
+    _labels_on()
+    await admin_client.post(f"/api/v1/shipments/order/{order_id}/envia")
+    monkeypatch.setattr(settings, "ENVIA_WEBHOOK_TOKEN", "s3cret")
+    monkeypatch.setattr(settings, "ENVIA_WEBHOOK_SECRET", "envia-auth-token")
+    body = json.dumps(
+        {"type": "tracking.simple", "data": {"tracking_number": "ENV-123", "status": "Picked Up"}}
+    ).encode()
+
+    async def post(signature: str) -> httpx.Response:
+        headers = {
+            "Content-Type": "application/json",
+            "X-Webhook-Event": "tracking.simple",
+            "X-Webhook-Timestamp": "1794383135040",
+            "X-Webhook-Signature": signature,
+        }
+        return await client.post(
+            "/api/v1/webhooks/envia", params={"token": "s3cret"}, content=body, headers=headers
+        )
+
+    assert (await post("v1=" + "0" * 64)).status_code == 401
+    good = hmac.new(b"envia-auth-token", b"1794383135040.tracking.simple." + body, hashlib.sha256)
+    resp = await post("v1=" + good.hexdigest())
+    assert resp.status_code == 200 and resp.json() == {"applied": True}
+    assert (await admin_client.get(f"/api/v1/orders/{order_id}")).json()["status"] == "shipped"
