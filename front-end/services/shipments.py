@@ -195,6 +195,20 @@ def create_envia_shipment(token: str, order_id: str) -> dict:
     return _envia_client.post(f"/api/v1/shipments/order/{order_id}/envia", token=token)
 
 
+def retry_envia_shipments(token: str) -> dict:
+    """Staff only: buy the missing label of up to 10 paid Colombian orders.
+    `{created, failed: [{order_id, order_number, detail}], remaining}`."""
+    if settings.API_USE_MOCKS:
+        created = 0
+        for order in mock_data.MOCK_ORDERS:
+            if order["status"] == "paid" and (order.get("shipping_address") or {}).get("country") == "CO":
+                create_envia_shipment(token, order["id"])
+                created += 1
+        return {"created": created, "failed": [], "remaining": 0}
+    # shortcut: one 65 s timeout for the whole batch; the backend caps it at 10 orders.
+    return _envia_client.post("/api/v1/shipments/envia/retry", token=token)
+
+
 def sync_shipment(token: str, shipment_id: str, order_id: str) -> dict:
     """Staff only: the shipment after reading Envia's tracking, plus
     `carrier_status` (Envia's own status name, e.g. "Created")."""

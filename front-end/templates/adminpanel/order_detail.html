@@ -43,7 +43,7 @@
                         <td class="lead">{{ entry.created_at|api_datetime }}</td>
                         <td data-label="Cambio">{% if entry.from_status %}<span class="status status--{{ entry.from_status }}">{{ entry.from_status|order_status_label }}</span><span class="to" aria-hidden="true"></span><span class="visually-hidden"> a </span>{% endif %}<span class="status status--{{ entry.to_status }}">{{ entry.to_status|order_status_label }}</span></td>
                         <td data-label="Origen">{{ entry.source|order_status_source_label }}</td>
-                        <td data-label="Quién">{% if entry.actor %}{{ entry.actor.full_name }}<span class="sub">{{ entry.actor.email }} · {{ entry.actor.role|user_role_label }}</span>{% elif entry.source == "shipment_created" %}Automático (Envia){% else %}Usuario eliminado{% endif %}</td>
+                        <td data-label="Quién">{% if entry.actor %}{{ entry.actor.full_name }}<span class="sub">{{ entry.actor.email }} · {{ entry.actor.role|user_role_label }}</span>{% elif entry.source|slice:":9" == "shipment_" %}Automático (Envia){% else %}Usuario eliminado{% endif %}</td>
                         <td class="vcol" data-label="Tras">{% if entry.elapsed %}<span class="var var--flat">{{ entry.elapsed }}</span>{% else %}Inicio{% endif %}</td>
                     </tr>
                     {% endfor %}

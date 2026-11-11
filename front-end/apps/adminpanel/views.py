@@ -293,6 +293,28 @@ def shipment_envia(request, order_id):
 
 @api_staff_required
 @require_POST
+def envia_retry(request):
+    """The dashboard's "Reintentar guías": buys the label of every paid
+    Colombian order still without one (the backend does up to 10 per call)."""
+    token = auth_service.get_access_token(request)
+    try:
+        result = shipments_service.retry_envia_shipments(token)
+    except ApiError as exc:
+        messages.error(request, f"No se pudieron reintentar las guías: {exc.detail}")
+        return redirect("adminpanel:home")
+    if result["created"]:
+        messages.success(request, f"Guías generadas: {result['created']}.")
+    for failure in result["failed"]:
+        messages.error(request, f"{failure['order_number']}: {failure['detail']}")
+    if result["remaining"] > len(result["failed"]):
+        messages.info(request, "Quedan pedidos sin guía: vuelve a reintentar.")
+    elif not result["created"] and not result["failed"]:
+        messages.info(request, "No hay pedidos pagados sin guía.")
+    return redirect("adminpanel:home")
+
+
+@api_staff_required
+@require_POST
 def shipment_sync(request, order_id):
     token = auth_service.get_access_token(request)
     shipment = shipments_service.get_shipment_for_order(token, str(order_id))

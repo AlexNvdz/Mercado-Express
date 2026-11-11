@@ -5,6 +5,7 @@ Admin dashboard statistics (apps/adminpanel). See
     GET /api/v1/reports/summary?top_products_limit=   staff
     GET /api/v1/inventory?low_stock=true              staff, paginated
     GET /api/v1/orders?status=<stage>&page_size=5     staff, one call per stage
+    GET /api/v1/orders?status=paid&country=CO         staff, paid orders without a label
 
 Every number comes from the backend: revenue is summed server-side from the
 `Sale` ledger (not `Order.total_amount`), order counts and top products are
@@ -104,7 +105,15 @@ def get_dashboard_stats(token: str) -> dict:
         for status, label in ATTEND_STAGES
     ]
 
+    # A paid order has no shipment (creating one moves it to `preparing`), so
+    # these are the Colombian orders whose automatic Envia label failed.
+    without_label = orders_service.list_orders(
+        token, page=1, page_size=ATTEND_PER_STAGE, status="paid", country="CO"
+    )
+
     return {
+        "without_label": without_label["items"][:ATTEND_PER_STAGE],
+        "without_label_count": without_label["total"],
         "net_revenue": _to_decimal(summary["net_revenue"]),
         "gross_revenue": _to_decimal(summary["gross_revenue"]),
         "refunded_amount": _to_decimal(summary["refunded_amount"]),

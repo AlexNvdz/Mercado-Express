@@ -105,6 +105,7 @@ def list_orders(
     search: str | None = None,
     created_from: str | None = None,
     created_to: str | None = None,
+    country: str | None = None,
 ) -> dict:
     """Every filter is server-side, so `total`/`pages` count only matching
     orders and pagination keeps them. `search` matches the order number or the
@@ -121,6 +122,8 @@ def list_orders(
             items = [o for o in items if o["created_at"][:10] >= created_from]
         if created_to:
             items = [o for o in items if o["created_at"][:10] <= created_to]
+        if country:
+            items = [o for o in items if (o.get("shipping_address") or {}).get("country") == country]
         return {"items": items, "total": len(items), "page": 1, "page_size": len(items) or 1, "pages": 1}
 
     params: dict = {"page": page, "page_size": page_size}
@@ -132,6 +135,8 @@ def list_orders(
         params["created_from"] = created_from
     if created_to:
         params["created_to"] = created_to
+    if country:
+        params["country"] = country
     return api_client.get("/api/v1/orders", token=token, params=params)
 
 

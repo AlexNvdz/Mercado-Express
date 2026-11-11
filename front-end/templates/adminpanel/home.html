@@ -37,6 +37,31 @@
 </section>
 
 <p class="group-label caps">Operación</p>
+{% if stats.without_label_count %}
+<section class="sheet" aria-labelledby="nolabel-title">
+    <div class="sheet__head">
+        <h2 class="sheet__title" id="nolabel-title">Pedidos pagados sin guía <span class="var var--down">{{ stats.without_label_count|money }}</span></h2>
+        <form method="post" action="{% url 'adminpanel:envia_retry' %}" data-confirm="Se compra la guía más económica de cada pedido con el saldo de Envia. Los que vuelvan a fallar muestran el motivo." data-confirm-title="¿Reintentar las guías?" data-confirm-ok="Reintentar guías">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--sm">Reintentar guías</button>
+        </form>
+    </div>
+    <table class="ledger">
+        <thead><tr><th>Pedido</th><th>Ciudad</th><th class="num">Total</th><th class="vcol" title="Tiempo desde el pago">Espera</th></tr></thead>
+        <tbody>
+            {% for order in stats.without_label %}
+            <tr>
+                <td class="lead"><a class="code code--clip" href="{% url 'adminpanel:order_detail' order.id %}" title="{{ order.order_number }}">{{ order.order_number }}</a></td>
+                <td data-label="Ciudad">{{ order.shipping_address.city }}</td>
+                <td class="num" data-label="Total">${{ order.total_amount|money }}</td>
+                <td class="vcol" data-label="Espera"><span class="var var--warn">{{ order.updated_at|since }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="sheet__foot">La guía automática de Envia falló (falta el teléfono, sin cobertura...). Cuando el cliente corrija su dirección o teléfono, reintenta.</p>
+</section>
+{% endif %}
 <section class="sheet flow" aria-labelledby="status-title">
     <div class="sheet__head">
         <h2 class="sheet__title" id="status-title">Pedidos por estado</h2>

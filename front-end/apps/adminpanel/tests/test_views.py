@@ -870,3 +870,34 @@ def test_envia_failure_shows_the_backend_reason(client, monkeypatch):
     order = _order_in_status("paid")
     response = client.post(reverse("adminpanel:shipment_envia", kwargs={"order_id": order["id"]}), follow=True)
     assert "No se pudo generar la guía: Ninguna transportadora cotizó este envío." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_home_lists_paid_orders_without_label_and_retries_them(client):
+    _login_as_staff(client)
+    content = client.get(reverse("adminpanel:home")).content.decode()
+    assert "Pedidos pagados sin guía" not in content
+
+    order = _order_in_status("paid")
+    content = client.get(reverse("adminpanel:home")).content.decode()
+    assert "Pedidos pagados sin guía" in content
+    assert order["order_number"] in content
+
+    response = client.post(reverse("adminpanel:envia_retry"), follow=True)
+    content = response.content.decode()
+    assert "Guías generadas: 1." in content
+    assert "Pedidos pagados sin guía" not in content
+    assert order["status"] == "preparing"
+
+
+@pytest.mark.django_db
+def test_envia_retry_shows_each_failure(client, monkeypatch):
+    def partial(token):
+        failure = {"order_id": "x", "order_number": "ME-0001", "detail": "Falta el teléfono de quien recibe el pedido."}
+        return {"created": 0, "failed": [failure], "remaining": 1}
+
+    monkeypatch.setattr("apps.adminpanel.views.shipments_service.retry_envia_shipments", partial)
+    _login_as_staff(client)
+    content = client.post(reverse("adminpanel:envia_retry"), follow=True).content.decode()
+    assert "ME-0001: Falta el teléfono de quien recibe el pedido." in content
+    assert "Quedan pedidos sin guía" not in content
